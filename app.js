@@ -18,8 +18,55 @@ app.use(express.static('public')); // serve frontend files if needed
 // --------- ROUTES ---------
 
 // Home
-app.get('/', (req, res) => {
-  res.send("Welcome to TravelAura API 🚀");
+app.post('/signup', async (req, res) => {
+  try {
+    const { username, email, phone, address, password } = req.body;
+    if (!username || !email || !phone || !address || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // TODO: Use password hashing in production!
+    const user = new User({ username, email, phone, address, password });
+    await user.save();
+
+    res.status(201).json({
+      message: 'User registered!',
+      user: {
+        _id: user._id,          // ✅ return MongoDB ObjectId
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        address: user.address
+      }
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(409).json({ message: 'Username or email already exists' });
+    } else {
+      res.status(500).json({ message: 'Error registering user', error: err });
+    }
+  }
+});
+
+
+// Login route
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username, password });
+  if (user) {
+    res.json({
+      message: 'Login successful',
+      user: {
+        _id: user._id,          // ✅ include MongoDB ID
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        address: user.address
+      }
+    });
+  } else {
+    res.status(401).json({ message: 'Invalid credentials' });
+  }
 });
 
 // Get all destinations
