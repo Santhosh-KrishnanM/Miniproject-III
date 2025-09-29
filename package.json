@@ -1,0 +1,36 @@
+{
+  "name": "travelauraserver",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "dotenv": "^17.2.1",
+    "cors": "^2.8.5"
+  }
+}
+
+{
+  "name": "travelauraserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Activity.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Santhosh-KrishnanM/Miniproject-III.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Santhosh-KrishnanM/Miniproject-III/issues"
+  },
+  "homepage": "https://github.com/Santhosh-KrishnanM/Miniproject-III#readme"
+}
