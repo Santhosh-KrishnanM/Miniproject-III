@@ -11,6 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/Santhosh-KrishnanM/Miniproject-III.git"
   },
+<<<<<<< HEAD
   "keywords": [
     "express",
     "mongoose",
@@ -18,6 +19,9 @@
     "travel",
     "api"
   ],
+=======
+  "keywords": ["express", "mongoose", "tourism", "travel", "api"],
+>>>>>>> 708f77ca15dbedf6f80255a3e3a6fb231eaf21b6
   "author": "Santhosh Krishnan",
   "license": "ISC",
   "type": "commonjs",
@@ -27,7 +31,10 @@
   "homepage": "https://github.com/Santhosh-KrishnanM/Miniproject-III#readme",
   "dependencies": {
     "bcrypt": "^5.1.1",
+<<<<<<< HEAD
     "bcryptjs": "^3.0.2",
+=======
+>>>>>>> 708f77ca15dbedf6f80255a3e3a6fb231eaf21b6
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
