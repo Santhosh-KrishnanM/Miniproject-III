@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-<<<<<<< HEAD
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
@@ -84,44 +83,12 @@ app.put('/api/users/:id', async (req, res) => {
     );
     if (!updatedUser) return res.status(404).json({ error: "User not found" });
     res.json(updatedUser);
-=======
-require('dotenv').config();
-
-const db = require('./db'); // import db connection
-const Destination = require('./Destination');
-const Booking = require('./Booking'); 
-const User = require('./User');
-
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public')); // serve frontend files if needed
-
-// --------- ROUTES ---------
-
-// Home
-app.get('/', (req, res) => {
-  res.send("Welcome to TravelAura API 🚀");
-});
-
-// Get all destinations
-app.get('/api/destinations', async (req, res) => {
-  try {
-    const destinations = await Destination.find();
-    res.json(destinations);
->>>>>>> 708f77ca15dbedf6f80255a3e3a6fb231eaf21b6
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-<<<<<<< HEAD
 // Booking routes
-=======
-// Create booking
->>>>>>> 708f77ca15dbedf6f80255a3e3a6fb231eaf21b6
 app.post('/api/bookings', async (req, res) => {
   try {
     const { userId, destination, startDate, endDate, travelers } = req.body;
@@ -130,7 +97,6 @@ app.post('/api/bookings', async (req, res) => {
       destination,
       startDate,
       endDate,
-<<<<<<< HEAD
       travelers
     });
     await booking.save();
@@ -304,40 +270,3 @@ db.once('open', () => {
     console.log(`🚀 Server started at http://localhost:${PORT}`);
   });
 });
-=======
-      travelers,
-      status: "Confirmed"
-    });
-    const saved = await booking.save();
-    res.json(saved);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Get bookings by user
-app.get('/api/bookings/:userId', async (req, res) => {
-  try {
-    const bookings = await Booking.find({ userId: req.params.userId }).populate('destination');
-    res.json(bookings);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Example user profile update route
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updatedUser);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// --------- SERVER START ---------
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-});
->>>>>>> 708f77ca15dbedf6f80255a3e3a6fb231eaf21b6
