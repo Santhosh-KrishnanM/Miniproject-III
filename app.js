@@ -19,6 +19,10 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/travel.html');
+});
+
 // Signup route (with password hashing)
 app.post('/signup', async (req, res) => {
   try {
@@ -135,7 +139,7 @@ app.post('/destinations', async (req, res) => {
   }
 });
 
-app.get('/api/destinations', async (req, res) => {
+app.get('/apstinations', async (req, res) => {
   try {
     const destinations = await Destination.find({});
     res.json(destinations);
@@ -265,8 +269,14 @@ app.get('/health', (req, res) => {
 
 // Start server after DB connection
 const PORT = process.env.PORT || 3000;
-db.once('open', () => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server started at http://localhost:${PORT}`);
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB Atlas connected");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("❌ DB connection failed:", err.message);
+    process.exit(1);
   });
-});
