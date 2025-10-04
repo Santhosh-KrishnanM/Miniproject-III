@@ -20,7 +20,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/travel.html');
+  res.sendFile(__dirname + '/travel.html');
 });
 
 // Signup route (with password hashing)
