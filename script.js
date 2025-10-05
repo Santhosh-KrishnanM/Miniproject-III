@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing up...';
         
         // Call backend API
-        fetch('http://localhost:3000/signup', {
+        fetch("https://travel-aura-enb6.onrender.com/signup", {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
         
         // Call backend API
-        fetch('http://localhost:3000/login', {
+        fetch("https://travel-aura-enb6.onrender.com/login", {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
