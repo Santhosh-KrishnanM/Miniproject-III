@@ -303,6 +303,15 @@ function formatDateTime(dateStr) {
 
 // --------- LOGOUT ------------
 function logout() {
-  localStorage.removeItem("currentUser");
-  window.location.href = "travel.html"; // back to login
+  if (confirm("Are you sure you want to log out?")) {
+    localStorage.removeItem("currentUser");
+    window.location.href = "travel.html"; // redirect back to login/home
+  }
 }
+
+// Attach logout event when page loads
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", logout);
+});
+
