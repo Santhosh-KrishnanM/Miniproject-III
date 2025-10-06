@@ -187,13 +187,26 @@ async function renderActivities() {
 // --------- BOOKING FORM ------------
 
 async function submitBooking() {
+  const destInput = document.getElementById("destinationSearch").value.trim();
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
-  if (!selectedDestinationId || !startDate || !endDate || !travelers) {
+  // Check if all fields are filled
+  if (!destInput || !startDate || !endDate || !travelers) {
     alert("Please fill all fields");
     return;
+  }
+
+  // ✅ Automatically find destination ID if user typed it manually
+  if (!selectedDestinationId) {
+    const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
+    if (match) {
+      selectedDestinationId = match._id;
+    } else {
+      alert("Please select a valid destination from the list.");
+      return;
+    }
   }
 
   try {
@@ -211,15 +224,19 @@ async function submitBooking() {
 
     const newBooking = await res.json();
 
-    alert("✅ Booking confirmed for " + (newBooking.destination?.name || "Trip"));
-    closeBookingForm();
-    await loadUserBookings(currentUser._id); // refresh bookings list
-
+    if (res.ok) {
+      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "Trip"}`);
+      closeBookingForm();
+      await loadUserBookings(currentUser._id); // Refresh list
+    } else {
+      alert("Booking failed: " + (newBooking.error || "Unknown error"));
+    }
   } catch (err) {
     console.error("Booking error:", err);
-    alert("Failed to save booking.");
+    alert("Failed to save booking. Please try again.");
   }
 }
+
 
 function filterDestinationsList() {
   const input = document.getElementById("destinationSearch").value.toLowerCase();
