@@ -187,12 +187,11 @@ async function renderActivities() {
 // --------- BOOKING FORM ------------
 
 async function submitBooking() {
-  const destInput = document.getElementById("destinationSearch").value.trim();
+  //const destInput = document.getElementById("destinationSearch").value.trim();
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
-  // Check if all fields are filled
   if (!destInput || !startDate || !endDate || !travelers) {
     alert("Please fill all fields");
     return;
