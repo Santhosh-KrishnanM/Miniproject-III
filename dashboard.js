@@ -1,3 +1,4 @@
+// Dashboard functionality
 let currentUser = null;
 let selectedDestinationId = null;
 let destinations = []; // store destinations from backend
@@ -9,9 +10,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentUser = JSON.parse(userData);
     updateUserProfile();
     await renderAllSections();
-    await loadUserBookings(currentUser._id); // ✅ load user's bookings
+    await loadUserBookings(currentUser._id);
   }
-  await loadDestinations(); // ✅ load destination list for search
+  await loadDestinations();
+
+  // Attach logout event when page loads
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    logout();
+  });
 });
 
 // --------- USER PROFILE ------------
@@ -86,7 +94,7 @@ async function renderAllSections() {
 
 async function renderDestinations() {
   const list = await getDestinations();
-  destinations = list; // ✅ store for search
+  destinations = list;
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
@@ -99,7 +107,7 @@ async function renderDestinations() {
       <div class="destination-info">
         <h4>${dest.name}</h4>
         <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${dest.type.replace('-', ' ')}</span>
+        <span class="destination-type">${(dest.type || '').replace('-', ' ')}</span>
         <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
           <i class="fas fa-heart"></i> Add to Favorites
         </button>
@@ -131,6 +139,41 @@ async function renderFavorites() {
   });
 }
 
+// --------- FAVORITE HANDLERS ------------
+async function addFavorite(userId, destinationId) {
+  try {
+    const res = await fetch('/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, destinationId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Added to favorites!');
+      await renderFavorites();
+    } else {
+      alert(data.message || 'Could not add favorite');
+    }
+  } catch (err) {
+    alert('Error adding favorite');
+  }
+}
+
+async function removeFavorite(favoriteId) {
+  try {
+    const res = await fetch(`/favorites/${favoriteId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Favorite removed!');
+      await renderFavorites();
+    } else {
+      alert(data.message || 'Could not remove favorite');
+    }
+  } catch (err) {
+    alert('Error removing favorite');
+  }
+}
+
 async function renderBookings() {
   const bookings = await getUserBookings(currentUser?._id);
   const container = document.getElementById('bookingsList');
@@ -142,7 +185,7 @@ async function renderBookings() {
     card.innerHTML = `
       <div class="booking-header">
         <h3>${booking.destination?.name || "Unknown"}</h3>
-        <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span>
+        <span class="booking-status ${booking.status ? booking.status.toLowerCase() : ''}">${booking.status || ''}</span>
       </div>
       <div class="booking-details">
         <div class="detail-item"><i class="fas fa-calendar"></i> <span>${formatDate(booking.startDate)} - ${formatDate(booking.endDate)}</span></div>
@@ -184,16 +227,27 @@ async function renderActivities() {
 }
 
 // --------- BOOKING FORM ------------
-
 async function submitBooking() {
-  //const destInput = document.getElementById("destinationSearch").value.trim();
+  const destInput = document.getElementById("destinationSearch").value;
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
+  // Check if all fields are filled
   if (!destInput || !startDate || !endDate || !travelers) {
     alert("Please fill all fields");
     return;
+  }
+
+  // Automatically find destination ID if user typed it manually
+  if (!selectedDestinationId) {
+    const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
+    if (match) {
+      selectedDestinationId = match._id;
+    } else {
+      alert("Please select a valid destination from the list.");
+      return;
+    }
   }
 
   try {
@@ -214,7 +268,7 @@ async function submitBooking() {
     if (res.ok) {
       alert(`✅ Booking confirmed for ${newBooking.destination?.name || "Trip"}`);
       closeBookingForm();
-      await loadUserBookings(currentUser._id); // Refresh list
+      await loadUserBookings(currentUser._id);
     } else {
       alert("Booking failed: " + (newBooking.error || "Unknown error"));
     }
@@ -223,7 +277,6 @@ async function submitBooking() {
     alert("Failed to save booking. Please try again.");
   }
 }
-
 
 function filterDestinationsList() {
   const input = document.getElementById("destinationSearch").value.toLowerCase();
@@ -264,11 +317,11 @@ async function loadUserBookings(userId) {
       card.innerHTML = `
         <div class="booking-header">
           <h3>${booking.destination?.name || "Unknown"} Trip</h3>
-          <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span>
+          <span class="booking-status ${booking.status ? booking.status.toLowerCase() : ''}">${booking.status || ''}</span>
         </div>
         <div class="booking-details">
-          <div class="detail-item"><i class="fas fa-calendar"></i><span>${booking.startDate.slice(0,10)} → ${booking.endDate.slice(0,10)}</span></div>
-          <div class="detail-item"><i class="fas fa-users"></i><span>${booking.travelers} Travelers</span></div>
+          <div class="detail-item"><i class="fas fa-calendar"></i><span>${booking.startDate ? booking.startDate.slice(0,10) : ''} → ${booking.endDate ? booking.endDate.slice(0,10) : ''}</span></div>
+          <div class="detail-item"><i class="fas fa-users"></i><span>${booking.travelers || 1} Travelers</span></div>
         </div>
         <div class="booking-actions">
           <button class="btn-outline">View Details</button>
@@ -309,14 +362,20 @@ function formatDateTime(dateStr) {
 function logout() {
   if (confirm("Are you sure you want to log out?")) {
     localStorage.removeItem("currentUser");
-    window.location.href = "travel.html"; // redirect back to login/home
+    window.location.href = "travel.html";
   }
 }
 
+// --------- OPTIONAL: STATS FUNCTION -----------
+async function updateStats() {
+  // Add stats update logic if needed
+}
 
-// Attach logout event when page loads
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", logout);
-});
-
+// --------- OPTIONAL: Destination Details Modal -----
+function showDestinationDetails(destId) {
+  // You can implement a modal or section to show more info about a destination
+  const dest = destinations.find(d => d._id === destId);
+  if (dest) {
+    alert(`Destination: ${dest.name}\nType: ${dest.type}\nRating: ${dest.rating}\nDescription: ${dest.description}`);
+  }
+}
