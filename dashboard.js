@@ -193,13 +193,13 @@ async function submitBooking() {
   const travelers = document.getElementById("travelers").value;
 
   // Check if all fields are filled
-  if (!destInput || !startDate || !endDate || !travelers) {
+  if (!selectedDestinationId || !startDate || !endDate || !travelers) {
     alert("Please fill all fields");
     return;
   }
 
   // ✅ Automatically find destination ID if user typed it manually
-  if (!selectedDestinationId) {
+  /*if (!selectedDestinationId) {
     const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
     if (match) {
       selectedDestinationId = match._id;
@@ -207,7 +207,7 @@ async function submitBooking() {
       alert("Please select a valid destination from the list.");
       return;
     }
-  }
+  }*/
 
   try {
     const res = await fetch("/api/bookings", {
