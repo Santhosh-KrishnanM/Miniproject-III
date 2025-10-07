@@ -1,4 +1,3 @@
-// Dashboard functionality
 let currentUser = null;
 let selectedDestinationId = null;
 let destinations = []; // store destinations from backend
@@ -187,18 +186,16 @@ async function renderActivities() {
 // --------- BOOKING FORM ------------
 
 async function submitBooking() {
-  const destInput = document.getElementById("destinationSearch").value.trim();
+  //const destInput = document.getElementById("destinationSearch").value.trim();
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
-  // Check if all fields are filled
   if (!destInput || !startDate || !endDate || !travelers) {
     alert("Please fill all fields");
     return;
   }
 
-  // ✅ Automatically find destination ID if user typed it manually
   if (!selectedDestinationId) {
     const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
     if (match) {
@@ -326,6 +323,8 @@ function logout() {
   }
 }
 
+
+// Attach logout event when page loads
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", logout);
