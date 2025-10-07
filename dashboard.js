@@ -197,7 +197,6 @@ async function submitBooking() {
     return;
   }
 
-  // ✅ Automatically find destination ID if user typed it manually
   if (!selectedDestinationId) {
     const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
     if (match) {
