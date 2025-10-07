@@ -326,6 +326,7 @@ function logout() {
   }
 }
 
+
 // Attach logout event when page loads
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
