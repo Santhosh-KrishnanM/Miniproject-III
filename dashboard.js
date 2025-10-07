@@ -224,13 +224,10 @@ async function submitBooking() {
 
     const newBooking = await res.json();
 
-    if (res.ok) {
-      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "Trip"}`);
-      closeBookingForm();
-      await loadUserBookings(currentUser._id); // Refresh list
-    } else {
-      alert("Booking failed: " + (newBooking.error || "Unknown error"));
-    }
+    alert(`✅ Booking confirmed for ${newBooking.destination?.name || "Trip"}`);
+    closeBookingForm();
+    await loadUserBookings(currentUser._id); // Refresh list
+    
   } catch (err) {
     console.error("Booking error:", err);
     alert("Failed to save booking. Please try again.");
