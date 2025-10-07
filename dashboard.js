@@ -196,16 +196,6 @@ async function submitBooking() {
     return;
   }
 
-  if (!selectedDestinationId) {
-    const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
-    if (match) {
-      selectedDestinationId = match._id;
-    } else {
-      alert("Please select a valid destination from the list.");
-      return;
-    }
-  }
-
   try {
     const res = await fetch("/api/bookings", {
       method: "POST",
