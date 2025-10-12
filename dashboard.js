@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadUserBookings(currentUser._id); // ✅ load user's bookings
   }
   await loadDestinations(); // ✅ load destination list for search
+  setupDestinationSearch(); // ✅ enable live suggestions
+  setupDateRestrictions();  // ✅ prevent past date selection
 });
 
 // --------- USER PROFILE ------------
@@ -54,7 +56,7 @@ function toggleSidebar() {
 
 // --------- API INTEGRATION ------------
 async function getDestinations() {
-  const res = await fetch('/api/destinations');
+  const res = await fetch('/destinations');
   return res.json();
 }
 
@@ -193,21 +195,24 @@ async function submitBooking() {
   const travelers = document.getElementById("travelers").value;
 
   // Check if all fields are filled
-  if (!selectedDestinationId || !startDate || !endDate || !travelers) {
-    alert("Please fill all fields");
+  if (!destInput || !startDate || !endDate || !travelers) {
+    alert("Please fill all fields.");
     return;
   }
 
-  // ✅ Automatically find destination ID if user typed it manually
-  /*if (!selectedDestinationId) {
-    const match = destinations.find(d => d.name.toLowerCase() === destInput.toLowerCase());
+  // ✅ Ensure destination ID is found — even if user typed manually
+  let destinationId = selectedDestinationId;
+  if (!destinationId) {
+    const match = destinations.find(
+      (d) => d.name.toLowerCase() === destInput.toLowerCase()
+    );
     if (match) {
-      selectedDestinationId = match._id;
+      destinationId = match._id;
     } else {
       alert("Please select a valid destination from the list.");
       return;
     }
-  }*/
+  }
 
   try {
     const res = await fetch("/api/bookings", {
@@ -215,24 +220,29 @@ async function submitBooking() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: currentUser._id,
-        destination: selectedDestinationId,
+        destination: destinationId,
         startDate,
         endDate,
-        travelers
-      })
+        travelers,
+      }),
     });
 
     const newBooking = await res.json();
 
-    alert(`✅ Booking confirmed for ${newBooking.destination?.name || "Trip"}`);
-    closeBookingForm();
-    await loadUserBookings(currentUser._id); // Refresh list
-    
+    if (res.ok) {
+      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
+      closeBookingForm();
+      await loadUserBookings(currentUser._id); // refresh the list
+      selectedDestinationId = null; // reset after booking
+    } else {
+      alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
+    }
   } catch (err) {
     console.error("Booking error:", err);
-    alert("Failed to save booking. Please try again.");
+    alert("Failed to save booking. Please try again later.");
   }
 }
+
 
 
 function filterDestinationsList() {
@@ -329,4 +339,50 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", logout);
 });
+
+function setupDestinationSearch() {
+  const input = document.getElementById("destinationSearch");
+  const resultsBox = document.getElementById("destinationResults");
+
+  input.addEventListener("input", () => {
+    const query = input.value.toLowerCase().trim();
+    resultsBox.innerHTML = "";
+
+    if (!query) return;
+
+    const filtered = destinations.filter(d => d.name.toLowerCase().includes(query));
+
+    filtered.forEach(dest => {
+      const li = document.createElement("li");
+      li.textContent = dest.name;
+      li.classList.add("suggestion-item");
+      li.onclick = () => selectDestination(dest);
+      resultsBox.appendChild(li);
+    });
+
+    resultsBox.style.display = filtered.length ? "block" : "none";
+  });
+
+  // Hide suggestions when clicked outside
+  document.addEventListener("click", (e) => {
+    if (!resultsBox.contains(e.target) && e.target !== input) {
+      resultsBox.style.display = "none";
+    }
+  });
+}
+
+function setupDateRestrictions() {
+  const today = new Date().toISOString().split("T")[0];
+  const startInput = document.getElementById("startDate");
+  const endInput = document.getElementById("endDate");
+
+  // Set min date for both inputs
+  startInput.min = today;
+  endInput.min = today;
+
+  // When user picks start date, update end date's min value
+  startInput.addEventListener("change", () => {
+    endInput.min = startInput.value;
+  });
+}
 
