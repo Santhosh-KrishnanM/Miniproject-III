@@ -140,6 +140,42 @@ app.get('/api/bookings/:userId', async (req, res) => {
   }
 });
 
+// ---------------------- UPDATE BOOKING ----------------------
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const { startDate, endDate, travelers } = req.body;
+
+    // Validate
+    if (!startDate || !endDate || !travelers) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Find and update booking
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { startDate, endDate, travelers },
+      { new: true }
+    ).populate("destination");
+
+    if (!updatedBooking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Log activity for user
+    await Activity.create({
+      userId: updatedBooking.userId,
+      type: 'booking',
+      content: `Modified booking for ${updatedBooking.destination.name}`,
+      destinationId: updatedBooking.destination._id
+    });
+
+    res.json(updatedBooking);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update booking", details: err.message });
+  }
+});
+
+
 // ---------------------- DESTINATIONS ----------------------
 
 app.post('/destinations', async (req, res) => {
