@@ -243,7 +243,57 @@ async function submitBooking() {
   }
 }
 
+function openModifyForm(booking) {
+  const modal = document.getElementById("modifyBookingModal");
+  document.getElementById("modifyBookingId").value = booking._id;
+  document.getElementById("modifyStartDate").value = booking.startDate.slice(0,10);
+  document.getElementById("modifyEndDate").value = booking.endDate.slice(0,10);
+  document.getElementById("modifyTravelers").value = booking.travelers;
+  modal.style.display = "flex";
 
+  // Prevent past dates
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("modifyStartDate").setAttribute("min", today);
+  document.getElementById("modifyEndDate").setAttribute("min", today);
+}
+
+// Close modify modal
+function closeModifyForm() {
+  document.getElementById("modifyBookingModal").style.display = "none";
+}
+
+// Submit booking update
+async function submitBookingModification() {
+  const id = document.getElementById("modifyBookingId").value;
+  const startDate = document.getElementById("modifyStartDate").value;
+  const endDate = document.getElementById("modifyEndDate").value;
+  const travelers = document.getElementById("modifyTravelers").value;
+
+  if (!startDate || !endDate || !travelers) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/bookings/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startDate, endDate, travelers })
+    });
+
+    if (res.ok) {
+      alert("✅ Booking updated successfully!");
+      closeModifyForm();
+      await loadUserBookings(currentUser._id);
+    } else {
+      const err = await res.json();
+      alert("Failed to update booking: " + (err.error || "Unknown error"));
+    }
+  } catch (error) {
+    console.error("Modify error:", error);
+    alert("Error updating booking");
+  }
+}
 
 function filterDestinationsList() {
   const input = document.getElementById("destinationSearch").value.toLowerCase();
@@ -292,7 +342,7 @@ async function loadUserBookings(userId) {
         </div>
         <div class="booking-actions">
           <button class="btn-outline">View Details</button>
-          <button class="btn-outline">Modify</button>
+          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(booking)})'>Modify</button>
           <button class="btn-danger">Cancel</button>
         </div>
       `;
