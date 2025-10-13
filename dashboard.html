@@ -371,6 +371,33 @@
           <button class="btn-primary" onclick="submitBooking()">Confirm Booking</button>
         </div>
       </div>
+      <!-- Modify Booking Modal -->
+      <div id="modifyBookingModal" class="modal" style="display:none;">
+        <div class="modal-content">
+    <span class="close-btn" onclick="closeModifyForm()">&times;</span>
+    <h2>Modify Booking</h2>
+
+    <input type="hidden" id="modifyBookingId">
+
+    <div class="form-group">
+      <label>Start Date</label>
+      <input type="date" id="modifyStartDate">
+    </div>
+
+    <div class="form-group">
+      <label>End Date</label>
+      <input type="date" id="modifyEndDate">
+    </div>
+
+    <div class="form-group">
+      <label>Travelers</label>
+      <input type="number" id="modifyTravelers" min="1">
+    </div>
+
+    <button class="btn-primary" onclick="submitBookingModification()">Save Changes</button>
+  </div>
+</div>
+
       <!-- Edit Profile Modal -->
       <div id="editProfileModal" class="modal" style="display:none;">
         <div class="modal-content">
