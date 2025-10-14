@@ -531,15 +531,35 @@ body {
 }
 
 .booking-status {
-  padding: 4px 12px;
+  padding: 6px 12px;
   border-radius: 15px;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .booking-status.confirmed {
   background: #d4edda;
   color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.booking-status.pending {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.booking-status.cancelled {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.booking-status.completed {
+  background: #cce5ff;
+  color: #004085;
+  border: 1px solid #b3d7ff;
 }
 
 .booking-details {
@@ -563,6 +583,33 @@ body {
 .booking-actions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.booking-actions button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.85rem;
+}
+.booking-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.booking-actions button i {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .booking-actions {
+    flex-direction: column;
+  }
+  
+  .booking-actions button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Profile Styles */
@@ -804,9 +851,10 @@ body {
   background: #fff;
   padding: 30px;
   border-radius: 12px;
-  width: 400px;
+  width: 450px;
   max-width: 90%;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  position: relative;
 }
 
 .modal-content h2 {
@@ -816,20 +864,29 @@ body {
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 600;
+  color: #333;
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #c38828;
+  box-shadow: 0 0 0 2px rgba(195, 136, 40, 0.1);
 }
 
 .search-results {
