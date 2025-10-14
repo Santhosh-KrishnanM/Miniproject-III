@@ -200,6 +200,19 @@ async function submitBooking() {
     return;
   }
 
+  // Validate dates are not in the past
+  const today = new Date().toISOString().split("T")[0];
+  if (startDate < today || endDate < today) {
+    alert("Please select future dates only.");
+    return;
+  }
+
+  // Validate end date is after start date
+  if (endDate <= startDate) {
+    alert("End date must be after start date.");
+    return;
+  }
+
   // ✅ Ensure destination ID is found — even if user typed manually
   let destinationId = selectedDestinationId;
   if (!destinationId) {
@@ -243,55 +256,71 @@ async function submitBooking() {
   }
 }
 
-function openModifyForm(booking) {
-  const modal = document.getElementById("modifyBookingModal");
-  document.getElementById("modifyBookingId").value = booking._id;
-  document.getElementById("modifyStartDate").value = booking.startDate.slice(0,10);
-  document.getElementById("modifyEndDate").value = booking.endDate.slice(0,10);
-  document.getElementById("modifyTravelers").value = booking.travelers;
-  modal.style.display = "flex";
+async function submitBooking() {
+  const destInput = document.getElementById("destinationSearch").value.trim();
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const travelers = document.getElementById("travelers").value;
 
-  // Prevent past dates
-  const today = new Date().toISOString().split("T")[0];
-  document.getElementById("modifyStartDate").setAttribute("min", today);
-  document.getElementById("modifyEndDate").setAttribute("min", today);
-}
-
-// Close modify modal
-function closeModifyForm() {
-  document.getElementById("modifyBookingModal").style.display = "none";
-}
-
-// Submit booking update
-async function submitBookingModification() {
-  const id = document.getElementById("modifyBookingId").value;
-  const startDate = document.getElementById("modifyStartDate").value;
-  const endDate = document.getElementById("modifyEndDate").value;
-  const travelers = document.getElementById("modifyTravelers").value;
-
-  if (!startDate || !endDate || !travelers) {
-    alert("Please fill all fields");
+  // Check if all fields are filled
+  if (!destInput || !startDate || !endDate || !travelers) {
+    alert("Please fill all fields.");
     return;
   }
 
+  // Validate dates are not in the past
+  const today = new Date().toISOString().split("T")[0];
+  if (startDate < today || endDate < today) {
+    alert("Please select future dates only.");
+    return;
+  }
+
+  // Validate end date is after start date
+  if (endDate <= startDate) {
+    alert("End date must be after start date.");
+    return;
+  }
+
+  // ✅ Ensure destination ID is found — even if user typed manually
+  let destinationId = selectedDestinationId;
+  if (!destinationId) {
+    const match = destinations.find(
+      (d) => d.name.toLowerCase() === destInput.toLowerCase()
+    );
+    if (match) {
+      destinationId = match._id;
+    } else {
+      alert("Please select a valid destination from the list.");
+      return;
+    }
+  }
+
   try {
-    const res = await fetch(`/api/bookings/${id}`, {
-      method: "PUT",
+    const res = await fetch("/api/bookings", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, travelers })
+      body: JSON.stringify({
+        userId: currentUser._id,
+        destination: destinationId,
+        startDate,
+        endDate,
+        travelers,
+      }),
     });
 
+    const newBooking = await res.json();
+
     if (res.ok) {
-      alert("✅ Booking updated successfully!");
-      closeModifyForm();
-      await loadUserBookings(currentUser._id);
+      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
+      closeBookingForm();
+      await loadUserBookings(currentUser._id); // refresh the list
+      selectedDestinationId = null; // reset after booking
     } else {
-      const err = await res.json();
-      alert("Failed to update booking: " + (err.error || "Unknown error"));
+      alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
     }
-  } catch (error) {
-    console.error("Modify error:", error);
-    alert("Error updating booking");
+  } catch (err) {
+    console.error("Booking error:", err);
+    alert("Failed to save booking. Please try again later.");
   }
 }
 
@@ -351,6 +380,16 @@ async function loadUserBookings(userId) {
     bookings.forEach(booking => {
       const card = document.createElement("div");
       card.className = "booking-card";
+      
+      // Create a safe booking object for JSON.stringify
+      const safeBooking = {
+        _id: booking._id,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        travelers: booking.travelers,
+        destination: booking.destination
+      };
+      
       card.innerHTML = `
         <div class="booking-header">
           <h3>${booking.destination?.name || "Unknown"} Trip</h3>
@@ -362,9 +401,8 @@ async function loadUserBookings(userId) {
         </div>
         <div class="booking-actions">
           <button class="btn-outline">View Details</button>
-          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(booking)})'>Modify</button>
-          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(booking).replace(/'/g, "&apos;")})'>Modify</button>
-
+          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(safeBooking)})'>Modify</button>
+          <button class="btn-danger" onclick='cancelBooking("${booking._id}")'>Cancel</button>
         </div>
       `;
       container.appendChild(card);
@@ -379,6 +417,16 @@ async function loadUserBookings(userId) {
 // --------- MODAL CONTROL ------------
 function openBookingForm() {
   document.getElementById("bookingModal").style.display = "flex";
+  // Reset form and reapply date restrictions
+  document.getElementById("destinationSearch").value = "";
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+  document.getElementById("travelers").value = "1";
+  document.getElementById("destinationResults").innerHTML = "";
+  selectedDestinationId = null;
+  
+  // Reapply date restrictions when modal opens
+  setupDateRestrictions();
 }
 function closeBookingForm() {
   document.getElementById("bookingModal").style.display = "none";
@@ -447,13 +495,27 @@ function setupDateRestrictions() {
   const startInput = document.getElementById("startDate");
   const endInput = document.getElementById("endDate");
 
+  if (!startInput || !endInput) return; // Exit if elements don't exist
+
   // Set min date for both inputs
   startInput.min = today;
   endInput.min = today;
 
   // When user picks start date, update end date's min value
   startInput.addEventListener("change", () => {
-    endInput.min = startInput.value;
+    endInput.min = startInput.value || today;
+    // Clear end date if it's before the new start date
+    if (endInput.value && endInput.value <= startInput.value) {
+      endInput.value = "";
+    }
+  });
+
+  // Validate end date is after start date
+  endInput.addEventListener("change", () => {
+    if (startInput.value && endInput.value <= startInput.value) {
+      alert("End date must be after start date.");
+      endInput.value = "";
+    }
   });
 }
 
