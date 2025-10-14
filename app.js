@@ -88,20 +88,34 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Update user profile
+// ---------------------- UPDATE USER PROFILE ----------------------
 app.put('/api/users/:id', async (req, res) => {
   try {
+    const { username, email, phone, address } = req.body;
+
+    if (!username || !email || !phone || !address) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { username, email, phone, address },
       { new: true }
     );
-    if (!updatedUser) return res.status(404).json({ error: "User not found" });
-    res.json(updatedUser);
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Failed to update profile", details: err.message });
   }
 });
+
 
 // ---------------------- BOOKINGS ----------------------
 
@@ -172,6 +186,28 @@ app.put('/api/bookings/:id', async (req, res) => {
     res.json(updatedBooking);
   } catch (err) {
     res.status(500).json({ error: "Failed to update booking", details: err.message });
+  }
+});
+
+// ---------------------- DELETE BOOKING ----------------------
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndDelete(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Log activity when user cancels booking
+    await Activity.create({
+      userId: booking.userId,
+      type: 'booking',
+      content: `Cancelled booking for ${booking.destination}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ message: "Booking cancelled successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete booking", details: err.message });
   }
 });
 

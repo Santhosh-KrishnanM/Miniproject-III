@@ -295,6 +295,26 @@ async function submitBookingModification() {
   }
 }
 
+// --------- CANCEL BOOKING ------------
+async function cancelBooking(id) {
+  if (!confirm("Are you sure you want to cancel this booking?")) return;
+
+  try {
+    const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("❌ Booking cancelled successfully!");
+      await loadUserBookings(currentUser._id);
+    } else {
+      alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Cancel booking error:", err);
+    alert("Error cancelling booking");
+  }
+}
+
 function filterDestinationsList() {
   const input = document.getElementById("destinationSearch").value.toLowerCase();
   const resultsBox = document.getElementById("destinationResults");
@@ -343,7 +363,8 @@ async function loadUserBookings(userId) {
         <div class="booking-actions">
           <button class="btn-outline">View Details</button>
           <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(booking)})'>Modify</button>
-          <button class="btn-danger">Cancel</button>
+          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(booking).replace(/'/g, "&apos;")})'>Modify</button>
+
         </div>
       `;
       container.appendChild(card);
@@ -436,3 +457,50 @@ function setupDateRestrictions() {
   });
 }
 
+// --------- EDIT PROFILE ------------
+function editProfile() {
+  document.getElementById("editProfileModal").style.display = "flex";
+  document.getElementById("editUsername").value = currentUser.username;
+  document.getElementById("editEmail").value = currentUser.email;
+  document.getElementById("editPhone").value = currentUser.phone;
+  document.getElementById("editAddress").value = currentUser.address;
+}
+
+function closeEditProfileForm() {
+  document.getElementById("editProfileModal").style.display = "none";
+}
+
+async function submitProfileEdit() {
+  const username = document.getElementById("editUsername").value.trim();
+  const email = document.getElementById("editEmail").value.trim();
+  const phone = document.getElementById("editPhone").value.trim();
+  const address = document.getElementById("editAddress").value.trim();
+
+  if (!username || !email || !phone || !address) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/users/${currentUser._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, phone, address }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("✅ Profile updated successfully!");
+      currentUser = data.user;
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      updateUserProfile();
+      closeEditProfileForm();
+    } else {
+      alert("Failed to update profile: " + (data.error || "Unknown error"));
+    }
+  } catch (error) {
+    console.error("Profile update error:", error);
+    alert("Error updating profile");
+  }
+}
