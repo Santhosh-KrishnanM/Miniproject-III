@@ -377,7 +377,28 @@ async function submitBooking() {
 
 // --------- CANCEL BOOKING ------------
 async function cancelBooking(bookingId) {
-  if (!confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) {
+  // Get booking details first
+  const bookings = await getUserBookings(currentUser._id);
+  const booking = bookings.find(b => b._id === bookingId);
+  
+  if (!booking) {
+    alert("Booking not found.");
+    return;
+  }
+
+  const bookingDate = new Date(booking.startDate);
+  const today = new Date();
+  const daysUntilTrip = Math.ceil((bookingDate - today) / (1000 * 60 * 60 * 24));
+
+  let confirmMessage = `Are you sure you want to cancel your booking for "${booking.destination?.name || 'Unknown'}"?`;
+  
+  if (daysUntilTrip > 0) {
+    confirmMessage += `\n\nYour trip is in ${daysUntilTrip} days.`;
+  }
+  
+  confirmMessage += "\n\nThis action cannot be undone.";
+
+  if (!confirm(confirmMessage)) {
     return;
   }
 
@@ -392,9 +413,11 @@ async function cancelBooking(bookingId) {
     const data = await res.json();
 
     if (res.ok) {
-      alert("✅ Booking cancelled successfully!");
+      alert(`✅ Booking cancelled successfully!\n\nBooking for "${booking.destination?.name || 'Unknown'}" has been cancelled.`);
       // Refresh the bookings list
       await loadUserBookings(currentUser._id);
+      // Update stats
+      await updateStats();
     } else {
       alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
     }
@@ -427,18 +450,126 @@ function selectDestination(dest) {
 
 async function viewBookingDetails(bookingId) {
   try {
-    const res = await fetch(`/api/bookings/details/${bookingId}`);
-    const booking = await res.json();
+    // First try to get the booking from the existing bookings data
+    const bookings = await getUserBookings(currentUser._id);
+    const booking = bookings.find(b => b._id === bookingId);
     
-    if (res.ok) {
-      // Create a detailed view modal or navigate to a details page
-      alert(`Booking Details:\n\nDestination: ${booking.destination?.name || 'Unknown'}\nDates: ${booking.startDate.slice(0,10)} to ${booking.endDate.slice(0,10)}\nTravelers: ${booking.travelers}\nStatus: ${booking.status}\nBooking ID: ${booking._id}`);
+    if (booking) {
+      // Create a more detailed modal instead of just an alert
+      showBookingDetailsModal(booking);
     } else {
-      alert("Failed to load booking details.");
+      alert("Booking not found.");
     }
   } catch (err) {
     console.error("Error loading booking details:", err);
     alert("Error loading booking details.");
+  }
+}
+
+
+function showBookingDetailsModal(booking) {
+  // Remove existing modal if it exists
+  const existingModal = document.getElementById('bookingDetailsModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal HTML
+  const modal = document.createElement('div');
+  modal.id = 'bookingDetailsModal';
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+
+  const bookingDate = new Date(booking.startDate);
+  const endDate = new Date(booking.endDate);
+  const today = new Date();
+  const isUpcoming = bookingDate > today;
+  const duration = Math.ceil((endDate - bookingDate) / (1000 * 60 * 60 * 24));
+
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="close-btn" onclick="closeBookingDetailsModal()">&times;</span>
+      <h2><i class="fas fa-info-circle"></i> Booking Details</h2>
+      
+      <div class="booking-details-content">
+        <div class="detail-section">
+          <h3><i class="fas fa-map-marker-alt"></i> Destination</h3>
+          <p><strong>${booking.destination?.name || 'Unknown Destination'}</strong></p>
+          ${booking.destination?.type ? `<span class="destination-type">${booking.destination.type.replace('-', ' ')}</span>` : ''}
+        </div>
+
+        <div class="detail-section">
+          <h3><i class="fas fa-calendar"></i> Travel Dates</h3>
+          <p><strong>Start:</strong> ${formatDetailDate(booking.startDate)}</p>
+          <p><strong>End:</strong> ${formatDetailDate(booking.endDate)}</p>
+          <p><strong>Duration:</strong> ${duration} day${duration > 1 ? 's' : ''}</p>
+        </div>
+
+        <div class="detail-section">
+          <h3><i class="fas fa-users"></i> Travelers</h3>
+          <p><strong>${booking.travelers}</strong> ${booking.travelers > 1 ? 'people' : 'person'}</p>
+        </div>
+
+        <div class="detail-section">
+          <h3><i class="fas fa-info"></i> Booking Information</h3>
+          <p><strong>Booking ID:</strong> ${booking._id}</p>
+          <p><strong>Status:</strong> <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span></p>
+          <p><strong>Created:</strong> ${booking.createdAt ? formatDetailDate(booking.createdAt) : 'Not available'}</p>
+        </div>
+
+        ${isUpcoming ? `
+          <div class="detail-section">
+            <h3><i class="fas fa-clock"></i> Countdown</h3>
+            <p><strong>${Math.ceil((bookingDate - today) / (1000 * 60 * 60 * 24))} days</strong> until your trip!</p>
+          </div>
+        ` : ''}
+
+        ${booking.destination?.rating ? `
+          <div class="detail-section">
+            <h3><i class="fas fa-star"></i> Destination Rating</h3>
+            <p><strong>${booking.destination.rating}</strong> / 5.0</p>
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="modal-actions" style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end;">
+        ${isUpcoming && booking.status.toLowerCase() === 'confirmed' ? `
+          <button class="btn-outline" onclick="closeBookingDetailsModal(); openModifyForm(${JSON.stringify({
+            _id: booking._id,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            travelers: booking.travelers,
+            destination: booking.destination
+          })})">
+            <i class="fas fa-edit"></i> Modify Booking
+          </button>
+        ` : ''}
+        <button class="btn-primary" onclick="closeBookingDetailsModal()">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function formatDetailDate(dateStr) {
+  const date = new Date(dateStr);
+  if (isNaN(date)) return 'Invalid Date';
+  
+  const options = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  };
+  
+  return date.toLocaleDateString('en-US', options);
+}
+
+function closeBookingDetailsModal() {
+  const modal = document.getElementById('bookingDetailsModal');
+  if (modal) {
+    modal.remove();
   }
 }
 
