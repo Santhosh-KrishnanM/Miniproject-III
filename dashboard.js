@@ -256,6 +256,57 @@ async function submitBooking() {
   }
 }
 
+async function updateStats() {
+  try {
+    if (!currentUser?._id) return;
+
+    const [destinations, favorites, bookings] = await Promise.all([
+      getDestinations(),
+      getUserFavorites(currentUser._id),
+      getUserBookings(currentUser._id)
+    ]);
+
+    // Calculate stats
+    const visitedCount = bookings.filter(b => 
+      b.status.toLowerCase() === 'completed' || 
+      new Date(b.endDate) < new Date()
+    ).length;
+
+    const upcomingCount = bookings.filter(b => 
+      b.status.toLowerCase() === 'confirmed' && 
+      new Date(b.startDate) > new Date()
+    ).length;
+
+    const favoriteCount = favorites.length;
+    
+    // Calculate average rating from visited destinations
+    const completedBookings = bookings.filter(b => 
+      b.status.toLowerCase() === 'completed' || 
+      new Date(b.endDate) < new Date()
+    );
+    
+    let totalRating = 0;
+    let ratedBookings = 0;
+    completedBookings.forEach(booking => {
+      if (booking.destination?.rating) {
+        totalRating += booking.destination.rating;
+        ratedBookings++;
+      }
+    });
+    
+    const averageRating = ratedBookings > 0 ? (totalRating / ratedBookings).toFixed(1) : '0';
+
+    // Update UI
+    document.getElementById('visitedCount').textContent = visitedCount;
+    document.getElementById('upcomingCount').textContent = upcomingCount;
+    document.getElementById('favoriteCount').textContent = favoriteCount;
+    document.getElementById('averageRating').textContent = averageRating;
+
+  } catch (err) {
+    console.error('Error updating stats:', err);
+  }
+}
+
 async function submitBooking() {
   const destInput = document.getElementById("destinationSearch").value.trim();
   const startDate = document.getElementById("startDate").value;
@@ -325,22 +376,31 @@ async function submitBooking() {
 }
 
 // --------- CANCEL BOOKING ------------
-async function cancelBooking(id) {
-  if (!confirm("Are you sure you want to cancel this booking?")) return;
+async function cancelBooking(bookingId) {
+  if (!confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) {
+    return;
+  }
 
   try {
-    const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
     const data = await res.json();
 
     if (res.ok) {
-      alert("❌ Booking cancelled successfully!");
+      alert("✅ Booking cancelled successfully!");
+      // Refresh the bookings list
       await loadUserBookings(currentUser._id);
     } else {
       alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
     }
   } catch (err) {
     console.error("Cancel booking error:", err);
-    alert("Error cancelling booking");
+    alert("Error cancelling booking. Please try again later.");
   }
 }
 
@@ -365,6 +425,24 @@ function selectDestination(dest) {
   document.getElementById("destinationResults").innerHTML = "";
 }
 
+async function viewBookingDetails(bookingId) {
+  try {
+    const res = await fetch(`/api/bookings/details/${bookingId}`);
+    const booking = await res.json();
+    
+    if (res.ok) {
+      // Create a detailed view modal or navigate to a details page
+      alert(`Booking Details:\n\nDestination: ${booking.destination?.name || 'Unknown'}\nDates: ${booking.startDate.slice(0,10)} to ${booking.endDate.slice(0,10)}\nTravelers: ${booking.travelers}\nStatus: ${booking.status}\nBooking ID: ${booking._id}`);
+    } else {
+      alert("Failed to load booking details.");
+    }
+  } catch (err) {
+    console.error("Error loading booking details:", err);
+    alert("Error loading booking details.");
+  }
+}
+
+// --------- ENHANCED LOAD USER BOOKINGS WITH PROPER BUTTON HANDLING ------------
 async function loadUserBookings(userId) {
   try {
     const res = await fetch(`/api/bookings/${userId}`);
@@ -373,7 +451,16 @@ async function loadUserBookings(userId) {
     container.innerHTML = "";
 
     if (!bookings.length) {
-      container.innerHTML = `<p>No bookings found.</p>`;
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #666;">
+          <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+          <h3>No bookings found</h3>
+          <p>Start planning your next adventure!</p>
+          <button class="btn-primary" onclick="openBookingForm()" style="margin-top: 15px;">
+            <i class="fas fa-plus"></i> Create New Booking
+          </button>
+        </div>
+      `;
       return;
     }
 
@@ -381,14 +468,11 @@ async function loadUserBookings(userId) {
       const card = document.createElement("div");
       card.className = "booking-card";
       
-      // Create a safe booking object for JSON.stringify
-      const safeBooking = {
-        _id: booking._id,
-        startDate: booking.startDate,
-        endDate: booking.endDate,
-        travelers: booking.travelers,
-        destination: booking.destination
-      };
+      // Determine if booking can be modified or cancelled
+      const bookingDate = new Date(booking.startDate);
+      const today = new Date();
+      const canModify = bookingDate > today && booking.status.toLowerCase() === 'confirmed';
+      const canCancel = bookingDate > today && booking.status.toLowerCase() !== 'cancelled';
       
       card.innerHTML = `
         <div class="booking-header">
@@ -396,13 +480,47 @@ async function loadUserBookings(userId) {
           <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span>
         </div>
         <div class="booking-details">
-          <div class="detail-item"><i class="fas fa-calendar"></i><span>${booking.startDate.slice(0,10)} → ${booking.endDate.slice(0,10)}</span></div>
-          <div class="detail-item"><i class="fas fa-users"></i><span>${booking.travelers} Travelers</span></div>
+          <div class="detail-item">
+            <i class="fas fa-calendar"></i>
+            <span>${booking.startDate.slice(0,10)} → ${booking.endDate.slice(0,10)}</span>
+          </div>
+          <div class="detail-item">
+            <i class="fas fa-users"></i>
+            <span>${booking.travelers} Travelers</span>
+          </div>
+          <div class="detail-item">
+            <i class="fas fa-info-circle"></i>
+            <span>Booking ID: ${booking._id.slice(-8)}</span>
+          </div>
         </div>
         <div class="booking-actions">
-          <button class="btn-outline">View Details</button>
-          <button class="btn-outline" onclick='openModifyForm(${JSON.stringify(safeBooking)})'>Modify</button>
-          <button class="btn-danger" onclick='cancelBooking("${booking._id}")'>Cancel</button>
+          <button class="btn-outline" onclick="viewBookingDetails('${booking._id}')">
+            <i class="fas fa-eye"></i> View Details
+          </button>
+          ${canModify ? 
+            `<button class="btn-outline" onclick='openModifyForm(${JSON.stringify({
+              _id: booking._id,
+              startDate: booking.startDate,
+              endDate: booking.endDate,
+              travelers: booking.travelers,
+              destination: booking.destination
+            })})'>
+              <i class="fas fa-edit"></i> Modify
+            </button>` 
+            : 
+            `<button class="btn-outline" disabled style="opacity: 0.5;">
+              <i class="fas fa-edit"></i> Modify
+            </button>`
+          }
+          ${canCancel ? 
+            `<button class="btn-danger" onclick="cancelBooking('${booking._id}')">
+              <i class="fas fa-times"></i> Cancel
+            </button>` 
+            : 
+            `<button class="btn-danger" disabled style="opacity: 0.5;">
+              <i class="fas fa-times"></i> Cancel
+            </button>`
+          }
         </div>
       `;
       container.appendChild(card);
@@ -412,6 +530,55 @@ async function loadUserBookings(userId) {
     console.error("Error loading bookings:", err);
     alert("Failed to load bookings.");
   }
+}
+
+function openModifyForm(booking) {
+  const modal = document.getElementById("modifyBookingModal");
+  
+  // Clear any existing event listeners to prevent duplicates
+  const modifyStartInput = document.getElementById("modifyStartDate");
+  const modifyEndInput = document.getElementById("modifyEndDate");
+  
+  // Clone elements to remove all event listeners
+  const newModifyStartInput = modifyStartInput.cloneNode(true);
+  const newModifyEndInput = modifyEndInput.cloneNode(true);
+  modifyStartInput.parentNode.replaceChild(newModifyStartInput, modifyStartInput);
+  modifyEndInput.parentNode.replaceChild(newModifyEndInput, modifyEndInput);
+  
+  // Update references to new elements
+  const startInput = document.getElementById("modifyStartDate");
+  const endInput = document.getElementById("modifyEndDate");
+  
+  // Set values
+  document.getElementById("modifyBookingId").value = booking._id;
+  startInput.value = booking.startDate.slice(0,10);
+  endInput.value = booking.endDate.slice(0,10);
+  document.getElementById("modifyTravelers").value = booking.travelers;
+  
+  // Set date restrictions
+  const today = new Date().toISOString().split("T")[0];
+  startInput.setAttribute("min", today);
+  endInput.setAttribute("min", today);
+  
+  // Add event listeners for date validation
+  startInput.addEventListener("change", function() {
+    endInput.min = startInput.value || today;
+    // Clear end date if it's before the new start date
+    if (endInput.value && endInput.value <= startInput.value) {
+      endInput.value = "";
+      alert("Please select an end date after the start date.");
+    }
+  });
+  
+  // Validate end date is after start date
+  endInput.addEventListener("change", function() {
+    if (startInput.value && endInput.value <= startInput.value) {
+      alert("End date must be after start date.");
+      endInput.value = "";
+    }
+  });
+  
+  modal.style.display = "flex";
 }
 
 // --------- MODAL CONTROL ------------
@@ -501,22 +668,30 @@ function setupDateRestrictions() {
   startInput.min = today;
   endInput.min = today;
 
-  // When user picks start date, update end date's min value
-  startInput.addEventListener("change", () => {
+  // Remove existing event listeners to prevent duplicates
+  startInput.removeEventListener("change", startInputHandler);
+  endInput.removeEventListener("change", endInputHandler);
+
+  // Define event handlers
+  function startInputHandler() {
     endInput.min = startInput.value || today;
     // Clear end date if it's before the new start date
     if (endInput.value && endInput.value <= startInput.value) {
       endInput.value = "";
+      alert("Please select an end date after the start date.");
     }
-  });
+  }
 
-  // Validate end date is after start date
-  endInput.addEventListener("change", () => {
+  function endInputHandler() {
     if (startInput.value && endInput.value <= startInput.value) {
       alert("End date must be after start date.");
       endInput.value = "";
     }
-  });
+  }
+
+  // Add event listeners
+  startInput.addEventListener("change", startInputHandler);
+  endInput.addEventListener("change", endInputHandler);
 }
 
 // --------- EDIT PROFILE ------------
