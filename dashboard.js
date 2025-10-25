@@ -10,11 +10,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentUser = JSON.parse(userData);
     updateUserProfile();
     await renderAllSections();
-    await loadUserBookings(currentUser._id); // ✅ load user's bookings
+    await loadUserBookings(currentUser._id);
   }
-  await loadDestinations(); // ✅ load destination list for search
-  setupDestinationSearch(); // ✅ enable live suggestions
-  setupDateRestrictions();  // ✅ prevent past date selection
+  await loadDestinations();
+  setupDestinationSearch();
+  setupDateRestrictions();
+  setupLogoutHandler();
 });
 
 // --------- USER PROFILE ------------
@@ -78,6 +79,18 @@ async function getUserActivities(userId) {
   return res.json();
 }
 
+// --------- LOAD DESTINATIONS ------------
+async function loadDestinations() {
+  try {
+    const list = await getDestinations();
+    destinations = list;
+    return list;
+  } catch (err) {
+    console.error("Error loading destinations:", err);
+    return [];
+  }
+}
+
 // --------- RENDER FUNCTIONS ------------
 async function renderAllSections() {
   await renderDestinations();
@@ -89,7 +102,7 @@ async function renderAllSections() {
 
 async function renderDestinations() {
   const list = await getDestinations();
-  destinations = list; // ✅ store for search
+  destinations = list;
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
@@ -152,9 +165,15 @@ async function renderBookings() {
         <div class="detail-item"><i class="fas fa-users"></i> <span>${booking.travelers || 1} Travelers</span></div>
       </div>
       <div class="booking-actions">
-        <button class="btn-outline">View Details</button>
-        <button class="btn-outline">Modify</button>
-        <button class="btn-danger">Cancel</button>
+        <button class="btn-outline" onclick="viewBookingDetails('${booking._id}')">View Details</button>
+        <button class="btn-outline" onclick='openModifyForm(${JSON.stringify({
+          _id: booking._id,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          travelers: booking.travelers,
+          destination: booking.destination
+        })})'>Modify</button>
+        <button class="btn-danger" onclick="cancelBooking('${booking._id}')">Cancel</button>
       </div>
     `;
     container.appendChild(card);
@@ -187,6 +206,20 @@ async function renderActivities() {
 }
 
 // --------- BOOKING FORM ------------
+function openBookingForm() {
+  document.getElementById("bookingModal").style.display = "flex";
+  document.getElementById("destinationSearch").value = "";
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+  document.getElementById("travelers").value = "1";
+  document.getElementById("destinationResults").innerHTML = "";
+  selectedDestinationId = null;
+  setupDateRestrictions();
+}
+
+function closeBookingForm() {
+  document.getElementById("bookingModal").style.display = "none";
+}
 
 async function submitBooking() {
   const destInput = document.getElementById("destinationSearch").value.trim();
@@ -194,26 +227,22 @@ async function submitBooking() {
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
-  // Check if all fields are filled
   if (!destInput || !startDate || !endDate || !travelers) {
     alert("Please fill all fields.");
     return;
   }
 
-  // Validate dates are not in the past
   const today = new Date().toISOString().split("T")[0];
   if (startDate < today || endDate < today) {
     alert("Please select future dates only.");
     return;
   }
 
-  // Validate end date is after start date
   if (endDate <= startDate) {
     alert("End date must be after start date.");
     return;
   }
 
-  // ✅ Ensure destination ID is found — even if user typed manually
   let destinationId = selectedDestinationId;
   if (!destinationId) {
     const match = destinations.find(
@@ -245,8 +274,8 @@ async function submitBooking() {
     if (res.ok) {
       alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
       closeBookingForm();
-      await loadUserBookings(currentUser._id); // refresh the list
-      selectedDestinationId = null; // reset after booking
+      await loadUserBookings(currentUser._id);
+      selectedDestinationId = null;
     } else {
       alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
     }
@@ -256,128 +285,73 @@ async function submitBooking() {
   }
 }
 
-async function updateStats() {
-  try {
-    if (!currentUser?._id) return;
-
-    const [destinations, favorites, bookings] = await Promise.all([
-      getDestinations(),
-      getUserFavorites(currentUser._id),
-      getUserBookings(currentUser._id)
-    ]);
-
-    // Calculate stats
-    const visitedCount = bookings.filter(b => 
-      b.status.toLowerCase() === 'completed' || 
-      new Date(b.endDate) < new Date()
-    ).length;
-
-    const upcomingCount = bookings.filter(b => 
-      b.status.toLowerCase() === 'confirmed' && 
-      new Date(b.startDate) > new Date()
-    ).length;
-
-    const favoriteCount = favorites.length;
-    
-    // Calculate average rating from visited destinations
-    const completedBookings = bookings.filter(b => 
-      b.status.toLowerCase() === 'completed' || 
-      new Date(b.endDate) < new Date()
-    );
-    
-    let totalRating = 0;
-    let ratedBookings = 0;
-    completedBookings.forEach(booking => {
-      if (booking.destination?.rating) {
-        totalRating += booking.destination.rating;
-        ratedBookings++;
-      }
-    });
-    
-    const averageRating = ratedBookings > 0 ? (totalRating / ratedBookings).toFixed(1) : '0';
-
-    // Update UI
-    document.getElementById('visitedCount').textContent = visitedCount;
-    document.getElementById('upcomingCount').textContent = upcomingCount;
-    document.getElementById('favoriteCount').textContent = favoriteCount;
-    document.getElementById('averageRating').textContent = averageRating;
-
-  } catch (err) {
-    console.error('Error updating stats:', err);
-  }
+// --------- MODIFY BOOKING ------------
+function openModifyForm(booking) {
+  const modal = document.getElementById("modifyBookingModal");
+  
+  document.getElementById("modifyBookingId").value = booking._id;
+  document.getElementById("modifyStartDate").value = booking.startDate.slice(0,10);
+  document.getElementById("modifyEndDate").value = booking.endDate.slice(0,10);
+  document.getElementById("modifyTravelers").value = booking.travelers;
+  
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("modifyStartDate").setAttribute("min", today);
+  document.getElementById("modifyEndDate").setAttribute("min", today);
+  
+  modal.style.display = "flex";
 }
 
-async function submitBooking() {
-  const destInput = document.getElementById("destinationSearch").value.trim();
-  const startDate = document.getElementById("startDate").value;
-  const endDate = document.getElementById("endDate").value;
-  const travelers = document.getElementById("travelers").value;
+function closeModifyForm() {
+  document.getElementById("modifyBookingModal").style.display = "none";
+}
 
-  // Check if all fields are filled
-  if (!destInput || !startDate || !endDate || !travelers) {
+async function submitBookingModification() {
+  const bookingId = document.getElementById("modifyBookingId").value;
+  const startDate = document.getElementById("modifyStartDate").value;
+  const endDate = document.getElementById("modifyEndDate").value;
+  const travelers = document.getElementById("modifyTravelers").value;
+
+  if (!startDate || !endDate || !travelers) {
     alert("Please fill all fields.");
     return;
   }
 
-  // Validate dates are not in the past
   const today = new Date().toISOString().split("T")[0];
   if (startDate < today || endDate < today) {
     alert("Please select future dates only.");
     return;
   }
 
-  // Validate end date is after start date
   if (endDate <= startDate) {
     alert("End date must be after start date.");
     return;
   }
 
-  // ✅ Ensure destination ID is found — even if user typed manually
-  let destinationId = selectedDestinationId;
-  if (!destinationId) {
-    const match = destinations.find(
-      (d) => d.name.toLowerCase() === destInput.toLowerCase()
-    );
-    if (match) {
-      destinationId = match._id;
-    } else {
-      alert("Please select a valid destination from the list.");
-      return;
-    }
-  }
-
   try {
-    const res = await fetch("/api/bookings", {
-      method: "POST",
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: currentUser._id,
-        destination: destinationId,
-        startDate,
-        endDate,
-        travelers,
-      }),
+      body: JSON.stringify({ startDate, endDate, travelers }),
     });
 
-    const newBooking = await res.json();
+    const data = await res.json();
 
     if (res.ok) {
-      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
-      closeBookingForm();
-      await loadUserBookings(currentUser._id); // refresh the list
-      selectedDestinationId = null; // reset after booking
+      alert("✅ Booking updated successfully!");
+      closeModifyForm();
+      await loadUserBookings(currentUser._id);
+      await updateStats();
     } else {
-      alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
+      alert("Failed to update booking: " + (data.error || data.message || "Unknown error"));
     }
   } catch (err) {
-    console.error("Booking error:", err);
-    alert("Failed to save booking. Please try again later.");
+    console.error("Update booking error:", err);
+    alert("Error updating booking. Please try again later.");
   }
 }
 
 // --------- CANCEL BOOKING ------------
 async function cancelBooking(bookingId) {
-  // Get booking details first
   const bookings = await getUserBookings(currentUser._id);
   const booking = bookings.find(b => b._id === bookingId);
   
@@ -405,18 +379,14 @@ async function cancelBooking(bookingId) {
   try {
     const res = await fetch(`/api/bookings/${bookingId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"
-      }
+      headers: { "Content-Type": "application/json" }
     });
 
     const data = await res.json();
 
     if (res.ok) {
       alert(`✅ Booking cancelled successfully!\n\nBooking for "${booking.destination?.name || 'Unknown'}" has been cancelled.`);
-      // Refresh the bookings list
       await loadUserBookings(currentUser._id);
-      // Update stats
       await updateStats();
     } else {
       alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
@@ -427,35 +397,13 @@ async function cancelBooking(bookingId) {
   }
 }
 
-function filterDestinationsList() {
-  const input = document.getElementById("destinationSearch").value.toLowerCase();
-  const resultsBox = document.getElementById("destinationResults");
-  resultsBox.innerHTML = "";
-
-  destinations
-    .filter(dest => dest.name.toLowerCase().includes(input))
-    .forEach(dest => {
-      const li = document.createElement("li");
-      li.textContent = dest.name;
-      li.onclick = () => selectDestination(dest);
-      resultsBox.appendChild(li);
-    });
-}
-
-function selectDestination(dest) {
-  selectedDestinationId = dest._id;
-  document.getElementById("destinationSearch").value = dest.name;
-  document.getElementById("destinationResults").innerHTML = "";
-}
-
+// --------- VIEW BOOKING DETAILS ------------
 async function viewBookingDetails(bookingId) {
   try {
-    // First try to get the booking from the existing bookings data
     const bookings = await getUserBookings(currentUser._id);
     const booking = bookings.find(b => b._id === bookingId);
     
     if (booking) {
-      // Create a more detailed modal instead of just an alert
       showBookingDetailsModal(booking);
     } else {
       alert("Booking not found.");
@@ -466,15 +414,12 @@ async function viewBookingDetails(bookingId) {
   }
 }
 
-
 function showBookingDetailsModal(booking) {
-  // Remove existing modal if it exists
   const existingModal = document.getElementById('bookingDetailsModal');
   if (existingModal) {
     existingModal.remove();
   }
 
-  // Create modal HTML
   const modal = document.createElement('div');
   modal.id = 'bookingDetailsModal';
   modal.className = 'modal';
@@ -552,20 +497,6 @@ function showBookingDetailsModal(booking) {
   document.body.appendChild(modal);
 }
 
-function formatDetailDate(dateStr) {
-  const date = new Date(dateStr);
-  if (isNaN(date)) return 'Invalid Date';
-  
-  const options = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  };
-  
-  return date.toLocaleDateString('en-US', options);
-}
-
 function closeBookingDetailsModal() {
   const modal = document.getElementById('bookingDetailsModal');
   if (modal) {
@@ -573,7 +504,7 @@ function closeBookingDetailsModal() {
   }
 }
 
-// --------- ENHANCED LOAD USER BOOKINGS WITH PROPER BUTTON HANDLING ------------
+// --------- LOAD USER BOOKINGS ------------
 async function loadUserBookings(userId) {
   try {
     const res = await fetch(`/api/bookings/${userId}`);
@@ -599,7 +530,6 @@ async function loadUserBookings(userId) {
       const card = document.createElement("div");
       card.className = "booking-card";
       
-      // Determine if booking can be modified or cancelled
       const bookingDate = new Date(booking.startDate);
       const today = new Date();
       const canModify = bookingDate > today && booking.status.toLowerCase() === 'confirmed';
@@ -663,99 +593,76 @@ async function loadUserBookings(userId) {
   }
 }
 
-function openModifyForm(booking) {
-  const modal = document.getElementById("modifyBookingModal");
-  
-  // Clear any existing event listeners to prevent duplicates
-  const modifyStartInput = document.getElementById("modifyStartDate");
-  const modifyEndInput = document.getElementById("modifyEndDate");
-  
-  // Clone elements to remove all event listeners
-  const newModifyStartInput = modifyStartInput.cloneNode(true);
-  const newModifyEndInput = modifyEndInput.cloneNode(true);
-  modifyStartInput.parentNode.replaceChild(newModifyStartInput, modifyStartInput);
-  modifyEndInput.parentNode.replaceChild(newModifyEndInput, modifyEndInput);
-  
-  // Update references to new elements
-  const startInput = document.getElementById("modifyStartDate");
-  const endInput = document.getElementById("modifyEndDate");
-  
-  // Set values
-  document.getElementById("modifyBookingId").value = booking._id;
-  startInput.value = booking.startDate.slice(0,10);
-  endInput.value = booking.endDate.slice(0,10);
-  document.getElementById("modifyTravelers").value = booking.travelers;
-  
-  // Set date restrictions
-  const today = new Date().toISOString().split("T")[0];
-  startInput.setAttribute("min", today);
-  endInput.setAttribute("min", today);
-  
-  // Add event listeners for date validation
-  startInput.addEventListener("change", function() {
-    endInput.min = startInput.value || today;
-    // Clear end date if it's before the new start date
-    if (endInput.value && endInput.value <= startInput.value) {
-      endInput.value = "";
-      alert("Please select an end date after the start date.");
-    }
-  });
-  
-  // Validate end date is after start date
-  endInput.addEventListener("change", function() {
-    if (startInput.value && endInput.value <= startInput.value) {
-      alert("End date must be after start date.");
-      endInput.value = "";
-    }
-  });
-  
-  modal.style.display = "flex";
-}
+// --------- UPDATE STATS ------------
+async function updateStats() {
+  try {
+    if (!currentUser?._id) return;
 
-// --------- MODAL CONTROL ------------
-function openBookingForm() {
-  document.getElementById("bookingModal").style.display = "flex";
-  // Reset form and reapply date restrictions
-  document.getElementById("destinationSearch").value = "";
-  document.getElementById("startDate").value = "";
-  document.getElementById("endDate").value = "";
-  document.getElementById("travelers").value = "1";
-  document.getElementById("destinationResults").innerHTML = "";
-  selectedDestinationId = null;
-  
-  // Reapply date restrictions when modal opens
-  setupDateRestrictions();
-}
-function closeBookingForm() {
-  document.getElementById("bookingModal").style.display = "none";
-}
+    const [destinations, favorites, bookings] = await Promise.all([
+      getDestinations(),
+      getUserFavorites(currentUser._id),
+      getUserBookings(currentUser._id)
+    ]);
 
-// --------- UTILITY ------------
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  if (isNaN(d)) return '';
-  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-}
-function formatDateTime(dateStr) {
-  const d = new Date(dateStr);
-  if (isNaN(d)) return '';
-  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
+    const visitedCount = bookings.filter(b => 
+      b.status.toLowerCase() === 'completed' || 
+      new Date(b.endDate) < new Date()
+    ).length;
 
-// --------- LOGOUT ------------
-function logout() {
-  if (confirm("Are you sure you want to log out?")) {
-    localStorage.removeItem("currentUser");
-    window.location.href = "travel.html"; // redirect back to login/home
+    const upcomingCount = bookings.filter(b => 
+      b.status.toLowerCase() === 'confirmed' && 
+      new Date(b.startDate) > new Date()
+    ).length;
+
+    const favoriteCount = favorites.length;
+    
+    const completedBookings = bookings.filter(b => 
+      b.status.toLowerCase() === 'completed' || 
+      new Date(b.endDate) < new Date()
+    );
+    
+    let totalRating = 0;
+    let ratedBookings = 0;
+    completedBookings.forEach(booking => {
+      if (booking.destination?.rating) {
+        totalRating += booking.destination.rating;
+        ratedBookings++;
+      }
+    });
+    
+    const averageRating = ratedBookings > 0 ? (totalRating / ratedBookings).toFixed(1) : '0';
+
+    document.getElementById('visitedCount').textContent = visitedCount;
+    document.getElementById('upcomingCount').textContent = upcomingCount;
+    document.getElementById('favoriteCount').textContent = favoriteCount;
+    document.getElementById('averageRating').textContent = averageRating;
+
+  } catch (err) {
+    console.error('Error updating stats:', err);
   }
 }
 
+// --------- DESTINATION SEARCH ------------
+function filterDestinationsList() {
+  const input = document.getElementById("destinationSearch").value.toLowerCase();
+  const resultsBox = document.getElementById("destinationResults");
+  resultsBox.innerHTML = "";
 
-// Attach logout event when page loads
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", logout);
-});
+  destinations
+    .filter(dest => dest.name.toLowerCase().includes(input))
+    .forEach(dest => {
+      const li = document.createElement("li");
+      li.textContent = dest.name;
+      li.onclick = () => selectDestination(dest);
+      resultsBox.appendChild(li);
+    });
+}
+
+function selectDestination(dest) {
+  selectedDestinationId = dest._id;
+  document.getElementById("destinationSearch").value = dest.name;
+  document.getElementById("destinationResults").innerHTML = "";
+}
 
 function setupDestinationSearch() {
   const input = document.getElementById("destinationSearch");
@@ -780,7 +687,6 @@ function setupDestinationSearch() {
     resultsBox.style.display = filtered.length ? "block" : "none";
   });
 
-  // Hide suggestions when clicked outside
   document.addEventListener("click", (e) => {
     if (!resultsBox.contains(e.target) && e.target !== input) {
       resultsBox.style.display = "none";
@@ -788,25 +694,22 @@ function setupDestinationSearch() {
   });
 }
 
+// --------- DATE RESTRICTIONS ------------
 function setupDateRestrictions() {
   const today = new Date().toISOString().split("T")[0];
   const startInput = document.getElementById("startDate");
   const endInput = document.getElementById("endDate");
 
-  if (!startInput || !endInput) return; // Exit if elements don't exist
+  if (!startInput || !endInput) return;
 
-  // Set min date for both inputs
   startInput.min = today;
   endInput.min = today;
 
-  // Remove existing event listeners to prevent duplicates
   startInput.removeEventListener("change", startInputHandler);
   endInput.removeEventListener("change", endInputHandler);
 
-  // Define event handlers
   function startInputHandler() {
     endInput.min = startInput.value || today;
-    // Clear end date if it's before the new start date
     if (endInput.value && endInput.value <= startInput.value) {
       endInput.value = "";
       alert("Please select an end date after the start date.");
@@ -820,7 +723,6 @@ function setupDateRestrictions() {
     }
   }
 
-  // Add event listeners
   startInput.addEventListener("change", startInputHandler);
   endInput.addEventListener("change", endInputHandler);
 }
@@ -871,4 +773,55 @@ async function submitProfileEdit() {
     console.error("Profile update error:", error);
     alert("Error updating profile");
   }
+}
+
+// --------- UTILITY FUNCTIONS ------------
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+function formatDateTime(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function formatDetailDate(dateStr) {
+  const date = new Date(dateStr);
+  if (isNaN(date)) return 'Invalid Date';
+  
+  const options = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  };
+  
+  return date.toLocaleDateString('en-US', options);
+}
+
+// --------- LOGOUT ------------
+function logout() {
+  if (confirm("Are you sure you want to log out?")) {
+    localStorage.removeItem("currentUser");
+    window.location.href = "travel.html";
+  }
+}
+
+function setupLogoutHandler() {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", logout);
+  }
+}
+
+// --------- SHOW ADVENTURE/FOOD PAGE ------------
+function showAdventurePage() {
+  window.location.href = "travel.html#adventure";
+}
+
+function showFoodPage() {
+  window.location.href = "travel.html#food";
 }
