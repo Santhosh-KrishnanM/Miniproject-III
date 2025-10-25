@@ -69,7 +69,9 @@ function showMainExperiences() {
 function logout() {
   // Clear stored user data
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('adminUser');
   sessionStorage.removeItem('currentUser');
+  sessionStorage.removeItem('adminUser');
   
   // Reset UI to public state
   document.getElementById("mainPage").style.display = "none";
@@ -79,7 +81,7 @@ function logout() {
   document.querySelector('.experiences').style.display = 'block';
   
   // If on dashboard page, redirect to main page
-  if (window.location.pathname.includes('dashboard.html')) {
+  if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('admin_login.html')) {
     window.location.href = 'travel.html';
   }
 }
@@ -127,16 +129,19 @@ function getCurrentDateTime() {
 }
 
 // Enhanced user data storage
-function storeUserData(userData) {
+function storeUserData(userData, isAdmin = false) {
   const enhancedUserData = {
     ...userData,
     loginTime: getCurrentDateTime(),
-    isLoggedIn: true
+    isLoggedIn: true,
+    userType: isAdmin ? 'admin' : 'tourist'
   };
 
+  const storageKey = isAdmin ? 'adminUser' : 'currentUser';
+  
   // ✅ Store in both localStorage and sessionStorage
-  localStorage.setItem('currentUser', JSON.stringify(enhancedUserData));
-  sessionStorage.setItem('currentUser', JSON.stringify(enhancedUserData));
+  localStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
+  sessionStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
 
   return enhancedUserData;
 }
@@ -144,18 +149,33 @@ function storeUserData(userData) {
 
 // Check if user is already logged in
 function checkExistingLogin() {
+  // Check for admin first
+  const adminData = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
+  if (adminData) {
+    try {
+      const admin = JSON.parse(adminData);
+      if (admin.isLoggedIn && admin.userType === 'admin') {
+        console.log('Admin already logged in:', admin.username);
+        return { ...admin, isAdmin: true };
+      }
+    } catch (error) {
+      console.error('Error parsing stored admin data:', error);
+      localStorage.removeItem('adminUser');
+      sessionStorage.removeItem('adminUser');
+    }
+  }
+
+  // Check for tourist user
   const userData = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
   if (userData) {
     try {
       const user = JSON.parse(userData);
-      if (user.isLoggedIn) {
-        // User is already logged in, could redirect to dashboard
+      if (user.isLoggedIn && user.userType === 'tourist') {
         console.log('User already logged in:', user.username);
-        return user;
+        return { ...user, isAdmin: false };
       }
     } catch (error) {
       console.error('Error parsing stored user data:', error);
-      // Clear corrupted data
       localStorage.removeItem('currentUser');
       sessionStorage.removeItem('currentUser');
     }
@@ -167,8 +187,7 @@ function checkExistingLogin() {
 document.addEventListener('DOMContentLoaded', function() {
   // Check if user is already logged in
   const existingUser = checkExistingLogin();
-  if (existingUser && !window.location.pathname.includes('dashboard.html')) {
-    // Could show a message or redirect to dashboard
+  if (existingUser && !window.location.pathname.includes('dashboard.html') && !window.location.pathname.includes('admin_login.html')) {
     console.log('Welcome back,', existingUser.username);
   }
   
@@ -259,13 +278,14 @@ document.addEventListener('DOMContentLoaded', function() {
           if (data.message === 'User registered!' && data.user) {
             // Store user data with real _id
             const userData = storeUserData({
-            _id: data.user._id,   // ✅ store MongoDB ID
-            username: data.user.username,
-            email: data.user.email,
-            phone: data.user.phone,
-            address: data.user.address,
-            registrationDate: getCurrentDateTime()
-            });
+              _id: data.user._id,
+              username: data.user.username,
+              email: data.user.email,
+              phone: data.user.phone,
+              address: data.user.address,
+              registrationDate: getCurrentDateTime()
+            }, false);
+            
             alert(`Welcome ${userData.username}! Registration successful. Redirecting to dashboard...`);
 
             setTimeout(() => {
@@ -273,9 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1500);
           } else {
             alert(data.message || 'Registration failed. Please try again.');
-         }
+          }
         })
-
         .catch(error => {
           console.error('Signup error:', error);
           alert('Signup failed. Please check your connection and try again.');
@@ -289,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Login event listener
+  // Login event listener - UNIFIED FOR BOTH ADMIN AND TOURIST
   const loginBtn = document.getElementById("loginBtn");
   if (loginBtn) {
     loginBtn.addEventListener("click", function(e) {
@@ -319,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
         
-        // Call backend API
-        fetch("https://travel-aura-enb6.onrender.com/login", {
+        // ✅ Try admin login first
+        fetch("https://travel-aura-enb6.onrender.com/admin/login", {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -332,34 +351,70 @@ document.addEventListener('DOMContentLoaded', function() {
           })
         })
         .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          if (data.message === 'Login successful' && data.user) {
-            // Store user data with enhanced information
-            const userData = storeUserData({
-              _id: data.user._id,          // ✅ keep MongoDB ObjectId
-              username: data.user.username,
-              email: data.user.email,
-              phone: data.user.phone,
-              address: data.user.address,
-              lastLogin: getCurrentDateTime()
-            });
-
-            
-            // Show success message
-            alert(`Welcome back ${userData.username}! Redirecting to dashboard...`);
-            
-            // Redirect to dashboard after a brief delay
-            setTimeout(() => {
-              window.location.href = 'dashboard.html';
-            }, 1500);
-            
+          if (response.ok) {
+            return response.json().then(data => ({ success: true, data, isAdmin: true }));
           } else {
-            alert(data.message || 'Invalid credentials. Please try again.');
+            // Admin login failed, try tourist login
+            return fetch("https://travel-aura-enb6.onrender.com/login", {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({
+                username: username.value.trim(),
+                password: password.value
+              })
+            }).then(touristResponse => {
+              if (touristResponse.ok) {
+                return touristResponse.json().then(data => ({ success: true, data, isAdmin: false }));
+              } else {
+                return { success: false };
+              }
+            });
+          }
+        })
+        .then(result => {
+          if (result.success) {
+            const userData = result.data;
+            const isAdmin = result.isAdmin;
+
+            if (isAdmin && userData.admin) {
+              // Admin login successful
+              const adminData = storeUserData({
+                _id: userData.admin._id,
+                username: userData.admin.username,
+                email: userData.admin.email,
+                lastLogin: getCurrentDateTime()
+              }, true);
+
+              alert(`Welcome back Admin ${adminData.username}! Redirecting to admin dashboard...`);
+              
+              setTimeout(() => {
+                window.location.href = 'admin_login.html';
+              }, 1500);
+
+            } else if (!isAdmin && userData.user) {
+              // Tourist login successful
+              const touristData = storeUserData({
+                _id: userData.user._id,
+                username: userData.user.username,
+                email: userData.user.email,
+                phone: userData.user.phone,
+                address: userData.user.address,
+                lastLogin: getCurrentDateTime()
+              }, false);
+
+              alert(`Welcome back ${touristData.username}! Redirecting to dashboard...`);
+              
+              setTimeout(() => {
+                window.location.href = 'dashboard.html';
+              }, 1500);
+            } else {
+              alert('Login failed. Invalid response from server.');
+            }
+          } else {
+            alert('Invalid credentials. Please try again.');
           }
         })
         .catch(error => {
@@ -454,7 +509,11 @@ function navigateToPage(pageName) {
       break;
     case 'dashboard':
       if (user) {
-        window.location.href = 'dashboard.html';
+        if (user.isAdmin) {
+          window.location.href = 'admin_login.html';
+        } else {
+          window.location.href = 'dashboard.html';
+        }
       } else {
         openModal();
       }
@@ -473,8 +532,9 @@ function refreshSession() {
   if (user) {
     // Update last activity time
     user.lastActivity = getCurrentDateTime();
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    const storageKey = user.isAdmin ? 'adminUser' : 'currentUser';
+    localStorage.setItem(storageKey, JSON.stringify(user));
+    sessionStorage.setItem(storageKey, JSON.stringify(user));
   }
 }
 
@@ -490,15 +550,16 @@ console.log(`
 🌴 Tamil Nadu Tourism Application
 📅 Current Date: ${getCurrentDateTime()}
 👨‍💻 Developer: sk-krishnan05
-🚀 Version: 1.0.0
+🚀 Version: 2.0.0
 
 Welcome to the Tamil Nadu Tourism web application!
-This application features user authentication, dashboard management,
-and comprehensive tourism information for Tamil Nadu.
+This application features unified login for both admin and tourist users.
 
 Features:
+- Unified Login System (Admin + Tourist)
 - User Registration & Login
 - Interactive Dashboard
+- Admin Dashboard
 - Destination Management
 - Booking System
 - Responsive Design
@@ -522,7 +583,6 @@ if (typeof module !== 'undefined' && module.exports) {
 // Global error handler
 window.addEventListener('error', function(e) {
   console.error('Application Error:', e.error);
-  // Could send error reports to a logging service
 });
 
 // Handle page visibility changes (useful for session management)

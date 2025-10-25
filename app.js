@@ -88,6 +88,53 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// ---------------------- ADMIN ROUTES ----------------------
+
+app.post('/admin/signup', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password)
+      return res.status(400).json({ message: 'All fields are required' });
+
+    const existing = await Admin.findOne({ $or: [{ username }, { email }] });
+    if (existing)
+      return res.status(409).json({ message: 'Admin already exists' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const admin = new Admin({ username, email, password: hashed });
+    await admin.save();
+
+    res.status(201).json({ message: '✅ Admin account created successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating admin', error: err.message });
+  }
+});
+
+// ✅ Admin Login (SINGLE DEFINITION)
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const admin = await Admin.findOne({ username });
+    if (!admin) return res.status(401).json({ error: 'Invalid username' });
+
+    const valid = await bcrypt.compare(password, admin.password);
+    if (!valid) return res.status(401).json({ error: 'Invalid password' });
+
+    res.json({
+      message: 'Login successful',
+      admin: {
+        _id: admin._id,
+        username: admin.username,
+        email: admin.email
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Login failed', error: err.message });
+  }
+});
+
 // ---------------------- UPDATE USER PROFILE ----------------------
 app.put('/api/users/:id', async (req, res) => {
   try {
@@ -350,6 +397,48 @@ app.get('/pages/:slug', async (req, res) => {
     else res.status(404).json({ message: 'Page not found' });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching page', error: err.message });
+  }
+});
+
+// ---------------------- ADMIN DATA ROUTES ----------------------
+
+// Get all users
+app.get('/admin/users', async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+  }
+});
+
+// Get all bookings
+app.get('/admin/bookings', async (req, res) => {
+  try {
+    const bookings = await Booking.find().populate('destination');
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch bookings', error: err.message });
+  }
+});
+
+// Delete a booking
+app.delete('/admin/bookings/:id', async (req, res) => {
+  try {
+    await Booking.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Booking deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete booking', error: err.message });
+  }
+});
+
+// Get all destinations
+app.get('/admin/destinations', async (req, res) => {
+  try {
+    const destinations = await Destination.find();
+    res.json(destinations);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch destinations', error: err.message });
   }
 });
 

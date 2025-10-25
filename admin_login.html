@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Travel Aura</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    body {
+      background-color: #f4f6f8;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+    }
+    .admin-header {
+      background: #0b132b;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-header h1 {
+      font-size: 1.5rem;
+    }
+    .logout-btn {
+      background: crimson;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tab-buttons {
+      display: flex;
+      justify-content: center;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .tab-buttons button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      border: none;
+      background: #1c2541;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tab-buttons button.active {
+      background: #3a506b;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin-top: 15px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #3a506b;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .delete-btn {
+      background: #d7263d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-header">
+    <h1>Travel Aura - Admin Dashboard</h1>
+    <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+  </div>
+
+  <div class="tab-buttons">
+    <button class="active" onclick="showTab('users')">Users</button>
+    <button onclick="showTab('bookings')">Bookings</button>
+    <button onclick="showTab('destinations')">Destinations</button>
+  </div>
+
+  <div id="users" class="tab-content active">
+    <h2>Registered Users</h2>
+    <table id="usersTable">
+      <thead>
+        <tr><th>Username</th><th>Email</th><th>Phone</th><th>Address</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="bookings" class="tab-content">
+    <h2>All Bookings</h2>
+    <table id="bookingsTable">
+      <thead>
+        <tr><th>User ID</th><th>Destination</th><th>Start</th><th>End</th><th>Travelers</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="destinations" class="tab-content">
+    <h2>Destinations List</h2>
+    <table id="destinationsTable">
+      <thead>
+        <tr><th>Name</th><th>Category</th><th>Location</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="adm.js"></script>
+</body>
+</html>

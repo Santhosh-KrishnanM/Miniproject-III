@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tamil Nadu Tourism</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -35,7 +36,9 @@
     </li>
     <li>Gallery</li>
     <li>Experiences</li>
-    <li class="login-btn" onclick="openModal()">Login</li>
+    <li class="login-btn" onclick="openModal()">
+      <i class="fas fa-sign-in-alt"></i> Login
+    </li>
   </ul>
 </nav>
 
@@ -104,19 +107,29 @@
     <span class="close-btn" onclick="closeModal()">&times;</span>
 
     <div id="loginForm">
-      <h2>Login</h2>
+      <h2><i class="fas fa-user-circle"></i> Login</h2>
+      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+        <i class="fas fa-info-circle"></i> Login as Admin or Tourist
+      </p>
       <div>
         <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
       </div>
       <div>
         <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
       </div>
-      <button id="loginBtn">Login</button>
-      <div class="toggle-link" onclick="showSignup()">Don't have an account? Sign up here</div>
+      <button id="loginBtn">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+      <div class="toggle-link" onclick="showSignup()">
+        Don't have an account? Sign up here
+      </div>
     </div>
 
     <div id="signupForm" style="display:none">
-      <h2>Sign Up</h2>
+      <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
+      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+        <i class="fas fa-info-circle"></i> Create a tourist account
+      </p>
       <div>
         <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
       </div>
@@ -132,8 +145,12 @@
       <div>
         <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
       </div>
-      <button id="signupBtn">Sign Up</button>
-      <div class="toggle-link" onclick="showLogin()">Already have an account? Login here</div>
+      <button id="signupBtn">
+        <i class="fas fa-user-plus"></i> Sign Up
+      </button>
+      <div class="toggle-link" onclick="showLogin()">
+        Already have an account? Login here
+      </div>
     </div>
   </div>
 </div>
@@ -149,7 +166,7 @@
     <button onclick="logout()" class="back-btn">Logout</button>
   </div>
 </div>
-<!-- Add this line just before closing </body> tag, after script.js -->
+
 <script src="script.js"></script>
 </body>
 </html>

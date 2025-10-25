@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Login - Travel Aura</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      font-family: "Poppins", sans-serif;
+    }
+    .redirect-box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 10px;
+      width: 400px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .redirect-box h2 {
+      margin-bottom: 20px;
+    }
+    .redirect-box p {
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    button {
+      width: 100%;
+      background: #00b4db;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #008fb3;
+    }
+    .info-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #ffcc00;
+    }
+  </style>
+</head>
+<body>
+  <div class="redirect-box">
+    <div class="info-icon">
+      <i class="fas fa-info-circle"></i>
+    </div>
+    <h2>Admin Login</h2>
+    <p>
+      Admin and tourist users now share the same login page.
+      <br><br>
+      Please use the main login page to access both admin and tourist dashboards.
+    </p>
+    <button onclick="window.location.href='travel.html'">
+      <i class="fas fa-arrow-left"></i> Go to Login Page
+    </button>
+  </div>
+
+  <script>
+    // Auto-redirect after 3 seconds
+    setTimeout(() => {
+      window.location.href = 'travel.html';
+    }, 3000);
+  </script>
+</body>
+</html>
