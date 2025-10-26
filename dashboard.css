@@ -930,3 +930,126 @@ body {
 .suggestion-item:hover {
   background: #f0f0f0;
 }
+
+/* ========== TRAVEL INSIGHTS WIDGET ========== */
+#travelInsightsWidget h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.insight-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.insight-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.insight-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.insight-info h4 {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.insight-info p {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.insight-info span {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.upcoming-trips-preview {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+}
+
+.upcoming-trips-preview h4 {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trip-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.trip-preview-item:hover {
+  background: #e9ecef;
+}
+
+.trip-preview-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.no-trips-message {
+  text-align: center;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .insight-item {
+    padding: 12px;
+  }
+}

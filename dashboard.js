@@ -98,59 +98,32 @@ async function renderAllSections() {
   await renderBookings();
   await renderActivities();
   await updateStats();
+  await renderTravelInsights(); // New: Travel insights widget
 }
 
-// Update the renderDestinations function in dashboard.js
 async function renderDestinations() {
   const list = await getDestinations();
   destinations = list;
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
-  if (list.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #666;">
-        <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
-        <h3>No destinations available</h3>
-        <p>Please check back later for exciting destinations!</p>
-      </div>
-    `;
-    return;
-  }
-
   list.forEach(dest => {
     const card = document.createElement('div');
     card.className = 'destination-card';
-    card.style.cursor = 'pointer';
-    
+    card.onclick = () => showDestinationDetails(dest._id);
     card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'}')"></div>
+      <div class="destination-image" style="background-image: url('${dest.imageUrl || ''}')"></div>
       <div class="destination-info">
         <h4>${dest.name}</h4>
-        <p><i class="fas fa-star"></i> ${dest.rating || '4.5'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${(dest.type || 'destination').replace('-', ' ')}</span>
-        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn-primary" onclick="event.stopPropagation(); viewDestinationDetails('${dest._id}')">
-            <i class="fas fa-eye"></i> View Details
-          </button>
-          <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
-            <i class="fas fa-heart"></i> Favorite
-          </button>
-        </div>
+        <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
+        <span class="destination-type">${dest.type.replace('-', ' ')}</span>
+        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+          <i class="fas fa-heart"></i> Add to Favorites
+        </button>
       </div>
     `;
-    
-    // Make entire card clickable
-    card.addEventListener('click', () => viewDestinationDetails(dest._id));
-    
     container.appendChild(card);
   });
-}
-
-// Add this new function to dashboard.js
-function viewDestinationDetails(destinationId) {
-  console.log('Viewing destination:', destinationId);
-  window.location.href = `destination-details.html?id=${destinationId}`;
 }
 
 async function renderFavorites() {
@@ -208,17 +181,35 @@ async function renderBookings() {
   });
 }
 
+// --------- RENDER ACTIVITIES (FIXED - NO CANCELLED BOOKINGS) ------------
 async function renderActivities() {
   const activities = await getUserActivities(currentUser?._id);
   const container = document.getElementById('activityList');
   container.innerHTML = '';
 
-  if (!activities.length) {
-    container.innerHTML = `<p style="text-align:center;">No Activity</p>`;
+  // ✅ Filter out cancelled booking activities
+  const filteredActivities = activities.filter(act => {
+    // Exclude activities that mention "Cancelled" or "cancelled"
+    if (act.content && act.content.toLowerCase().includes('cancelled')) {
+      return false;
+    }
+    return true;
+  });
+
+  if (!filteredActivities.length) {
+    container.innerHTML = `
+      <div class="activity-item" style="justify-content: center;">
+        <div class="activity-details" style="text-align: center;">
+          <p style="color: #999;"><i class="fas fa-inbox"></i> No recent activity</p>
+          <span style="font-size: 0.85em;">Start exploring destinations to see your activity here!</span>
+        </div>
+      </div>
+    `;
     return;
   }
 
-  activities.forEach(act => {
+  // Show only the 5 most recent activities
+  filteredActivities.slice(0, 5).forEach(act => {
     const icon = act.type === 'favorite' ? 'heart' : act.type === 'booking' ? 'calendar-check' : 'star';
     const item = document.createElement('div');
     item.className = 'activity-item';
@@ -231,6 +222,126 @@ async function renderActivities() {
     `;
     container.appendChild(item);
   });
+}
+
+// --------- NEW: RENDER TRAVEL INSIGHTS WIDGET ------------
+async function renderTravelInsights() {
+  const bookings = await getUserBookings(currentUser?._id);
+  const favorites = await getUserFavorites(currentUser?._id);
+  
+  const container = document.getElementById('travelInsightsWidget');
+  if (!container) return;
+
+  // Calculate insights
+  const upcomingTrips = bookings.filter(b => 
+    b.status.toLowerCase() === 'confirmed' && 
+    new Date(b.startDate) > new Date()
+  );
+
+  const completedTrips = bookings.filter(b => 
+    b.status.toLowerCase() === 'completed' || 
+    new Date(b.endDate) < new Date()
+  );
+
+  const nextTrip = upcomingTrips.sort((a, b) => 
+    new Date(a.startDate) - new Date(b.startDate)
+  )[0];
+
+  const totalTravelers = bookings.reduce((sum, b) => sum + (b.travelers || 1), 0);
+
+  // Popular destination types from favorites
+  const favoriteTypes = favorites.map(f => f.destinationId?.type).filter(Boolean);
+  const typeCount = {};
+  favoriteTypes.forEach(type => {
+    typeCount[type] = (typeCount[type] || 0) + 1;
+  });
+  const topType = Object.keys(typeCount).sort((a, b) => typeCount[b] - typeCount[a])[0];
+
+  container.innerHTML = `
+    <h3><i class="fas fa-chart-line"></i> Travel Insights</h3>
+    <div class="insight-grid">
+      ${nextTrip ? `
+        <div class="insight-item">
+          <div class="insight-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="insight-info">
+            <h4>Next Trip</h4>
+            <p>${nextTrip.destination?.name || 'Unknown'}</p>
+            <span>${formatDate(nextTrip.startDate)}</span>
+          </div>
+        </div>
+      ` : ''}
+      
+      <div class="insight-item">
+        <div class="insight-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <i class="fas fa-plane-departure"></i>
+        </div>
+        <div class="insight-info">
+          <h4>Total Trips</h4>
+          <p style="font-size: 1.5rem; font-weight: bold; color: #333;">${completedTrips.length}</p>
+          <span>Completed journeys</span>
+        </div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="insight-info">
+          <h4>Travel Companions</h4>
+          <p style="font-size: 1.5rem; font-weight: bold; color: #333;">${totalTravelers}</p>
+          <span>Total travelers</span>
+        </div>
+      </div>
+
+      ${topType ? `
+        <div class="insight-item">
+          <div class="insight-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <i class="fas fa-heart"></i>
+          </div>
+          <div class="insight-info">
+            <h4>Favorite Type</h4>
+            <p style="text-transform: capitalize;">${topType.replace('-', ' ')}</p>
+            <span>Most preferred</span>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+
+    ${upcomingTrips.length > 0 ? `
+      <div class="upcoming-trips-preview">
+        <h4><i class="fas fa-suitcase-rolling"></i> Upcoming Trips (${upcomingTrips.length})</h4>
+        <div class="trips-list">
+          ${upcomingTrips.slice(0, 3).map(trip => {
+            const daysUntil = Math.ceil((new Date(trip.startDate) - new Date()) / (1000 * 60 * 60 * 24));
+            return `
+              <div class="trip-preview-item">
+                <i class="fas fa-map-marker-alt" style="color: #667eea;"></i>
+                <div>
+                  <strong>${trip.destination?.name || 'Unknown'}</strong>
+                  <span style="color: #999; font-size: 0.85em;">in ${daysUntil} days</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${upcomingTrips.length > 3 ? `
+          <button class="btn-outline" onclick="showSection('bookings')" style="margin-top: 10px; width: 100%;">
+            View All Trips <i class="fas fa-arrow-right"></i>
+          </button>
+        ` : ''}
+      </div>
+    ` : `
+      <div class="no-trips-message">
+        <i class="fas fa-calendar-plus" style="font-size: 2rem; color: #ccc; margin-bottom: 10px;"></i>
+        <p style="color: #999;">No upcoming trips planned</p>
+        <button class="btn-primary" onclick="openBookingForm()" style="margin-top: 10px;">
+          <i class="fas fa-plus"></i> Plan Your Next Adventure
+        </button>
+      </div>
+    `}
+  `;
 }
 
 // --------- BOOKING FORM ------------
@@ -303,6 +414,7 @@ async function submitBooking() {
       alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
       closeBookingForm();
       await loadUserBookings(currentUser._id);
+      await renderAllSections(); // Refresh all sections including insights
       selectedDestinationId = null;
     } else {
       alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
@@ -369,6 +481,7 @@ async function submitBookingModification() {
       closeModifyForm();
       await loadUserBookings(currentUser._id);
       await updateStats();
+      await renderAllSections(); // Refresh insights too
     } else {
       alert("Failed to update booking: " + (data.error || data.message || "Unknown error"));
     }
@@ -416,6 +529,7 @@ async function cancelBooking(bookingId) {
       alert(`✅ Booking cancelled successfully!\n\nBooking for "${booking.destination?.name || 'Unknown'}" has been cancelled.`);
       await loadUserBookings(currentUser._id);
       await updateStats();
+      await renderAllSections(); // Refresh all sections
     } else {
       alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
     }
@@ -684,64 +798,6 @@ function filterDestinationsList() {
       li.onclick = () => selectDestination(dest);
       resultsBox.appendChild(li);
     });
-}
-
-// Add this function to dashboard.js for filtering
-function filterDestinations(category) {
-  const allDestinations = destinations; // Use the global destinations array
-  const container = document.getElementById('destinationsList');
-  
-  // Update active filter tab
-  document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
-  event.target.classList.add('active');
-  
-  // Filter destinations
-  let filtered = allDestinations;
-  if (category !== 'all') {
-    filtered = allDestinations.filter(dest => 
-      dest.type && dest.type.toLowerCase().includes(category.toLowerCase())
-    );
-  }
-  
-  // Render filtered destinations
-  container.innerHTML = '';
-  
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / -1;">
-        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
-        <h3>No destinations found</h3>
-        <p>Try selecting a different category</p>
-      </div>
-    `;
-    return;
-  }
-  
-  filtered.forEach(dest => {
-    const card = document.createElement('div');
-    card.className = 'destination-card';
-    card.style.cursor = 'pointer';
-    
-    card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'}')"></div>
-      <div class="destination-info">
-        <h4>${dest.name}</h4>
-        <p><i class="fas fa-star"></i> ${dest.rating || '4.5'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${(dest.type || 'destination').replace('-', ' ')}</span>
-        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn-primary" onclick="event.stopPropagation(); viewDestinationDetails('${dest._id}')">
-            <i class="fas fa-eye"></i> View Details
-          </button>
-          <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
-            <i class="fas fa-heart"></i> Favorite
-          </button>
-        </div>
-      </div>
-    `;
-    
-    card.addEventListener('click', () => viewDestinationDetails(dest._id));
-    container.appendChild(card);
-  });
 }
 
 function selectDestination(dest) {
