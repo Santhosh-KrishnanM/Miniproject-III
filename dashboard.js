@@ -100,29 +100,57 @@ async function renderAllSections() {
   await updateStats();
 }
 
+// Update the renderDestinations function in dashboard.js
 async function renderDestinations() {
   const list = await getDestinations();
   destinations = list;
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+        <h3>No destinations available</h3>
+        <p>Please check back later for exciting destinations!</p>
+      </div>
+    `;
+    return;
+  }
+
   list.forEach(dest => {
     const card = document.createElement('div');
     card.className = 'destination-card';
-    card.onclick = () => showDestinationDetails(dest._id);
+    card.style.cursor = 'pointer';
+    
     card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest.imageUrl || ''}')"></div>
+      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'}')"></div>
       <div class="destination-info">
         <h4>${dest.name}</h4>
-        <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${dest.type.replace('-', ' ')}</span>
-        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
-          <i class="fas fa-heart"></i> Add to Favorites
-        </button>
+        <p><i class="fas fa-star"></i> ${dest.rating || '4.5'} (${dest.reviews || 0} reviews)</p>
+        <span class="destination-type">${(dest.type || 'destination').replace('-', ' ')}</span>
+        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn-primary" onclick="event.stopPropagation(); viewDestinationDetails('${dest._id}')">
+            <i class="fas fa-eye"></i> View Details
+          </button>
+          <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+            <i class="fas fa-heart"></i> Favorite
+          </button>
+        </div>
       </div>
     `;
+    
+    // Make entire card clickable
+    card.addEventListener('click', () => viewDestinationDetails(dest._id));
+    
     container.appendChild(card);
   });
+}
+
+// Add this new function to dashboard.js
+function viewDestinationDetails(destinationId) {
+  console.log('Viewing destination:', destinationId);
+  window.location.href = `destination-details.html?id=${destinationId}`;
 }
 
 async function renderFavorites() {
@@ -656,6 +684,64 @@ function filterDestinationsList() {
       li.onclick = () => selectDestination(dest);
       resultsBox.appendChild(li);
     });
+}
+
+// Add this function to dashboard.js for filtering
+function filterDestinations(category) {
+  const allDestinations = destinations; // Use the global destinations array
+  const container = document.getElementById('destinationsList');
+  
+  // Update active filter tab
+  document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Filter destinations
+  let filtered = allDestinations;
+  if (category !== 'all') {
+    filtered = allDestinations.filter(dest => 
+      dest.type && dest.type.toLowerCase().includes(category.toLowerCase())
+    );
+  }
+  
+  // Render filtered destinations
+  container.innerHTML = '';
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / -1;">
+        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+        <h3>No destinations found</h3>
+        <p>Try selecting a different category</p>
+      </div>
+    `;
+    return;
+  }
+  
+  filtered.forEach(dest => {
+    const card = document.createElement('div');
+    card.className = 'destination-card';
+    card.style.cursor = 'pointer';
+    
+    card.innerHTML = `
+      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'}')"></div>
+      <div class="destination-info">
+        <h4>${dest.name}</h4>
+        <p><i class="fas fa-star"></i> ${dest.rating || '4.5'} (${dest.reviews || 0} reviews)</p>
+        <span class="destination-type">${(dest.type || 'destination').replace('-', ' ')}</span>
+        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn-primary" onclick="event.stopPropagation(); viewDestinationDetails('${dest._id}')">
+            <i class="fas fa-eye"></i> View Details
+          </button>
+          <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+            <i class="fas fa-heart"></i> Favorite
+          </button>
+        </div>
+      </div>
+    `;
+    
+    card.addEventListener('click', () => viewDestinationDetails(dest._id));
+    container.appendChild(card);
+  });
 }
 
 function selectDestination(dest) {
