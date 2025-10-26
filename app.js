@@ -245,22 +245,89 @@ app.delete('/api/bookings/:id', async (req, res) => {
 
 // ---------------------- DESTINATIONS ----------------------
 
+// Create destination
 app.post('/destinations', async (req, res) => {
   try {
-    const destination = new Destination(req.body);
+    const { name, type, rating, description, imageUrl } = req.body;
+    
+    if (!name || !type || !description || !imageUrl) {
+      return res.status(400).json({ message: 'Name, type, description, and imageUrl are required' });
+    }
+
+    const destination = new Destination({
+      name,
+      type,
+      rating: rating || 0,
+      description,
+      imageUrl
+    });
+    
     await destination.save();
-    res.status(201).json({ message: 'Destination created!', destination });
+    console.log('✅ Destination created:', destination.name);
+    
+    res.status(201).json({ 
+      message: 'Destination created successfully!', 
+      destination 
+    });
   } catch (err) {
+    console.error('Error creating destination:', err);
     res.status(500).json({ message: 'Error creating destination', error: err.message });
   }
 });
 
+// Get all destinations
 app.get('/destinations', async (req, res) => {
   try {
     const destinations = await Destination.find({});
     res.json(destinations);
   } catch (err) {
+    console.error('Error fetching destinations:', err);
     res.status(500).json({ error: "Failed to fetch destinations" });
+  }
+});
+
+// Update destination
+app.put('/destinations/:id', async (req, res) => {
+  try {
+    const { name, type, rating, description, imageUrl } = req.body;
+    
+    const updatedDestination = await Destination.findByIdAndUpdate(
+      req.params.id,
+      { name, type, rating, description, imageUrl },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedDestination) {
+      return res.status(404).json({ message: 'Destination not found' });
+    }
+
+    console.log('✅ Destination updated:', updatedDestination.name);
+    
+    res.json({ 
+      message: 'Destination updated successfully', 
+      destination: updatedDestination 
+    });
+  } catch (err) {
+    console.error('Error updating destination:', err);
+    res.status(500).json({ message: 'Error updating destination', error: err.message });
+  }
+});
+
+// Delete destination
+app.delete('/destinations/:id', async (req, res) => {
+  try {
+    const destination = await Destination.findByIdAndDelete(req.params.id);
+    
+    if (!destination) {
+      return res.status(404).json({ message: 'Destination not found' });
+    }
+
+    console.log('✅ Destination deleted:', destination.name);
+    
+    res.json({ message: 'Destination deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting destination:', err);
+    res.status(500).json({ message: 'Error deleting destination', error: err.message });
   }
 });
 

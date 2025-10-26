@@ -93,7 +93,7 @@
     tr:hover {
       background-color: #f1f1f1;
     }
-    .delete-btn {
+    .delete-btn, .edit-btn {
       background: #d7263d;
       color: white;
       border: none;
@@ -101,9 +101,153 @@
       border-radius: 4px;
       cursor: pointer;
       transition: all 0.3s ease;
+      margin-right: 5px;
+      font-size: 0.9rem;
     }
     .delete-btn:hover {
       background: #b71c2e;
+    }
+    .edit-btn {
+      background: #4CAF50;
+    }
+    .edit-btn:hover {
+      background: #45a049;
+    }
+    .add-destination-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .add-destination-btn:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 500px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 20px;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-group small {
+      display: block;
+      margin-top: 5px;
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      background: #45a049;
+    }
+    .btn-secondary {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+      background: #555;
+    }
+    .image-preview {
+      max-width: 100%;
+      max-height: 200px;
+      margin-top: 10px;
+      border-radius: 5px;
+      display: none;
+      border: 2px solid #ddd;
+    }
+    .destination-image {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 28px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+    .close-btn:hover {
+      color: #333;
     }
   </style>
 </head>
@@ -127,6 +271,7 @@
     </button>
   </div>
 
+  <!-- Users Tab -->
   <div id="users" class="tab-content active">
     <h2><i class="fas fa-users"></i> Registered Users</h2>
     <table id="usersTable">
@@ -148,6 +293,7 @@
     </table>
   </div>
 
+  <!-- Bookings Tab -->
   <div id="bookings" class="tab-content">
     <h2><i class="fas fa-calendar-check"></i> All Bookings</h2>
     <table id="bookingsTable">
@@ -171,19 +317,26 @@
     </table>
   </div>
 
+  <!-- Destinations Tab -->
   <div id="destinations" class="tab-content">
-    <h2><i class="fas fa-map-marker-alt"></i> Destinations List</h2>
+    <h2><i class="fas fa-map-marker-alt"></i> Manage Destinations</h2>
+    <button class="add-destination-btn" onclick="openAddDestinationModal()">
+      <i class="fas fa-plus"></i> Add New Destination
+    </button>
     <table id="destinationsTable">
       <thead>
         <tr>
+          <th style="width: 100px;">Image</th>
           <th>Name</th>
           <th>Type</th>
+          <th>Rating</th>
           <th>Description</th>
+          <th style="width: 150px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td colspan="3" style="text-align: center; padding: 20px;">
+          <td colspan="6" style="text-align: center; padding: 20px;">
             <i class="fas fa-spinner fa-spin"></i> Loading destinations...
           </td>
         </tr>
@@ -191,7 +344,62 @@
     </table>
   </div>
 
-  <!-- Load the admin JavaScript file -->
+  <!-- Add/Edit Destination Modal -->
+  <div id="destinationModal" class="modal">
+    <div class="modal-content" style="position: relative;">
+      <span class="close-btn" onclick="closeDestinationModal()">&times;</span>
+      <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Add New Destination</h2>
+      <form id="destinationForm">
+        <input type="hidden" id="destinationId">
+        
+        <div class="form-group">
+          <label for="destName"><i class="fas fa-map-marker-alt"></i> Destination Name *</label>
+          <input type="text" id="destName" required placeholder="e.g., Marina Beach">
+        </div>
+
+        <div class="form-group">
+          <label for="destType"><i class="fas fa-tag"></i> Type *</label>
+          <select id="destType" required>
+            <option value="">Select Type</option>
+            <option value="beach">🏖️ Beach</option>
+            <option value="temple">🛕 Temple</option>
+            <option value="hill-station">⛰️ Hill Station</option>
+            <option value="heritage">🏛️ Heritage</option>
+            <option value="adventure">🎢 Adventure</option>
+            <option value="wildlife">🦁 Wildlife</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="destRating"><i class="fas fa-star"></i> Rating (1-5)</label>
+          <input type="number" id="destRating" min="1" max="5" step="0.1" placeholder="4.5">
+          <small>Optional - Leave empty for no rating</small>
+        </div>
+
+        <div class="form-group">
+          <label for="destDescription"><i class="fas fa-align-left"></i> Description *</label>
+          <textarea id="destDescription" required placeholder="Enter destination description..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="destImageUrl"><i class="fas fa-image"></i> Image URL *</label>
+          <input type="url" id="destImageUrl" required placeholder="https://example.com/image.jpg">
+          <small>Enter a direct image URL (jpg, png, webp) - Use Unsplash, Pexels, or Imgur</small>
+          <img id="imagePreview" class="image-preview" alt="Preview">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeDestinationModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-save"></i> Save Destination
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="adm.js"></script>
 </body>
 </html>

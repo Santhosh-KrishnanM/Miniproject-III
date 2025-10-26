@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentAdmin = JSON.parse(storedAdmin);
     console.log("Admin logged in:", currentAdmin.username);
     loadAdminData();
+    setupDestinationFormHandlers();
   }
 });
 
@@ -95,13 +96,50 @@ function renderDestinations(destinations) {
     return;
   }
   
-  tbody.innerHTML = destinations.map(d => `
-    <tr>
-      <td>${d.name}</td>
-      <td>${d.type || 'N/A'}</td>
-      <td>${d.description || 'N/A'}</td>
-    </tr>
-  `).join('');
+  if (!destinations || destinations.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+          <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
+          <strong>No destinations found</strong>
+          <p style="margin: 10px 0 0 0;">Click "Add New Destination" to create your first destination!</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = destinations.map(d => {
+    const destinationJson = JSON.stringify(d).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    return `
+      <tr>
+        <td>
+          <img src="${d.imageUrl || 'https://via.placeholder.com/80x60?text=No+Image'}" 
+               alt="${d.name}" 
+               class="destination-image"
+               onerror="this.src='https://via.placeholder.com/80x60?text=Error'">
+        </td>
+        <td><strong>${d.name}</strong></td>
+        <td>
+          <span style="text-transform: capitalize; background: #e3f2fd; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+            ${(d.type || 'N/A').replace('-', ' ')}
+          </span>
+        </td>
+        <td>${d.rating ? '⭐ ' + d.rating : '<span style="color: #999;">Not rated</span>'}</td>
+        <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${d.description || ''}">
+          ${d.description || 'No description'}
+        </td>
+        <td>
+          <button class="edit-btn" onclick='editDestination(${destinationJson})'>
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button class="delete-btn" onclick="deleteDestination('${d._id}', '${d.name.replace(/'/g, "\\'")}')">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   console.log(`✅ Rendered ${destinations.length} destinations`);
 }
@@ -178,79 +216,166 @@ function logoutAdmin() {
   window.location.href = "travel.html";
 }
 
-// --------- ALTERNATIVE DESTINATIONS LOADING (if needed) ------------
-async function loadDestinations() {
-  const res = await fetch('/destinations');
-  const data = await res.json();
-  const container = document.getElementById('adminDestinationsList');
-  
-  if (!container) return; // Element doesn't exist on this page
-  
-  container.innerHTML = data.map(d => `
-    <div class="destination-card">
-      <div class="destination-info">
-        <h4>${d.name}</h4>
-        <p>${d.type}</p>
-        <button class="btn-danger" onclick="deleteDestination('${d._id}')">Delete</button>
-      </div>
-    </div>
-  `).join('');
+// --------- DESTINATION MANAGEMENT ------------
+
+// Open Add Destination Modal
+function openAddDestinationModal() {
+  document.getElementById('destinationModal').style.display = 'flex';
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Destination';
+  document.getElementById('destinationForm').reset();
+  document.getElementById('destinationId').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
+  console.log('✅ Add destination modal opened');
 }
 
-// --------- ADD DESTINATION (if modal exists) ------------
-async function addDestination() {
-  const name = document.getElementById("destName")?.value;
-  const type = document.getElementById("destType")?.value;
-  const imageUrl = document.getElementById("destImage")?.value;
+// Close Destination Modal
+function closeDestinationModal() {
+  document.getElementById('destinationModal').style.display = 'none';
+  document.getElementById('destinationForm').reset();
+  document.getElementById('imagePreview').style.display = 'none';
+  console.log('✅ Destination modal closed');
+}
 
-  if (!name || !type) {
-    alert("Please fill required fields");
+// Setup form handlers
+function setupDestinationFormHandlers() {
+  // Image URL Preview
+  const imageUrlInput = document.getElementById('destImageUrl');
+  const imagePreview = document.getElementById('imagePreview');
+  
+  if (imageUrlInput) {
+    imageUrlInput.addEventListener('input', function() {
+      const url = this.value.trim();
+      if (url) {
+        imagePreview.src = url;
+        imagePreview.style.display = 'block';
+        imagePreview.onerror = function() {
+          this.style.display = 'none';
+          console.warn('Invalid image URL');
+        };
+      } else {
+        imagePreview.style.display = 'none';
+      }
+    });
+  }
+
+  // Form submission
+  const destinationForm = document.getElementById('destinationForm');
+  if (destinationForm) {
+    destinationForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const destinationId = document.getElementById('destinationId').value;
+      const name = document.getElementById('destName').value.trim();
+      const type = document.getElementById('destType').value;
+      const rating = parseFloat(document.getElementById('destRating').value) || 0;
+      const description = document.getElementById('destDescription').value.trim();
+      const imageUrl = document.getElementById('destImageUrl').value.trim();
+
+      if (!name || !type || !description || !imageUrl) {
+        alert('Please fill all required fields');
+        return;
+      }
+
+      const destinationData = {
+        name,
+        type,
+        rating,
+        description,
+        imageUrl
+      };
+
+      try {
+        const url = destinationId 
+          ? `/destinations/${destinationId}` 
+          : '/destinations';
+        const method = destinationId ? 'PUT' : 'POST';
+
+        console.log(`${method} ${url}`, destinationData);
+
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(destinationData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert(destinationId ? '✅ Destination updated successfully!' : '✅ Destination added successfully!');
+          closeDestinationModal();
+          loadAdminData(); // Refresh data
+          console.log('✅ Destination saved:', data);
+        } else {
+          alert('Failed to save destination: ' + (data.message || 'Unknown error'));
+          console.error('Save failed:', data);
+        }
+      } catch (error) {
+        console.error('Error saving destination:', error);
+        alert('Error saving destination. Please try again.');
+      }
+    });
+  }
+}
+
+// Edit Destination
+function editDestination(destination) {
+  console.log('Editing destination:', destination);
+  
+  document.getElementById('destinationModal').style.display = 'flex';
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Destination';
+  
+  document.getElementById('destinationId').value = destination._id;
+  document.getElementById('destName').value = destination.name;
+  document.getElementById('destType').value = destination.type || '';
+  document.getElementById('destRating').value = destination.rating || '';
+  document.getElementById('destDescription').value = destination.description || '';
+  document.getElementById('destImageUrl').value = destination.imageUrl || '';
+  
+  if (destination.imageUrl) {
+    const imagePreview = document.getElementById('imagePreview');
+    imagePreview.src = destination.imageUrl;
+    imagePreview.style.display = 'block';
+  }
+}
+
+// Delete Destination
+async function deleteDestination(id, name) {
+  if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
     return;
   }
 
-  const res = await fetch("/destinations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, type, imageUrl })
-  });
-
-  if (res.ok) {
-    alert("Destination added!");
-    closeAddDestinationModal();
-    loadDestinations();
-  } else {
-    alert("Error adding destination");
-  }
-}
-
-// --------- DELETE DESTINATION ------------
-async function deleteDestination(id) {
-  if (!confirm("Delete this destination?")) return;
-  
   try {
-    await fetch(`/destinations/${id}`, { method: "DELETE" });
-    alert("Destination deleted");
-    loadDestinations();
-  } catch (err) {
-    console.error("Error deleting destination:", err);
-    alert("Error deleting destination");
+    console.log('Deleting destination:', id);
+    
+    const response = await fetch(`/destinations/${id}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('✅ Destination deleted successfully!');
+      loadAdminData(); // Refresh data
+      console.log('✅ Destination deleted');
+    } else {
+      alert('Failed to delete destination: ' + (data.message || 'Unknown error'));
+      console.error('Delete failed:', data);
+    }
+  } catch (error) {
+    console.error('Error deleting destination:', error);
+    alert('Error deleting destination. Please try again.');
   }
 }
 
-// --------- MODAL CONTROLS (if modals exist) ------------
-function openAddDestinationModal() {
-  const modal = document.getElementById("addDestinationModal");
-  if (modal) {
-    modal.style.display = "flex";
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+  const modal = document.getElementById('destinationModal');
+  if (event.target === modal) {
+    closeDestinationModal();
   }
-}
-
-function closeAddDestinationModal() {
-  const modal = document.getElementById("addDestinationModal");
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
+});
 
 // --------- CONSOLE LOG ON LOAD ------------
 console.log(`
