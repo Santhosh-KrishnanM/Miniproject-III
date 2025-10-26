@@ -336,8 +336,8 @@ async function renderTravelInsights() {
       <div class="no-trips-message">
         <i class="fas fa-calendar-plus" style="font-size: 2rem; color: #ccc; margin-bottom: 10px;"></i>
         <p style="color: #999;">No upcoming trips planned</p>
-        <button class="btn-primary" onclick="openBookingForm()" style="margin-top: 10px;">
-          <i class="fas fa-plus"></i> Plan Your Next Adventure
+        <button class="btn-primary" onclick="showSection('destinations')" style="margin-top: 10px;">
+          <i class="fas fa-compass"></i> Explore Destinations
         </button>
       </div>
     `}
