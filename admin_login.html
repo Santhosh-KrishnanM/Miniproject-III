@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Admin Dashboard - Travel Aura</title>
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     body {
       background-color: #f4f6f8;
@@ -25,9 +26,22 @@
       background: crimson;
       color: white;
       border: none;
-      padding: 8px 15px;
+      padding: 10px 20px;
       border-radius: 5px;
       cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .logout-btn:hover {
+      background: #dc143c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .logout-btn:active {
+      transform: translateY(0);
     }
     .tab-buttons {
       display: flex;
@@ -44,6 +58,10 @@
       color: white;
       border-radius: 5px;
       cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .tab-buttons button:hover {
+      background: #2d3e5f;
     }
     .tab-buttons button.active {
       background: #3a506b;
@@ -82,51 +100,98 @@
       padding: 5px 10px;
       border-radius: 4px;
       cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .delete-btn:hover {
+      background: #b71c2e;
     }
   </style>
 </head>
 <body>
   <div class="admin-header">
-    <h1>Travel Aura - Admin Dashboard</h1>
-    <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+    <h1><i class="fas fa-user-shield"></i> Travel Aura - Admin Dashboard</h1>
+    <button class="logout-btn" onclick="logoutAdmin()">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
   </div>
 
   <div class="tab-buttons">
-    <button class="active" onclick="showTab('users')">Users</button>
-    <button onclick="showTab('bookings')">Bookings</button>
-    <button onclick="showTab('destinations')">Destinations</button>
+    <button class="active" onclick="showTab('users')">
+      <i class="fas fa-users"></i> Users
+    </button>
+    <button onclick="showTab('bookings')">
+      <i class="fas fa-calendar-check"></i> Bookings
+    </button>
+    <button onclick="showTab('destinations')">
+      <i class="fas fa-map-marker-alt"></i> Destinations
+    </button>
   </div>
 
   <div id="users" class="tab-content active">
-    <h2>Registered Users</h2>
+    <h2><i class="fas fa-users"></i> Registered Users</h2>
     <table id="usersTable">
       <thead>
-        <tr><th>Username</th><th>Email</th><th>Phone</th><th>Address</th></tr>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Address</th>
+        </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading users...
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
 
   <div id="bookings" class="tab-content">
-    <h2>All Bookings</h2>
+    <h2><i class="fas fa-calendar-check"></i> All Bookings</h2>
     <table id="bookingsTable">
       <thead>
-        <tr><th>User ID</th><th>Destination</th><th>Start</th><th>End</th><th>Travelers</th><th>Action</th></tr>
+        <tr>
+          <th>User ID</th>
+          <th>Destination</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Travelers</th>
+          <th>Action</th>
+        </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading bookings...
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
 
   <div id="destinations" class="tab-content">
-    <h2>Destinations List</h2>
+    <h2><i class="fas fa-map-marker-alt"></i> Destinations List</h2>
     <table id="destinationsTable">
       <thead>
-        <tr><th>Name</th><th>Category</th><th>Location</th></tr>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td colspan="3" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading destinations...
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
 
+  <!-- Load the admin JavaScript file -->
   <script src="adm.js"></script>
 </body>
 </html>
