@@ -16,6 +16,20 @@ document.addEventListener('DOMContentLoaded', async function() {
   setupDestinationSearch();
   setupDateRestrictions();
   setupLogoutHandler();
+
+  // ✅ Check if coming from destination details page
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('openBooking') === 'true') {
+    const bookingDest = localStorage.getItem('bookingDestination');
+    if (bookingDest) {
+      const dest = JSON.parse(bookingDest);
+      openBookingForm();
+      selectedDestinationId = dest.id;
+      document.getElementById("destinationSearch").value = dest.name;
+      localStorage.removeItem('bookingDestination'); // Clean up
+      console.log('✅ Booking form opened with pre-filled destination');
+    }
+  }
 });
 
 // --------- USER PROFILE ------------
@@ -126,125 +140,10 @@ async function renderDestinations() {
   });
 }
 
-// --------- SHOW DESTINATION DETAILS ------------
-async function showDestinationDetails(destinationId) {
-  try {
-    // Find the destination from the loaded destinations array
-    const destination = destinations.find(d => d._id === destinationId);
-    
-    if (!destination) {
-      alert("Destination not found");
-      return;
-    }
-
-    // Create modal
-    const existingModal = document.getElementById('destinationDetailsModal');
-    if (existingModal) {
-      existingModal.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'destinationDetailsModal';
-    modal.className = 'modal';
-    modal.style.display = 'flex';
-
-    // Check if already in favorites
-    const favorites = await getUserFavorites(currentUser._id);
-    const isFavorite = favorites.some(fav => fav.destinationId?._id === destinationId);
-
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width: 600px;">
-        <span class="close-btn" onclick="closeDestinationDetailsModal()">&times;</span>
-        
-        <div class="destination-details-header">
-          <div class="destination-details-image" style="background-image: url('${destination.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80'}'); height: 250px; background-size: cover; background-position: center; border-radius: 10px; margin-bottom: 20px;"></div>
-          
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-            <div>
-              <h2 style="margin: 0; color: #333; font-size: 1.8rem;">${destination.name}</h2>
-              <span class="destination-type" style="display: inline-block; margin-top: 8px;">${destination.type ? destination.type.replace('-', ' ') : 'Destination'}</span>
-            </div>
-            ${destination.rating ? `
-              <div style="text-align: right;">
-                <div style="color: #ffa500; font-size: 1.5rem;">
-                  <i class="fas fa-star"></i> ${destination.rating}
-                </div>
-                <span style="color: #999; font-size: 0.85rem;">${destination.reviews || 0} reviews</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-
-        <div class="destination-details-content">
-          <div class="detail-section">
-            <h3><i class="fas fa-info-circle"></i> About</h3>
-            <p style="line-height: 1.6; color: #666;">
-              ${destination.description || 'Discover the beauty and culture of ' + destination.name + '. A perfect destination for travelers seeking memorable experiences in Tamil Nadu.'}
-            </p>
-          </div>
-
-          <div class="detail-section">
-            <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
-            <p style="color: #666;">
-              ${destination.location || 'Tamil Nadu, India'}
-            </p>
-          </div>
-
-          ${destination.highlights ? `
-            <div class="detail-section">
-              <h3><i class="fas fa-star"></i> Highlights</h3>
-              <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
-                ${destination.highlights.split(',').map(h => `<li>${h.trim()}</li>`).join('')}
-              </ul>
-            </div>
-          ` : ''}
-
-          <div class="detail-section">
-            <h3><i class="fas fa-compass"></i> Best Time to Visit</h3>
-            <p style="color: #666;">
-              ${destination.bestTime || 'October to March (Winter months are ideal for pleasant weather)'}
-            </p>
-          </div>
-
-          ${destination.activities ? `
-            <div class="detail-section">
-              <h3><i class="fas fa-hiking"></i> Activities</h3>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${destination.activities.split(',').map(activity => `
-                  <span style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem;">
-                    ${activity.trim()}
-                  </span>
-                `).join('')}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-
-        <div class="modal-actions" style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-          ${isFavorite ? `
-            <button class="btn-outline" style="background: #ffebee; color: #c62828; border-color: #c62828;">
-              <i class="fas fa-heart"></i> Already in Favorites
-            </button>
-          ` : `
-            <button class="btn-outline" onclick="addFavoriteFromModal('${currentUser._id}', '${destinationId}')">
-              <i class="fas fa-heart"></i> Add to Favorites
-            </button>
-          `}
-          
-          <button class="btn-primary" onclick="bookFromDestinationModal('${destinationId}', '${destination.name}')">
-            <i class="fas fa-calendar-plus"></i> Book This Trip
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-    console.log(`✅ Showing details for: ${destination.name}`);
-    
-  } catch (error) {
-    console.error("Error showing destination details:", error);
-    alert("Error loading destination details");
-  }
+// --------- SHOW DESTINATION DETAILS (Navigate to separate page) ------------
+function showDestinationDetails(destinationId) {
+  console.log(`🔄 Navigating to destination details: ${destinationId}`);
+  window.location.href = `destination-details.html?id=${destinationId}`;
 }
 
 // --------- CLOSE DESTINATION DETAILS MODAL ------------
