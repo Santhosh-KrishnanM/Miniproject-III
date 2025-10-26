@@ -7,7 +7,6 @@ require('dotenv').config();
 
 const db = require('./db');
 const User = require('./User');
-const Admin = require('./admin');
 const Booking = require('./Booking');
 const Destination = require('./Destination');
 const Favorite = require('./Favorite');
@@ -27,6 +26,14 @@ app.use(express.static(__dirname));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'travel.html'));
 });
+
+// ---------------------- STATIC ADMIN CREDENTIALS ----------------------
+const STATIC_ADMIN = {
+  username: 'admin',
+  password: 'admin123',
+  email: 'admin@travelaura.com',
+  _id: 'static-admin-001'
+};
 
 // ---------------------- AUTH ROUTES ----------------------
 
@@ -88,49 +95,30 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ---------------------- ADMIN ROUTES ----------------------
-
-app.post('/admin/signup', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password)
-      return res.status(400).json({ message: 'All fields are required' });
-
-    const existing = await Admin.findOne({ $or: [{ username }, { email }] });
-    if (existing)
-      return res.status(409).json({ message: 'Admin already exists' });
-
-    const hashed = await bcrypt.hash(password, 10);
-    const admin = new Admin({ username, email, password: hashed });
-    await admin.save();
-
-    res.status(201).json({ message: '✅ Admin account created successfully' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error creating admin', error: err.message });
-  }
-});
-
-// ✅ Admin Login (SINGLE DEFINITION)
+// ---------------------- STATIC ADMIN LOGIN ----------------------
 app.post('/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const admin = await Admin.findOne({ username });
-    if (!admin) return res.status(401).json({ error: 'Invalid username' });
+    console.log('🔍 Admin login attempt:', username);
 
-    const valid = await bcrypt.compare(password, admin.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid password' });
-
-    res.json({
-      message: 'Login successful',
-      admin: {
-        _id: admin._id,
-        username: admin.username,
-        email: admin.email
-      }
-    });
+    // ✅ Check static admin credentials
+    if (username === STATIC_ADMIN.username && password === STATIC_ADMIN.password) {
+      console.log('✅ Static admin login successful');
+      res.json({
+        message: 'Login successful',
+        admin: {
+          _id: STATIC_ADMIN._id,
+          username: STATIC_ADMIN.username,
+          email: STATIC_ADMIN.email
+        }
+      });
+    } else {
+      console.log('❌ Invalid admin credentials');
+      res.status(401).json({ error: 'Invalid admin credentials' });
+    }
   } catch (err) {
+    console.error('Admin login error:', err);
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
 });
@@ -206,12 +194,10 @@ app.put('/api/bookings/:id', async (req, res) => {
   try {
     const { startDate, endDate, travelers } = req.body;
 
-    // Validate
     if (!startDate || !endDate || !travelers) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Find and update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { startDate, endDate, travelers },
@@ -222,7 +208,6 @@ app.put('/api/bookings/:id', async (req, res) => {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // Log activity for user
     await Activity.create({
       userId: updatedBooking.userId,
       type: 'booking',
@@ -244,7 +229,6 @@ app.delete('/api/bookings/:id', async (req, res) => {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // Log activity when user cancels booking
     await Activity.create({
       userId: booking.userId,
       type: 'booking',
@@ -455,6 +439,9 @@ const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Atlas connected");
+    console.log("🔐 Static Admin Credentials:");
+    console.log("   Username: admin");
+    console.log("   Password: admin123");
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
