@@ -126,6 +126,273 @@ async function renderDestinations() {
   });
 }
 
+// --------- SHOW DESTINATION DETAILS ------------
+async function showDestinationDetails(destinationId) {
+  try {
+    // Find the destination from the loaded destinations array
+    const destination = destinations.find(d => d._id === destinationId);
+    
+    if (!destination) {
+      alert("Destination not found");
+      return;
+    }
+
+    // Create modal
+    const existingModal = document.getElementById('destinationDetailsModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'destinationDetailsModal';
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+
+    // Check if already in favorites
+    const favorites = await getUserFavorites(currentUser._id);
+    const isFavorite = favorites.some(fav => fav.destinationId?._id === destinationId);
+
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 600px;">
+        <span class="close-btn" onclick="closeDestinationDetailsModal()">&times;</span>
+        
+        <div class="destination-details-header">
+          <div class="destination-details-image" style="background-image: url('${destination.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80'}'); height: 250px; background-size: cover; background-position: center; border-radius: 10px; margin-bottom: 20px;"></div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+            <div>
+              <h2 style="margin: 0; color: #333; font-size: 1.8rem;">${destination.name}</h2>
+              <span class="destination-type" style="display: inline-block; margin-top: 8px;">${destination.type ? destination.type.replace('-', ' ') : 'Destination'}</span>
+            </div>
+            ${destination.rating ? `
+              <div style="text-align: right;">
+                <div style="color: #ffa500; font-size: 1.5rem;">
+                  <i class="fas fa-star"></i> ${destination.rating}
+                </div>
+                <span style="color: #999; font-size: 0.85rem;">${destination.reviews || 0} reviews</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="destination-details-content">
+          <div class="detail-section">
+            <h3><i class="fas fa-info-circle"></i> About</h3>
+            <p style="line-height: 1.6; color: #666;">
+              ${destination.description || 'Discover the beauty and culture of ' + destination.name + '. A perfect destination for travelers seeking memorable experiences in Tamil Nadu.'}
+            </p>
+          </div>
+
+          <div class="detail-section">
+            <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+            <p style="color: #666;">
+              ${destination.location || 'Tamil Nadu, India'}
+            </p>
+          </div>
+
+          ${destination.highlights ? `
+            <div class="detail-section">
+              <h3><i class="fas fa-star"></i> Highlights</h3>
+              <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+                ${destination.highlights.split(',').map(h => `<li>${h.trim()}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+
+          <div class="detail-section">
+            <h3><i class="fas fa-compass"></i> Best Time to Visit</h3>
+            <p style="color: #666;">
+              ${destination.bestTime || 'October to March (Winter months are ideal for pleasant weather)'}
+            </p>
+          </div>
+
+          ${destination.activities ? `
+            <div class="detail-section">
+              <h3><i class="fas fa-hiking"></i> Activities</h3>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${destination.activities.split(',').map(activity => `
+                  <span style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem;">
+                    ${activity.trim()}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="modal-actions" style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+          ${isFavorite ? `
+            <button class="btn-outline" style="background: #ffebee; color: #c62828; border-color: #c62828;">
+              <i class="fas fa-heart"></i> Already in Favorites
+            </button>
+          ` : `
+            <button class="btn-outline" onclick="addFavoriteFromModal('${currentUser._id}', '${destinationId}')">
+              <i class="fas fa-heart"></i> Add to Favorites
+            </button>
+          `}
+          
+          <button class="btn-primary" onclick="bookFromDestinationModal('${destinationId}', '${destination.name}')">
+            <i class="fas fa-calendar-plus"></i> Book This Trip
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    console.log(`✅ Showing details for: ${destination.name}`);
+    
+  } catch (error) {
+    console.error("Error showing destination details:", error);
+    alert("Error loading destination details");
+  }
+}
+
+// --------- CLOSE DESTINATION DETAILS MODAL ------------
+function closeDestinationDetailsModal() {
+  const modal = document.getElementById('destinationDetailsModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// --------- ADD TO FAVORITES FROM MODAL ------------
+async function addFavoriteFromModal(userId, destinationId) {
+  try {
+    const res = await fetch('/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, destinationId })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert('✅ Added to favorites!');
+      closeDestinationDetailsModal();
+      await renderAllSections(); // Refresh to update favorites count
+    } else {
+      alert(data.message || 'Failed to add to favorites');
+    }
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    alert('Error adding to favorites');
+  }
+}
+
+// --------- BOOK FROM DESTINATION MODAL ------------
+function bookFromDestinationModal(destinationId, destinationName) {
+  // Close destination modal
+  closeDestinationDetailsModal();
+  
+  // Open booking modal
+  openBookingForm();
+  
+  // Pre-fill destination
+  selectedDestinationId = destinationId;
+  document.getElementById("destinationSearch").value = destinationName;
+  
+  console.log(`✅ Booking form opened for: ${destinationName}`);
+}
+
+// --------- ADD TO FAVORITES (for destination cards) ------------
+async function addFavorite(userId, destinationId) {
+  if (!userId || !destinationId) {
+    alert("Please login to add favorites");
+    return;
+  }
+
+  try {
+    const res = await fetch('/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, destinationId })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert('✅ Added to favorites!');
+      await renderAllSections(); // Refresh all sections
+    } else {
+      alert(data.message || 'Failed to add to favorites');
+    }
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    alert('Error adding to favorites');
+  }
+}
+
+// --------- REMOVE FROM FAVORITES ------------
+async function removeFavorite(favoriteId) {
+  if (!confirm("Remove from favorites?")) return;
+
+  try {
+    const res = await fetch(`/favorites/${favoriteId}`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      alert('✅ Removed from favorites');
+      await renderAllSections(); // Refresh all sections
+    } else {
+      alert('Failed to remove from favorites');
+    }
+  } catch (error) {
+    console.error('Error removing favorite:', error);
+    alert('Error removing favorite');
+  }
+}
+
+// --------- FILTER DESTINATIONS ------------
+function filterDestinations(filterType) {
+  console.log(`Filtering destinations by: ${filterType}`);
+  
+  // Update active filter button
+  document.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Filter destinations
+  const container = document.getElementById('destinationsList');
+  container.innerHTML = '';
+
+  const filtered = filterType === 'all' 
+    ? destinations 
+    : destinations.filter(d => d.type === filterType);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">
+        <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+        <h3>No destinations found</h3>
+        <p>Try a different filter</p>
+      </div>
+    `;
+    return;
+  }
+
+  filtered.forEach(dest => {
+    const card = document.createElement('div');
+    card.className = 'destination-card';
+    card.onclick = () => showDestinationDetails(dest._id);
+    card.innerHTML = `
+      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=300&q=80'}')"></div>
+      <div class="destination-info">
+        <h4>${dest.name}</h4>
+        <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
+        <span class="destination-type">${dest.type ? dest.type.replace('-', ' ') : 'Destination'}</span>
+        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+          <i class="fas fa-heart"></i> Add to Favorites
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  console.log(`✅ Filtered ${filtered.length} destinations`);
+}
+
 async function renderFavorites() {
   const favorites = await getUserFavorites(currentUser?._id);
   const container = document.getElementById('favoritesGrid');
