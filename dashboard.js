@@ -117,7 +117,14 @@ async function renderAllSections() {
 
 async function renderDestinations() {
   const list = await getDestinations();
-  destinations = list;
+  
+  // ✅ Sort destinations by rating (highest first)
+  destinations = list.sort((a, b) => {
+    const ratingA = parseFloat(a.rating) || 0;
+    const ratingB = parseFloat(b.rating) || 0;
+    return ratingB - ratingA; // Descending order
+  });
+  
   const container = document.getElementById('destinationsList');
   
   if (!container) {
@@ -127,7 +134,7 @@ async function renderDestinations() {
   
   container.innerHTML = '';
 
-  if (!list || list.length === 0) {
+  if (!destinations || destinations.length === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / -1;">
         <i class="fas fa-map-marker-alt" style="font-size: 3rem; margin-bottom: 15px; display: block; color: #ccc;"></i>
@@ -138,7 +145,7 @@ async function renderDestinations() {
     return;
   }
 
-  list.forEach(dest => {
+  destinations.forEach((dest, index) => {
     const card = document.createElement('div');
     card.className = 'destination-card';
     card.onclick = () => showDestinationDetails(dest._id);
@@ -149,6 +156,16 @@ async function renderDestinations() {
     // Format the type nicely
     const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
     
+    // Add badge for top 3 rated destinations
+    let badge = '';
+    if (index === 0) {
+      badge = '<div class="top-badge" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);"><i class="fas fa-crown"></i> #1 Top Rated</div>';
+    } else if (index === 1) {
+      badge = '<div class="top-badge" style="background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);"><i class="fas fa-medal"></i> #2</div>';
+    } else if (index === 2) {
+      badge = '<div class="top-badge" style="background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);"><i class="fas fa-award"></i> #3</div>';
+    }
+    
     card.innerHTML = `
       <div class="destination-image" style="
         background-image: url('${imageUrl}');
@@ -158,15 +175,17 @@ async function renderDestinations() {
         border-radius: 12px 12px 0 0;
         position: relative;
       ">
+        ${badge}
         <div style="
           position: absolute;
-          top: 10px;
+          bottom: 10px;
           right: 10px;
-          background: rgba(255, 255, 255, 0.9);
-          padding: 5px 10px;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 5px 12px;
           border-radius: 20px;
           font-weight: bold;
-          font-size: 0.85rem;
+          font-size: 0.9rem;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         ">
           ${dest.rating ? '⭐ ' + dest.rating : 'New'}
         </div>
@@ -198,7 +217,7 @@ async function renderDestinations() {
     container.appendChild(card);
   });
   
-  console.log(`✅ Rendered ${list.length} destinations with images`);
+  console.log(`✅ Rendered ${destinations.length} destinations sorted by rating`);
 }
 
 // --------- SHOW DESTINATION DETAILS (Navigate to separate page) ------------
@@ -317,9 +336,16 @@ function filterDestinations(filterType) {
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
-  const filtered = filterType === 'all' 
+  let filtered = filterType === 'all' 
     ? destinations 
     : destinations.filter(d => d.type === filterType);
+
+  // ✅ Sort filtered results by rating
+  filtered.sort((a, b) => {
+    const ratingA = parseFloat(a.rating) || 0;
+    const ratingB = parseFloat(b.rating) || 0;
+    return ratingB - ratingA;
+  });
 
   if (filtered.length === 0) {
     container.innerHTML = `
@@ -332,13 +358,19 @@ function filterDestinations(filterType) {
     return;
   }
 
-  filtered.forEach(dest => {
+  filtered.forEach((dest, index) => {
     const card = document.createElement('div');
     card.className = 'destination-card';
     card.onclick = () => showDestinationDetails(dest._id);
     
     const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
     const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
+    
+    // Add badge for top 3 in filtered results
+    let badge = '';
+    if (index === 0) {
+      badge = '<div class="top-badge" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);"><i class="fas fa-crown"></i> Top Rated</div>';
+    }
     
     card.innerHTML = `
       <div class="destination-image" style="
@@ -349,15 +381,17 @@ function filterDestinations(filterType) {
         border-radius: 12px 12px 0 0;
         position: relative;
       ">
+        ${badge}
         <div style="
           position: absolute;
-          top: 10px;
+          bottom: 10px;
           right: 10px;
-          background: rgba(255, 255, 255, 0.9);
-          padding: 5px 10px;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 5px 12px;
           border-radius: 20px;
           font-weight: bold;
-          font-size: 0.85rem;
+          font-size: 0.9rem;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         ">
           ${dest.rating ? '⭐ ' + dest.rating : 'New'}
         </div>
@@ -389,8 +423,9 @@ function filterDestinations(filterType) {
     container.appendChild(card);
   });
 
-  console.log(`✅ Filtered ${filtered.length} destinations`);
+  console.log(`✅ Filtered ${filtered.length} destinations sorted by rating`);
 }
+
 
 async function renderFavorites() {
   const favorites = await getUserFavorites(currentUser?._id);
@@ -1234,68 +1269,7 @@ function showFoodPage() {
   window.location.href = "travel.html#food";
 }
 
-// ========== SUPPORT SECTION FUNCTIONS ==========
-
-// Live Chat
-function openLiveChat() {
-  document.getElementById('liveChatModal').style.display = 'flex';
-  console.log('Live chat opened');
-}
-
-function closeLiveChat() {
-  document.getElementById('liveChatModal').style.display = 'none';
-}
-
-function sendChatMessage() {
-  const input = document.getElementById('chatInput');
-  const message = input.value.trim();
-  
-  if (!message) return;
-  
-  const messagesContainer = document.getElementById('chatMessages');
-  
-  // Add user message
-  const userMsg = document.createElement('div');
-  userMsg.className = 'message user-message';
-  userMsg.innerHTML = `
-    <div class="message-avatar">
-      <i class="fas fa-user"></i>
-    </div>
-    <div class="message-content">
-      <strong>You</strong>
-      <p>${message}</p>
-      <span class="message-time">Just now</span>
-    </div>
-  `;
-  messagesContainer.appendChild(userMsg);
-  
-  input.value = '';
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  
-  // Simulate support response
-  setTimeout(() => {
-    const supportMsg = document.createElement('div');
-    supportMsg.className = 'message support-message';
-    supportMsg.innerHTML = `
-      <div class="message-avatar">
-        <i class="fas fa-user-tie"></i>
-      </div>
-      <div class="message-content">
-        <strong>Support Agent</strong>
-        <p>Thank you for your message. A support agent will respond shortly.</p>
-        <span class="message-time">Just now</span>
-      </div>
-    `;
-    messagesContainer.appendChild(supportMsg);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  }, 1000);
-}
-
-function handleChatEnter(event) {
-  if (event.key === 'Enter') {
-    sendChatMessage();
-  }
-}
+// ========== SUPPORT SECTION FUNCTIONS (SIMPLIFIED) ==========
 
 // Email Support
 function openEmailForm() {
@@ -1303,8 +1277,8 @@ function openEmailForm() {
   
   // Pre-fill user data
   if (currentUser) {
-    document.getElementById('supportName').value = currentUser.username;
-    document.getElementById('supportEmail').value = currentUser.email;
+    document.getElementById('supportName').value = currentUser.username || '';
+    document.getElementById('supportEmail').value = currentUser.email || '';
   }
 }
 
@@ -1319,54 +1293,334 @@ function submitEmailSupport(event) {
   const email = document.getElementById('supportEmail').value;
   const subject = document.getElementById('supportSubject').value;
   const message = document.getElementById('supportMessage').value;
+  const attachment = document.getElementById('supportAttachment').files[0];
+  
+  // Generate ticket ID
+  const ticketId = 'TKT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
   
   // In real implementation, send to backend
-  console.log('Email support request:', { name, email, subject, message });
+  console.log('Email support request:', { 
+    ticketId, 
+    name, 
+    email, 
+    subject, 
+    message,
+    attachment: attachment ? attachment.name : 'None'
+  });
   
-  alert('✅ Your support request has been sent!\n\nWe will respond to your email within 2 hours.');
+  alert(`✅ Your support request has been sent!\n\nTicket ID: ${ticketId}\n\nWe will respond to your email within 2 hours.`);
   closeEmailForm();
   document.getElementById('emailSupportForm').reset();
 }
 
-// Phone Support
-function callSupport() {
-  if (confirm('Call Travel Aura Support?\n\n+91 1800-123-4567\n\nThis will open your phone dialer.')) {
-    window.location.href = 'tel:+911800123567';
-  }
-}
-
 // WhatsApp Support
 function openWhatsApp() {
-  const message = encodeURIComponent('Hi, I need help with Travel Aura');
-  window.open(`https://wa.me/911800123567?text=${message}`, '_blank');
+  const userName = currentUser ? currentUser.username : 'User';
+  const message = encodeURIComponent(`Hi, I'm ${userName} from Travel Aura. I need help with:`);
+  window.open(`https://wa.me/919876543210?text=${message}`, '_blank');
 }
 
-// FAQ
+// FAQ Functions
 function openFAQ(question) {
   document.getElementById('faqModal').style.display = 'flex';
   document.getElementById('faqQuestion').textContent = question;
   
   // FAQ answers database
   const faqAnswers = {
-    'How do I book a trip?': 'To book a trip: 1) Browse destinations, 2) Click on a destination, 3) Click "Book This Trip", 4) Fill in your travel dates and number of travelers, 5) Confirm your booking.',
-    'Can I modify my booking?': 'Yes! Go to "My Bookings", find your booking, and click "Modify". You can change dates and number of travelers. Note: Modifications must be made at least 24 hours before departure.',
-    'What is the cancellation policy?': 'Free cancellation up to 48 hours before departure. Cancellations within 48 hours incur a 25% fee. No refunds for cancellations within 24 hours of departure.',
-    'How do I get my booking confirmation?': 'Booking confirmations are sent to your registered email immediately after booking. You can also view all bookings in the "My Bookings" section.',
-    'What payment methods do you accept?': 'We accept credit cards, debit cards, UPI, net banking, and digital wallets (Google Pay, PhonePe, Paytm).',
-    'Is my payment information secure?': 'Yes! We use bank-grade 256-bit SSL encryption. We never store your complete card details.',
-    'How do I get a refund?': 'Refunds are processed within 5-7 business days to your original payment method after cancellation approval.',
-    'Can I pay in installments?': 'Yes! We offer EMI options for bookings above ₹10,000. Select EMI at checkout.',
-    'How do I choose the right destination?': 'Use our filters (Beach, Hill Station, Temple, etc.) and read destination descriptions. Our AI recommendations in the Dashboard can also help!',
-    'What documents do I need?': 'Valid government ID is required. For some destinations, additional permits may be needed - check the destination details.',
-    'Are destinations family-friendly?': 'Most destinations are family-friendly. Check the destination details for age recommendations and activities.',
-    'What is the best time to visit?': 'Each destination page shows the best time to visit. Generally, October to March is ideal for Tamil Nadu.',
-    'How do I reset my password?': 'Click "Forgot Password" on the login page and follow the instructions sent to your email.',
-    'How do I update my profile?': 'Go to "Profile" section and click "Edit Profile". Update your information and save changes.',
-    'How do I delete my account?': 'Contact support at support@travelaura.com to request account deletion. This action is permanent.',
-    'How do I enable 2FA?': 'Two-factor authentication is coming soon! We\'ll notify you when it\'s available.'
+    'How do I book a trip?': `
+      <p><strong>Booking a trip is easy! Follow these steps:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to the <strong>Destinations</strong> section</li>
+        <li>Browse destinations or use filters (Beach, Hill Station, etc.)</li>
+        <li>Click on a destination card to view details</li>
+        <li>Click the <strong>"Book This Trip"</strong> button</li>
+        <li>Fill in your travel dates and number of travelers</li>
+        <li>Review your booking details</li>
+        <li>Click <strong>"Confirm Booking"</strong></li>
+      </ol>
+      <p>You'll receive a confirmation email immediately!</p>
+    `,
+    'Can I modify my booking?': `
+      <p><strong>Yes, you can modify your booking!</strong></p>
+      <p>Here's how:</p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to <strong>My Bookings</strong> section</li>
+        <li>Find the booking you want to modify</li>
+        <li>Click the <strong>"Modify"</strong> button</li>
+        <li>Update your travel dates or number of travelers</li>
+        <li>Save changes</li>
+      </ol>
+      <p><strong>Important:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Modifications must be made at least 24 hours before departure</li>
+        <li>You can only modify dates and number of travelers</li>
+        <li>To change destination, cancel and create a new booking</li>
+      </ul>
+    `,
+    'What is the cancellation policy?': `
+      <p><strong>Our flexible cancellation policy:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>✅ <strong>Free cancellation</strong> - 48+ hours before departure</li>
+        <li>⚠️ <strong>25% cancellation fee</strong> - 24-48 hours before departure</li>
+        <li>❌ <strong>No refund</strong> - Less than 24 hours before departure</li>
+      </ul>
+      <p><strong>Refund Processing:</strong></p>
+      <p>Refunds are processed within 5-7 business days to your original payment method.</p>
+      <p><strong>How to cancel:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to My Bookings</li>
+        <li>Find your booking</li>
+        <li>Click "Cancel" button</li>
+        <li>Confirm cancellation</li>
+      </ol>
+    `,
+    'How do I get my booking confirmation?': `
+      <p><strong>Booking confirmations are sent automatically!</strong></p>
+      <p><strong>Email Confirmation:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Sent to your registered email immediately after booking</li>
+        <li>Contains booking ID, destination, dates, and traveler details</li>
+        <li>Check your spam folder if you don't see it</li>
+      </ul>
+      <p><strong>View in Dashboard:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to <strong>My Bookings</strong> section</li>
+        <li>Find your booking</li>
+        <li>Click <strong>"View Details"</strong> to see full confirmation</li>
+      </ol>
+      <p><strong>Print or Save:</strong></p>
+      <p>You can print the confirmation or save it as PDF from your email.</p>
+    `,
+    'What payment methods do you accept?': `
+      <p><strong>We accept multiple payment methods:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>💳 <strong>Credit Cards</strong> - Visa, MasterCard, American Express</li>
+        <li>💳 <strong>Debit Cards</strong> - All major banks</li>
+        <li>📱 <strong>UPI</strong> - Google Pay, PhonePe, Paytm, BHIM</li>
+        <li>🏦 <strong>Net Banking</strong> - All major banks</li>
+        <li>💰 <strong>Digital Wallets</strong> - Paytm, Amazon Pay, Mobikwik</li>
+      </ul>
+      <p><strong>International Payments:</strong></p>
+      <p>We accept international credit/debit cards with proper authorization.</p>
+    `,
+    'Is my payment information secure?': `
+      <p><strong>Yes! Your payment security is our top priority.</strong></p>
+      <p><strong>Security Measures:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🔒 <strong>256-bit SSL Encryption</strong> - Bank-grade security</li>
+        <li>🛡️ <strong>PCI DSS Compliant</strong> - Industry standard compliance</li>
+        <li>🔐 <strong>Secure Payment Gateway</strong> - Razorpay/Stripe integration</li>
+        <li>❌ <strong>We NEVER store</strong> your complete card details</li>
+        <li>✅ <strong>3D Secure</strong> authentication for added protection</li>
+      </ul>
+      <p><strong>Your data is encrypted and protected at all times!</strong></p>
+    `,
+    'How do I get a refund?': `
+      <p><strong>Refund Process:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Cancel your booking (following cancellation policy)</li>
+        <li>Refund is automatically initiated</li>
+        <li>You'll receive a refund confirmation email</li>
+        <li>Amount credited within 5-7 business days</li>
+      </ol>
+      <p><strong>Refund Method:</strong></p>
+      <p>Refunds are processed to your original payment method:</p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>💳 Card payments → Same card</li>
+        <li>📱 UPI → Same UPI ID</li>
+        <li>🏦 Net Banking → Same bank account</li>
+      </ul>
+      <p><strong>Timeline:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Credit/Debit Card: 5-7 business days</li>
+        <li>UPI/Wallets: 3-5 business days</li>
+        <li>Net Banking: 5-7 business days</li>
+      </ul>
+    `,
+    'Can I pay in installments?': `
+      <p><strong>Yes! EMI options are available.</strong></p>
+      <p><strong>Eligibility:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Minimum booking amount: ₹10,000</li>
+        <li>Valid credit card required</li>
+        <li>Available from select banks</li>
+      </ul>
+      <p><strong>EMI Options:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>3 months - 0% interest</li>
+        <li>6 months - Low interest</li>
+        <li>9 months - Standard interest</li>
+        <li>12 months - Standard interest</li>
+      </ul>
+      <p><strong>How to choose EMI:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Proceed to payment</li>
+        <li>Select "EMI" option</li>
+        <li>Choose your preferred tenure</li>
+        <li>Complete payment</li>
+      </ol>
+    `,
+    'How do I choose the right destination?': `
+      <p><strong>Finding your perfect destination:</strong></p>
+      <p><strong>Use Filters:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🏖️ Beach - Marina Beach, Kochi</li>
+        <li>⛰️ Hill Station - Ooty, Kodaikanal</li>
+        <li>🛕 Temple - Meenakshi Temple, Rameshwaram</li>
+        <li>🏛️ Heritage - Historical sites</li>
+      </ul>
+      <p><strong>Consider:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>✈️ Travel distance and time</li>
+        <li>🌦️ Weather and season</li>
+        <li>👨‍👩‍👧‍👦 Group composition (family/friends/solo)</li>
+        <li>💰 Budget</li>
+        <li>🎯 Interests (adventure, relaxation, culture)</li>
+      </ul>
+      <p><strong>Check Reviews:</strong></p>
+      <p>Read ratings and reviews from other travelers!</p>
+    `,
+    'What documents do I need?': `
+      <p><strong>Required Documents:</strong></p>
+      <p><strong>For All Travelers:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>📋 Valid government-issued photo ID (Aadhaar/PAN/Passport/Driving License)</li>
+        <li>📱 Booking confirmation (print or digital)</li>
+      </ul>
+      <p><strong>For Specific Destinations:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🏔️ Hill stations may require permits</li>
+        <li>🏛️ Heritage sites may have entry restrictions</li>
+        <li>🌊 Beach destinations usually don't need special permits</li>
+      </ul>
+      <p><strong>For Minors:</strong></p>
+      <p>Minors (under 18) traveling without parents need:</p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Birth certificate or school ID</li>
+        <li>Parental consent letter (if traveling with others)</li>
+      </ul>
+    `,
+    'Are destinations family-friendly?': `
+      <p><strong>Yes! Most destinations are family-friendly.</strong></p>
+      <p><strong>Family-Friendly Features:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>👶 Child-friendly accommodations</li>
+        <li>🎡 Activities for all ages</li>
+        <li>🍽️ Family restaurants available</li>
+        <li>🚗 Easy accessibility</li>
+        <li>⚕️ Medical facilities nearby</li>
+      </ul>
+      <p><strong>Best for Families:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🏖️ Marina Beach - Safe, open beach</li>
+        <li>⛰️ Ooty - Pleasant weather, toy train</li>
+        <li>🏞️ Kodaikanal - Beautiful lake, boating</li>
+      </ul>
+      <p><strong>Age Recommendations:</strong></p>
+      <p>Check individual destination pages for age-specific recommendations and activities!</p>
+    `,
+    'What is the best time to visit?': `
+      <p><strong>Best Time to Visit Tamil Nadu:</strong></p>
+      <p><strong>Generally:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🌤️ <strong>October to March</strong> - Pleasant weather (15-30°C)</li>
+        <li>☀️ <strong>April to June</strong> - Hot summer (30-40°C)</li>
+        <li>🌧️ <strong>July to September</strong> - Monsoon season</li>
+      </ul>
+      <p><strong>Destination-Specific:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>🏖️ <strong>Beaches</strong> - November to February</li>
+        <li>⛰️ <strong>Hill Stations</strong> - March to June & September to November</li>
+        <li>🛕 <strong>Temples</strong> - Year-round (avoid major festivals for less crowd)</li>
+      </ul>
+      <p><strong>Festival Season:</strong></p>
+      <p>Visit during festivals like Pongal (Jan), Navarathri (Sep/Oct) for cultural experiences!</p>
+      <p><strong>Pro Tip:</strong> Check destination-specific details on the destination page!</p>
+    `,
+    'How do I reset my password?': `
+      <p><strong>Password Reset Process:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Click <strong>"Forgot Password"</strong> on the login page</li>
+        <li>Enter your registered email address</li>
+        <li>Check your email for reset link</li>
+        <li>Click the link (valid for 1 hour)</li>
+        <li>Create a new password</li>
+        <li>Confirm your new password</li>
+        <li>Login with your new password</li>
+      </ol>
+      <p><strong>Password Requirements:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Minimum 8 characters</li>
+        <li>At least one uppercase letter</li>
+        <li>At least one number</li>
+        <li>At least one special character</li>
+      </ul>
+      <p><strong>Didn't receive email?</strong> Check spam folder or contact support.</p>
+    `,
+    'How do I update my profile?': `
+      <p><strong>Updating Your Profile:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to <strong>Profile</strong> section in dashboard</li>
+        <li>Click <strong>"Edit Profile"</strong> button</li>
+        <li>Update your information:
+          <ul style="margin-top: 10px;">
+            <li>Username</li>
+            <li>Email address</li>
+            <li>Phone number</li>
+            <li>Address</li>
+          </ul>
+        </li>
+        <li>Click <strong>"Save Changes"</strong></li>
+      </ol>
+      <p><strong>Important Notes:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Email changes require verification</li>
+        <li>Phone number updates may need OTP verification</li>
+        <li>Changes are instant except email (needs verification)</li>
+      </ul>
+    `,
+    'How do I delete my account?': `
+      <p><strong>Account Deletion:</strong></p>
+      <p><strong>⚠️ Warning:</strong> Account deletion is <strong>permanent and irreversible!</strong></p>
+      <p><strong>What gets deleted:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Your profile information</li>
+        <li>Booking history</li>
+        <li>Favorites</li>
+        <li>Activity logs</li>
+      </ul>
+      <p><strong>How to delete:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Contact support at <strong>support@travelaura.com</strong></li>
+        <li>Subject: "Account Deletion Request"</li>
+        <li>Include your registered email and username</li>
+        <li>Verify your identity</li>
+        <li>Confirm deletion request</li>
+      </ol>
+      <p><strong>Processing Time:</strong> 7-14 business days</p>
+      <p><strong>Alternative:</strong> Consider deactivating instead of deleting!</p>
+    `,
+    'How do I change my email?': `
+      <p><strong>Changing Email Address:</strong></p>
+      <ol style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Go to <strong>Profile</strong> section</li>
+        <li>Click <strong>"Edit Profile"</strong></li>
+        <li>Update email address field</li>
+        <li>Click <strong>"Save Changes"</strong></li>
+        <li>Verify new email (check inbox for verification link)</li>
+        <li>Click verification link</li>
+        <li>Email updated!</li>
+      </ol>
+      <p><strong>Important:</strong></p>
+      <ul style="line-height: 2; color: #666; padding-left: 20px;">
+        <li>Old email remains active until new one is verified</li>
+        <li>Verification link expires in 24 hours</li>
+        <li>Use a valid, active email address</li>
+      </ul>
+    `
   };
   
-  document.getElementById('faqAnswer').innerHTML = `<p>${faqAnswers[question] || 'Answer coming soon...'}</p>`;
+  document.getElementById('faqAnswer').innerHTML = faqAnswers[question] || '<p>Answer coming soon...</p>';
 }
 
 function closeFAQModal() {
@@ -1374,42 +1628,85 @@ function closeFAQModal() {
 }
 
 function faqFeedback(feedback) {
-  alert(feedback === 'yes' ? 'Thanks for your feedback!' : 'We\'ll work on improving this answer. You can contact support for more help.');
+  if (feedback === 'yes') {
+    alert('✅ Thanks for your feedback!\n\nWe\'re glad we could help!');
+  } else {
+    alert('📝 Thanks for your feedback!\n\nWe\'ll work on improving this answer.\n\nPlease contact support if you need more help.');
+  }
   closeFAQModal();
 }
 
 function viewAllFAQs() {
-  alert('📚 Complete FAQ section coming soon!\n\nFor now, browse the categories shown or contact support directly.');
+  alert('📚 Complete FAQ Center Coming Soon!\n\nFor now:\n• Browse FAQ categories above\n• Contact email support\n• Message us on WhatsApp\n\nWe\'re here to help 24/7!');
 }
 
 // Resources
 function openResource(resourceType) {
-  const resources = {
-    'travel-guide': 'https://www.incredibleindia.org/content/incredible-india-v2/en/destinations/tamil-nadu.html',
-    'safety-tips': alert('🛡️ Safety Tips:\n\n1. Always carry ID\n2. Keep emergency contacts handy\n3. Follow local guidelines\n4. Stay in groups at night\n5. Keep valuables secure'),
-    'video-tutorials': alert('🎥 Video Tutorials:\n\nComing soon! We\'re creating helpful videos on:\n- How to book trips\n- Best destinations\n- Travel tips\n\nStay tuned!'),
-    'blog': alert('📝 Travel Blog:\n\nVisit our blog at:\ntravelaura.com/blog\n\n(Feature coming soon!)')
-  };
-  
-  if (resourceType === 'travel-guide') {
-    window.open(resources[resourceType], '_blank');
+  switch(resourceType) {
+    case 'travel-guide':
+      window.open('https://www.incredibleindia.org/content/incredible-india-v2/en/destinations/tamil-nadu.html', '_blank');
+      break;
+    case 'safety-tips':
+      alert('🛡️ Travel Safety Tips:\n\n' +
+            '1. Keep your valuables secure\n' +
+            '2. Stay in groups, especially at night\n' +
+            '3. Carry valid ID at all times\n' +
+            '4. Keep emergency contacts handy\n' +
+            '5. Follow local guidelines and rules\n' +
+            '6. Inform someone about your travel plans\n' +
+            '7. Keep copies of important documents\n' +
+            '8. Stay hydrated and carry medicines\n' +
+            '9. Use trusted transportation\n' +
+            '10. Trust your instincts!\n\n' +
+            'Have a safe journey! 🌟');
+      break;
+    case 'blog':
+      alert('📝 Travel Aura Blog\n\n' +
+            'Coming Soon!\n\n' +
+            'We\'re creating amazing travel content:\n' +
+            '• Destination guides\n' +
+            '• Travel tips & hacks\n' +
+            '• Local food recommendations\n' +
+            '• Budget travel ideas\n' +
+            '• Photography tips\n' +
+            '• Traveler stories\n\n' +
+            'Stay tuned! 🌍✈️');
+      break;
+    case 'destination-finder':
+      showSection('destinations');
+      alert('🧭 Destination Finder\n\nUse the filters and search to find your perfect destination!\n\n' +
+            'Try filtering by:\n' +
+            '• Beach\n' +
+            '• Hill Station\n' +
+            '• Temple\n' +
+            '• Heritage\n' +
+            '• And more!');
+      break;
   }
 }
 
 // Feedback
 function openFeedbackForm() {
-  const feedback = prompt('💬 We\'d love to hear your feedback!\n\nWhat do you think about Travel Aura?');
-  if (feedback) {
-    alert('✅ Thank you for your feedback!\n\nYour input helps us improve Travel Aura.');
-    console.log('User feedback:', feedback);
+  const feedback = prompt('💬 We\'d love to hear from you!\n\nWhat do you think about Travel Aura?\nShare your thoughts, suggestions, or ideas:');
+  
+  if (feedback && feedback.trim()) {
+    const ticketId = 'FBK-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    console.log('User feedback:', { ticketId, userId: currentUser?._id, feedback });
+    alert(`✅ Thank you for your feedback!\n\nTicket ID: ${ticketId}\n\nYour input helps us improve Travel Aura for everyone! 🌟`);
   }
 }
 
 function openBugReportForm() {
-  const bug = prompt('🐛 Report a Bug\n\nPlease describe the issue you encountered:');
-  if (bug) {
-    alert('✅ Bug report submitted!\n\nOur tech team will investigate this issue.\n\nTicket ID: #' + Math.random().toString(36).substr(2, 9).toUpperCase());
-    console.log('Bug report:', bug);
+  const bug = prompt('🐛 Report a Bug\n\nPlease describe the issue you encountered:\n\n' +
+                     'Include:\n' +
+                     '• What you were trying to do\n' +
+                     '• What happened instead\n' +
+                     '• Any error messages');
+  
+  if (bug && bug.trim()) {
+    const ticketId = 'BUG-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    console.log('Bug report:', { ticketId, userId: currentUser?._id, bug });
+    alert(`✅ Bug report submitted!\n\nTicket ID: ${ticketId}\n\nOur tech team will investigate this issue ASAP.\n\nWe appreciate your help in making Travel Aura better! 🛠️`);
   }
 }
 
@@ -1417,5 +1714,113 @@ function openBugReportForm() {
 window.addEventListener('click', function(event) {
   if (event.target.classList.contains('modal')) {
     event.target.style.display = 'none';
+  }
+});
+
+console.log('✅ Support section loaded successfully');
+// --------- SEARCH DESTINATIONS (REAL-TIME) ------------
+function searchDestinations() {
+  const searchInput = document.getElementById('destinationSearchInput');
+  const query = searchInput.value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('destinationSearchResults');
+  const clearBtn = document.querySelector('.clear-search-btn');
+
+  // Show/hide clear button
+  if (query) {
+    clearBtn.style.display = 'flex';
+  } else {
+    clearBtn.style.display = 'none';
+    resultsContainer.classList.remove('show');
+    return;
+  }
+
+  // Filter destinations based on search query
+  const results = destinations.filter(dest => 
+    dest.name.toLowerCase().includes(query) ||
+    (dest.type && dest.type.toLowerCase().includes(query)) ||
+    (dest.description && dest.description.toLowerCase().includes(query))
+  );
+
+  // Sort results by rating
+  results.sort((a, b) => {
+    const ratingA = parseFloat(a.rating) || 0;
+    const ratingB = parseFloat(b.rating) || 0;
+    return ratingB - ratingA;
+  });
+
+  // Display results
+  if (results.length > 0) {
+    resultsContainer.innerHTML = results.map(dest => `
+      <div class="search-result-item" onclick="navigateToDestination('${dest._id}')">
+        <img src="${dest.imageUrl || 'https://via.placeholder.com/60'}" 
+             alt="${dest.name}" 
+             class="search-result-image"
+             onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
+        <div class="search-result-info">
+          <h4>${highlightText(dest.name, query)}</h4>
+          <p>
+            <span class="search-result-rating">⭐ ${dest.rating || 'N/A'}</span>
+            <span style="text-transform: capitalize;">${dest.type ? dest.type.replace('-', ' ') : 'Destination'}</span>
+          </p>
+        </div>
+        <i class="fas fa-arrow-right" style="color: #999;"></i>
+      </div>
+    `).join('');
+    resultsContainer.classList.add('show');
+  } else {
+    resultsContainer.innerHTML = `
+      <div class="no-results">
+        <i class="fas fa-search"></i>
+        <p>No destinations found for "<strong>${query}</strong>"</p>
+        <small>Try searching for Marina Beach, Ooty, Kodaikanal, etc.</small>
+      </div>
+    `;
+    resultsContainer.classList.add('show');
+  }
+}
+
+// --------- HIGHLIGHT SEARCH TEXT ------------
+function highlightText(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<strong style="color: #667eea;">$1</strong>');
+}
+
+// --------- NAVIGATE TO DESTINATION ------------
+function navigateToDestination(destinationId) {
+  // Clear search
+  clearDestinationSearch();
+  
+  // Navigate to destination details page
+  window.location.href = `destination-details.html?id=${destinationId}`;
+}
+
+// --------- HANDLE ENTER KEY IN SEARCH ------------
+function handleDestinationSearchEnter(event) {
+  if (event.key === 'Enter') {
+    const resultsContainer = document.getElementById('destinationSearchResults');
+    const firstResult = resultsContainer.querySelector('.search-result-item');
+    
+    if (firstResult) {
+      // Click the first search result
+      firstResult.click();
+    }
+  }
+}
+
+// --------- CLEAR SEARCH ------------
+function clearDestinationSearch() {
+  document.getElementById('destinationSearchInput').value = '';
+  document.getElementById('destinationSearchResults').classList.remove('show');
+  document.querySelector('.clear-search-btn').style.display = 'none';
+}
+
+// --------- CLOSE SEARCH RESULTS ON OUTSIDE CLICK ------------
+document.addEventListener('click', function(event) {
+  const searchContainer = document.querySelector('.destination-search-container');
+  const resultsContainer = document.getElementById('destinationSearchResults');
+  
+  if (searchContainer && !searchContainer.contains(event.target)) {
+    resultsContainer.classList.remove('show');
   }
 });

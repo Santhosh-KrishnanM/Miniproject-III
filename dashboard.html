@@ -306,7 +306,7 @@
         </div>
       </section>
 
-      <!-- Support Section - Enhanced -->
+      <!-- Support Section - Simplified Enhanced -->
 <section id="support" class="content-section">
   <div class="support-container">
     <div class="support-header">
@@ -339,24 +339,8 @@
       </div>
     </div>
 
-    <!-- Contact Methods Grid -->
+    <!-- Contact Methods Grid (Simplified) -->
     <div class="support-grid">
-      <!-- Live Chat -->
-      <div class="support-card">
-        <div class="support-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-          <i class="fas fa-comments"></i>
-        </div>
-        <h3>Live Chat</h3>
-        <p>Chat with our support team in real-time. Get instant answers to your questions.</p>
-        <div class="support-meta">
-          <span class="status-badge online"><i class="fas fa-circle"></i> Online Now</span>
-          <span class="response-time">Avg. response: 30 sec</span>
-        </div>
-        <button class="btn-primary" onclick="openLiveChat()">
-          <i class="fas fa-comment-dots"></i> Start Chat
-        </button>
-      </div>
-
       <!-- Email Support -->
       <div class="support-card">
         <div class="support-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
@@ -370,22 +354,6 @@
         </div>
         <button class="btn-primary" onclick="openEmailForm()">
           <i class="fas fa-paper-plane"></i> Send Email
-        </button>
-      </div>
-
-      <!-- Phone Support -->
-      <div class="support-card">
-        <div class="support-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-          <i class="fas fa-phone-alt"></i>
-        </div>
-        <h3>Phone Support</h3>
-        <p>Speak directly with our travel experts. Available 24/7 for urgent matters.</p>
-        <div class="support-meta">
-          <span class="phone-number"><i class="fas fa-phone"></i> +91 1800-123-4567</span>
-          <span class="response-time">Toll-free number</span>
-        </div>
-        <button class="btn-primary" onclick="callSupport()">
-          <i class="fas fa-phone-volume"></i> Call Now
         </button>
       </div>
 
@@ -476,8 +444,8 @@
             <li onclick="openFAQ('How do I delete my account?')">
               <i class="fas fa-chevron-right"></i> How do I delete my account?
             </li>
-            <li onclick="openFAQ('How do I enable 2FA?')">
-              <i class="fas fa-chevron-right"></i> How do I enable 2FA?
+            <li onclick="openFAQ('How do I change my email?')">
+              <i class="fas fa-chevron-right"></i> How do I change my email?
             </li>
           </ul>
         </div>
@@ -488,7 +456,7 @@
       </button>
     </div>
 
-    <!-- Help Center Resources -->
+    <!-- Help Center Resources (Simplified) -->
     <div class="resources-section">
       <h3><i class="fas fa-book"></i> Help Center Resources</h3>
       <div class="resources-grid">
@@ -502,15 +470,15 @@
           <h4>Safety Tips</h4>
           <p>Stay safe during your travels</p>
         </div>
-        <div class="resource-card" onclick="openResource('video-tutorials')">
-          <i class="fas fa-video"></i>
-          <h4>Video Tutorials</h4>
-          <p>Learn how to use the platform</p>
-        </div>
         <div class="resource-card" onclick="openResource('blog')">
           <i class="fas fa-newspaper"></i>
           <h4>Travel Blog</h4>
           <p>Tips, stories, and inspiration</p>
+        </div>
+        <div class="resource-card" onclick="openResource('destination-finder')">
+          <i class="fas fa-compass"></i>
+          <h4>Destination Finder</h4>
+          <p>Find your perfect travel spot</p>
         </div>
       </div>
     </div>
@@ -533,40 +501,43 @@
       </div>
     </div>
 
+    <!-- Contact Information -->
+    <div class="contact-info-section">
+      <h3><i class="fas fa-info-circle"></i> Contact Information</h3>
+      <div class="contact-info-grid">
+        <div class="contact-info-item">
+          <i class="fas fa-envelope"></i>
+          <div>
+            <strong>Email</strong>
+            <p>support@travelaura.com</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <i class="fab fa-whatsapp"></i>
+          <div>
+            <strong>WhatsApp</strong>
+            <p>+91 98765 43210</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <div>
+            <strong>Address</strong>
+            <p>123 Travel Street, Chennai, Tamil Nadu</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <i class="fas fa-clock"></i>
+          <div>
+            <strong>Business Hours</strong>
+            <p>24/7 Support Available</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
-
-<!-- Live Chat Modal -->
-<div id="liveChatModal" class="modal" style="display:none;">
-  <div class="modal-content chat-modal">
-    <span class="close-btn" onclick="closeLiveChat()">&times;</span>
-    <div class="chat-header">
-      <div class="chat-avatar">
-        <i class="fas fa-headset"></i>
-      </div>
-      <div>
-        <h3>Live Chat Support</h3>
-        <span class="status-badge online"><i class="fas fa-circle"></i> Online</span>
-      </div>
-    </div>
-    <div class="chat-messages" id="chatMessages">
-      <div class="message support-message">
-        <div class="message-avatar">
-          <i class="fas fa-user-tie"></i>
-        </div>
-        <div class="message-content">
-          <strong>Support Agent</strong>
-          <p>Hello! Welcome to Travel Aura Support. How can I help you today?</p>
-          <span class="message-time">Just now</span>
-        </div>
-      </div>
-    </div>
-    <div class="chat-input-container">
-      <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="handleChatEnter(event)">
-      <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
-    </div>
-  </div>
-</div>
 
 <!-- Email Support Modal -->
 <div id="emailModal" class="modal" style="display:none;">
@@ -575,31 +546,34 @@
     <h2><i class="fas fa-envelope"></i> Email Support</h2>
     <form id="emailSupportForm" onsubmit="submitEmailSupport(event)">
       <div class="form-group">
-        <label>Your Name</label>
-        <input type="text" id="supportName" value="${currentUser?.username || ''}" required>
+        <label>Your Name *</label>
+        <input type="text" id="supportName" required>
       </div>
       <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="supportEmail" value="${currentUser?.email || ''}" required>
+        <label>Email Address *</label>
+        <input type="email" id="supportEmail" required>
       </div>
       <div class="form-group">
-        <label>Subject</label>
+        <label>Subject *</label>
         <select id="supportSubject" required>
           <option value="">Select a topic</option>
           <option value="booking">Booking Issue</option>
           <option value="payment">Payment Problem</option>
           <option value="cancellation">Cancellation Request</option>
           <option value="account">Account Help</option>
+          <option value="destination">Destination Inquiry</option>
+          <option value="feedback">General Feedback</option>
           <option value="other">Other</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Message</label>
-        <textarea id="supportMessage" rows="6" required placeholder="Describe your issue in detail..."></textarea>
+        <label>Message *</label>
+        <textarea id="supportMessage" rows="6" required placeholder="Describe your issue or question in detail..."></textarea>
       </div>
       <div class="form-group">
         <label>Attachment (Optional)</label>
         <input type="file" id="supportAttachment" accept="image/*,.pdf">
+        <small>Supported: JPG, PNG, PDF (Max 5MB)</small>
       </div>
       <div class="form-actions">
         <button type="button" class="btn-secondary" onclick="closeEmailForm()">Cancel</button>
@@ -617,8 +591,8 @@
     <span class="close-btn" onclick="closeFAQModal()">&times;</span>
     <h2 id="faqQuestion"></h2>
     <div id="faqAnswer"></div>
-    <div style="margin-top: 20px; text-align: center;">
-      <p>Was this helpful?</p>
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+      <p style="margin-bottom: 15px; color: #666;">Was this helpful?</p>
       <button class="btn-outline" onclick="faqFeedback('yes')" style="margin: 0 5px;">
         <i class="fas fa-thumbs-up"></i> Yes
       </button>
