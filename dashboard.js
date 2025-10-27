@@ -1233,3 +1233,189 @@ function showAdventurePage() {
 function showFoodPage() {
   window.location.href = "travel.html#food";
 }
+
+// ========== SUPPORT SECTION FUNCTIONS ==========
+
+// Live Chat
+function openLiveChat() {
+  document.getElementById('liveChatModal').style.display = 'flex';
+  console.log('Live chat opened');
+}
+
+function closeLiveChat() {
+  document.getElementById('liveChatModal').style.display = 'none';
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  
+  if (!message) return;
+  
+  const messagesContainer = document.getElementById('chatMessages');
+  
+  // Add user message
+  const userMsg = document.createElement('div');
+  userMsg.className = 'message user-message';
+  userMsg.innerHTML = `
+    <div class="message-avatar">
+      <i class="fas fa-user"></i>
+    </div>
+    <div class="message-content">
+      <strong>You</strong>
+      <p>${message}</p>
+      <span class="message-time">Just now</span>
+    </div>
+  `;
+  messagesContainer.appendChild(userMsg);
+  
+  input.value = '';
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  
+  // Simulate support response
+  setTimeout(() => {
+    const supportMsg = document.createElement('div');
+    supportMsg.className = 'message support-message';
+    supportMsg.innerHTML = `
+      <div class="message-avatar">
+        <i class="fas fa-user-tie"></i>
+      </div>
+      <div class="message-content">
+        <strong>Support Agent</strong>
+        <p>Thank you for your message. A support agent will respond shortly.</p>
+        <span class="message-time">Just now</span>
+      </div>
+    `;
+    messagesContainer.appendChild(supportMsg);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }, 1000);
+}
+
+function handleChatEnter(event) {
+  if (event.key === 'Enter') {
+    sendChatMessage();
+  }
+}
+
+// Email Support
+function openEmailForm() {
+  document.getElementById('emailModal').style.display = 'flex';
+  
+  // Pre-fill user data
+  if (currentUser) {
+    document.getElementById('supportName').value = currentUser.username;
+    document.getElementById('supportEmail').value = currentUser.email;
+  }
+}
+
+function closeEmailForm() {
+  document.getElementById('emailModal').style.display = 'none';
+}
+
+function submitEmailSupport(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('supportName').value;
+  const email = document.getElementById('supportEmail').value;
+  const subject = document.getElementById('supportSubject').value;
+  const message = document.getElementById('supportMessage').value;
+  
+  // In real implementation, send to backend
+  console.log('Email support request:', { name, email, subject, message });
+  
+  alert('✅ Your support request has been sent!\n\nWe will respond to your email within 2 hours.');
+  closeEmailForm();
+  document.getElementById('emailSupportForm').reset();
+}
+
+// Phone Support
+function callSupport() {
+  if (confirm('Call Travel Aura Support?\n\n+91 1800-123-4567\n\nThis will open your phone dialer.')) {
+    window.location.href = 'tel:+911800123567';
+  }
+}
+
+// WhatsApp Support
+function openWhatsApp() {
+  const message = encodeURIComponent('Hi, I need help with Travel Aura');
+  window.open(`https://wa.me/911800123567?text=${message}`, '_blank');
+}
+
+// FAQ
+function openFAQ(question) {
+  document.getElementById('faqModal').style.display = 'flex';
+  document.getElementById('faqQuestion').textContent = question;
+  
+  // FAQ answers database
+  const faqAnswers = {
+    'How do I book a trip?': 'To book a trip: 1) Browse destinations, 2) Click on a destination, 3) Click "Book This Trip", 4) Fill in your travel dates and number of travelers, 5) Confirm your booking.',
+    'Can I modify my booking?': 'Yes! Go to "My Bookings", find your booking, and click "Modify". You can change dates and number of travelers. Note: Modifications must be made at least 24 hours before departure.',
+    'What is the cancellation policy?': 'Free cancellation up to 48 hours before departure. Cancellations within 48 hours incur a 25% fee. No refunds for cancellations within 24 hours of departure.',
+    'How do I get my booking confirmation?': 'Booking confirmations are sent to your registered email immediately after booking. You can also view all bookings in the "My Bookings" section.',
+    'What payment methods do you accept?': 'We accept credit cards, debit cards, UPI, net banking, and digital wallets (Google Pay, PhonePe, Paytm).',
+    'Is my payment information secure?': 'Yes! We use bank-grade 256-bit SSL encryption. We never store your complete card details.',
+    'How do I get a refund?': 'Refunds are processed within 5-7 business days to your original payment method after cancellation approval.',
+    'Can I pay in installments?': 'Yes! We offer EMI options for bookings above ₹10,000. Select EMI at checkout.',
+    'How do I choose the right destination?': 'Use our filters (Beach, Hill Station, Temple, etc.) and read destination descriptions. Our AI recommendations in the Dashboard can also help!',
+    'What documents do I need?': 'Valid government ID is required. For some destinations, additional permits may be needed - check the destination details.',
+    'Are destinations family-friendly?': 'Most destinations are family-friendly. Check the destination details for age recommendations and activities.',
+    'What is the best time to visit?': 'Each destination page shows the best time to visit. Generally, October to March is ideal for Tamil Nadu.',
+    'How do I reset my password?': 'Click "Forgot Password" on the login page and follow the instructions sent to your email.',
+    'How do I update my profile?': 'Go to "Profile" section and click "Edit Profile". Update your information and save changes.',
+    'How do I delete my account?': 'Contact support at support@travelaura.com to request account deletion. This action is permanent.',
+    'How do I enable 2FA?': 'Two-factor authentication is coming soon! We\'ll notify you when it\'s available.'
+  };
+  
+  document.getElementById('faqAnswer').innerHTML = `<p>${faqAnswers[question] || 'Answer coming soon...'}</p>`;
+}
+
+function closeFAQModal() {
+  document.getElementById('faqModal').style.display = 'none';
+}
+
+function faqFeedback(feedback) {
+  alert(feedback === 'yes' ? 'Thanks for your feedback!' : 'We\'ll work on improving this answer. You can contact support for more help.');
+  closeFAQModal();
+}
+
+function viewAllFAQs() {
+  alert('📚 Complete FAQ section coming soon!\n\nFor now, browse the categories shown or contact support directly.');
+}
+
+// Resources
+function openResource(resourceType) {
+  const resources = {
+    'travel-guide': 'https://www.incredibleindia.org/content/incredible-india-v2/en/destinations/tamil-nadu.html',
+    'safety-tips': alert('🛡️ Safety Tips:\n\n1. Always carry ID\n2. Keep emergency contacts handy\n3. Follow local guidelines\n4. Stay in groups at night\n5. Keep valuables secure'),
+    'video-tutorials': alert('🎥 Video Tutorials:\n\nComing soon! We\'re creating helpful videos on:\n- How to book trips\n- Best destinations\n- Travel tips\n\nStay tuned!'),
+    'blog': alert('📝 Travel Blog:\n\nVisit our blog at:\ntravelaura.com/blog\n\n(Feature coming soon!)')
+  };
+  
+  if (resourceType === 'travel-guide') {
+    window.open(resources[resourceType], '_blank');
+  }
+}
+
+// Feedback
+function openFeedbackForm() {
+  const feedback = prompt('💬 We\'d love to hear your feedback!\n\nWhat do you think about Travel Aura?');
+  if (feedback) {
+    alert('✅ Thank you for your feedback!\n\nYour input helps us improve Travel Aura.');
+    console.log('User feedback:', feedback);
+  }
+}
+
+function openBugReportForm() {
+  const bug = prompt('🐛 Report a Bug\n\nPlease describe the issue you encountered:');
+  if (bug) {
+    alert('✅ Bug report submitted!\n\nOur tech team will investigate this issue.\n\nTicket ID: #' + Math.random().toString(36).substr(2, 9).toUpperCase());
+    console.log('Bug report:', bug);
+  }
+}
+
+// Close modals on outside click
+window.addEventListener('click', function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+});
