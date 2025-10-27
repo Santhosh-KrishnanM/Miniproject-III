@@ -119,25 +119,86 @@ async function renderDestinations() {
   const list = await getDestinations();
   destinations = list;
   const container = document.getElementById('destinationsList');
+  
+  if (!container) {
+    console.error('Destinations container not found');
+    return;
+  }
+  
   container.innerHTML = '';
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / -1;">
+        <i class="fas fa-map-marker-alt" style="font-size: 3rem; margin-bottom: 15px; display: block; color: #ccc;"></i>
+        <h3 style="color: #666;">No destinations available</h3>
+        <p>Check back later for amazing destinations!</p>
+      </div>
+    `;
+    return;
+  }
 
   list.forEach(dest => {
     const card = document.createElement('div');
     card.className = 'destination-card';
     card.onclick = () => showDestinationDetails(dest._id);
+    
+    // Use the imageUrl from database, fallback to placeholder
+    const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
+    
+    // Format the type nicely
+    const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
+    
     card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest.imageUrl || ''}')"></div>
+      <div class="destination-image" style="
+        background-image: url('${imageUrl}');
+        background-size: cover;
+        background-position: center;
+        height: 200px;
+        border-radius: 12px 12px 0 0;
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 5px 10px;
+          border-radius: 20px;
+          font-weight: bold;
+          font-size: 0.85rem;
+        ">
+          ${dest.rating ? '⭐ ' + dest.rating : 'New'}
+        </div>
+      </div>
       <div class="destination-info">
         <h4>${dest.name}</h4>
-        <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${dest.type.replace('-', ' ')}</span>
-        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+        <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">
+          <i class="fas fa-star" style="color: #ffa500;"></i> 
+          ${dest.rating || 'Not rated'} 
+          ${dest.reviews ? `(${dest.reviews} reviews)` : ''}
+        </p>
+        <span class="destination-type" style="
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 15px;
+          font-size: 0.8rem;
+          display: inline-block;
+          margin: 8px 0;
+        ">${typeFormatted}</span>
+        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')" style="
+          width: 100%;
+          margin-top: 10px;
+        ">
           <i class="fas fa-heart"></i> Add to Favorites
         </button>
       </div>
     `;
     container.appendChild(card);
   });
+  
+  console.log(`✅ Rendered ${list.length} destinations with images`);
 }
 
 // --------- SHOW DESTINATION DETAILS (Navigate to separate page) ------------
@@ -275,13 +336,52 @@ function filterDestinations(filterType) {
     const card = document.createElement('div');
     card.className = 'destination-card';
     card.onclick = () => showDestinationDetails(dest._id);
+    
+    const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
+    const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
+    
     card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=300&q=80'}')"></div>
+      <div class="destination-image" style="
+        background-image: url('${imageUrl}');
+        background-size: cover;
+        background-position: center;
+        height: 200px;
+        border-radius: 12px 12px 0 0;
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 5px 10px;
+          border-radius: 20px;
+          font-weight: bold;
+          font-size: 0.85rem;
+        ">
+          ${dest.rating ? '⭐ ' + dest.rating : 'New'}
+        </div>
+      </div>
       <div class="destination-info">
         <h4>${dest.name}</h4>
-        <p><i class="fas fa-star"></i> ${dest.rating || '0'} (${dest.reviews || 0} reviews)</p>
-        <span class="destination-type">${dest.type ? dest.type.replace('-', ' ') : 'Destination'}</span>
-        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')">
+        <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">
+          <i class="fas fa-star" style="color: #ffa500;"></i> 
+          ${dest.rating || 'Not rated'} 
+          ${dest.reviews ? `(${dest.reviews} reviews)` : ''}
+        </p>
+        <span class="destination-type" style="
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 15px;
+          font-size: 0.8rem;
+          display: inline-block;
+          margin: 8px 0;
+        ">${typeFormatted}</span>
+        <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')" style="
+          width: 100%;
+          margin-top: 10px;
+        ">
           <i class="fas fa-heart"></i> Add to Favorites
         </button>
       </div>
