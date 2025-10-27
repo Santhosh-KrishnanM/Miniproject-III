@@ -16,7 +16,11 @@ const Page = require('./Page');
 const bcrypt = require('bcryptjs');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins in development
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Accept']
+}));
 app.use(bodyParser.json());
 
 // ✅ Serve static files (HTML, CSS, JS, images) from the same folder

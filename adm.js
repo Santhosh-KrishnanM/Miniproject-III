@@ -31,9 +31,9 @@ async function loadAdminData() {
   try {
     console.log("Loading admin dashboard data...");
     
-    const users = await fetch('/admin/users').then(r => r.json());
-    const bookings = await fetch('/admin/bookings').then(r => r.json());
-    const destinations = await fetch('/admin/destinations').then(r => r.json());
+    const users = await fetch('https://travel-aura-enb6.onrender.com/admin/users').then(r => r.json());
+    const bookings = await fetch('https://travel-aura-enb6.onrender.com/admin/bookings').then(r => r.json());
+    const destinations = await fetch('https://travel-aura-enb6.onrender.com/admin/destinations').then(r => r.json());
 
     renderUsers(users);
     renderBookings(bookings);
@@ -110,7 +110,12 @@ function renderDestinations(destinations) {
   }
 
   tbody.innerHTML = destinations.map(d => {
-    const destinationJson = JSON.stringify(d).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    // Properly escape the destination object for onclick
+    const destinationStr = JSON.stringify(d)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '&quot;');
+    
     return `
       <tr>
         <td>
@@ -130,7 +135,7 @@ function renderDestinations(destinations) {
           ${d.description || 'No description'}
         </td>
         <td>
-          <button class="edit-btn" onclick='editDestination(${destinationJson})'>
+          <button class="edit-btn" onclick='editDestination(${destinationStr})'>
             <i class="fas fa-edit"></i> Edit
           </button>
           <button class="delete-btn" onclick="deleteDestination('${d._id}', '${d.name.replace(/'/g, "\\'")}')">
@@ -149,7 +154,9 @@ async function deleteBooking(id) {
   if (!confirm("Are you sure you want to delete this booking?")) return;
   
   try {
-    const res = await fetch(`/admin/bookings/${id}`, { method: 'DELETE' });
+    const res = await fetch(`https://travel-aura-enb6.onrender.com/admin/bookings/${id}`, { 
+      method: 'DELETE' 
+    });
     const data = await res.json();
     
     if (res.ok) {
@@ -267,12 +274,20 @@ function setupDestinationFormHandlers() {
       const destinationId = document.getElementById('destinationId').value;
       const name = document.getElementById('destName').value.trim();
       const type = document.getElementById('destType').value;
-      const rating = parseFloat(document.getElementById('destRating').value) || 0;
+      const ratingValue = document.getElementById('destRating').value;
+      const rating = ratingValue ? parseFloat(ratingValue) : 0;
       const description = document.getElementById('destDescription').value.trim();
       const imageUrl = document.getElementById('destImageUrl').value.trim();
 
+      // Validation
       if (!name || !type || !description || !imageUrl) {
-        alert('Please fill all required fields');
+        alert('Please fill all required fields (Name, Type, Description, and Image URL)');
+        return;
+      }
+
+      // Validate rating if provided
+      if (rating && (rating < 1 || rating > 5)) {
+        alert('Rating must be between 1 and 5');
         return;
       }
 
@@ -286,8 +301,8 @@ function setupDestinationFormHandlers() {
 
       try {
         const url = destinationId 
-          ? `/destinations/${destinationId}` 
-          : '/destinations';
+          ? `https://travel-aura-enb6.onrender.com/destinations/${destinationId}` 
+          : 'https://travel-aura-enb6.onrender.com/destinations';
         const method = destinationId ? 'PUT' : 'POST';
 
         console.log(`${method} ${url}`, destinationData);
@@ -295,12 +310,24 @@ function setupDestinationFormHandlers() {
         const response = await fetch(url, {
           method: method,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify(destinationData)
         });
 
-        const data = await response.json();
+        // Get response text first
+        const responseText = await response.text();
+        console.log('Response status:', response.status);
+        console.log('Response text:', responseText);
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          throw new Error('Invalid server response: ' + responseText);
+        }
 
         if (response.ok) {
           alert(destinationId ? '✅ Destination updated successfully!' : '✅ Destination added successfully!');
@@ -308,12 +335,13 @@ function setupDestinationFormHandlers() {
           loadAdminData(); // Refresh data
           console.log('✅ Destination saved:', data);
         } else {
-          alert('Failed to save destination: ' + (data.message || 'Unknown error'));
+          const errorMsg = data.message || data.error || 'Unknown error';
+          alert('Failed to save destination: ' + errorMsg);
           console.error('Save failed:', data);
         }
       } catch (error) {
         console.error('Error saving destination:', error);
-        alert('Error saving destination. Please try again.');
+        alert('Error saving destination: ' + error.message);
       }
     });
   }
@@ -349,7 +377,7 @@ async function deleteDestination(id, name) {
   try {
     console.log('Deleting destination:', id);
     
-    const response = await fetch(`/destinations/${id}`, {
+    const response = await fetch(`https://travel-aura-enb6.onrender.com/destinations/${id}`, {
       method: 'DELETE'
     });
 
