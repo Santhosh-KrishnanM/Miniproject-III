@@ -3,7 +3,7 @@
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
   const videos = [
-    "videos/4328782.mp4",
+    "videos/4328782-uhd_3840_2160_30fps.mp4",
     "videos/14608262.mp4",
     "videos/4328787.mp4"
   ];
