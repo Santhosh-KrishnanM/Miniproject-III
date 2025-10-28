@@ -73,7 +73,17 @@
         <div class="header-right">
           <div class="search-box">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search destinations...">
+            <input type="text" 
+                  id="headerSearchInput" 
+                  placeholder="Search destinations..." 
+                  onkeyup="headerSearchDestinations()"
+                  onkeydown="handleHeaderSearchEnter(event)">
+            <div id="headerSearchResults" class="header-search-results"></div>
+            
+            <!-- Clear Button -->
+            <button class="header-clear-search" onclick="clearHeaderSearch()" style="display: none;">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
           <div class="user-profile">
             <div class="user-avatar">

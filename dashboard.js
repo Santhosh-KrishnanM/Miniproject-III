@@ -1843,3 +1843,201 @@ document.addEventListener('click', function(event) {
     resultsContainer.classList.remove('show');
   }
 });
+
+// ========== HEADER SEARCH FUNCTIONALITY ==========
+
+// Header Search for Destinations
+function headerSearchDestinations() {
+  const searchInput = document.getElementById('headerSearchInput');
+  const query = searchInput.value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('headerSearchResults');
+  const clearBtn = document.querySelector('.header-clear-search');
+
+  // Show/hide clear button
+  if (query) {
+    clearBtn.style.display = 'flex';
+  } else {
+    clearBtn.style.display = 'none';
+    resultsContainer.classList.remove('show');
+    return;
+  }
+
+  // Filter destinations based on search query
+  const results = destinations.filter(dest => 
+    dest.name.toLowerCase().includes(query) ||
+    (dest.type && dest.type.toLowerCase().includes(query)) ||
+    (dest.description && dest.description.toLowerCase().includes(query))
+  );
+
+  // Sort results by rating
+  results.sort((a, b) => {
+    const ratingA = parseFloat(a.rating) || 0;
+    const ratingB = parseFloat(b.rating) || 0;
+    return ratingB - ratingA;
+  });
+
+  // Display results
+  if (results.length > 0) {
+    resultsContainer.innerHTML = results.slice(0, 5).map(dest => `
+      <div class="header-search-result-item" onclick="navigateToDestinationFromHeader('${dest._id}')">
+        <img src="${dest.imageUrl || 'https://via.placeholder.com/50'}" 
+             alt="${dest.name}" 
+             class="header-search-result-image"
+             onerror="this.src='https://via.placeholder.com/50?text=No+Image'">
+        <div class="header-search-result-info">
+          <h4>${highlightSearchText(dest.name, query)}</h4>
+          <p>
+            <span class="header-search-result-rating">⭐ ${dest.rating || 'N/A'}</span>
+            <span style="text-transform: capitalize;">${dest.type ? dest.type.replace('-', ' ') : 'Destination'}</span>
+          </p>
+        </div>
+        <i class="fas fa-arrow-right" style="color: #999; font-size: 0.9rem;"></i>
+      </div>
+    `).join('');
+    
+    // Show "View all results" if more than 5 results
+    if (results.length > 5) {
+      resultsContainer.innerHTML += `
+        <div class="header-search-view-all" onclick="viewAllHeaderSearchResults('${query}')">
+          <i class="fas fa-search"></i>
+          View all ${results.length} results
+        </div>
+      `;
+    }
+    
+    resultsContainer.classList.add('show');
+  } else {
+    resultsContainer.innerHTML = `
+      <div class="header-no-results">
+        <i class="fas fa-search"></i>
+        <p>No destinations found for "<strong>${query}</strong>"</p>
+        <small>Try searching for Marina Beach, Ooty, Kodaikanal, etc.</small>
+      </div>
+    `;
+    resultsContainer.classList.add('show');
+  }
+}
+
+// Highlight search text
+function highlightSearchText(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<strong style="color: #667eea;">$1</strong>');
+}
+
+// Navigate to destination from header search
+function navigateToDestinationFromHeader(destinationId) {
+  clearHeaderSearch();
+  window.location.href = `destination-details.html?id=${destinationId}`;
+}
+
+// View all search results
+function viewAllHeaderSearchResults(query) {
+  clearHeaderSearch();
+  showSection('destinations');
+  
+  // Filter destinations based on query
+  const searchQuery = query.toLowerCase();
+  const filtered = destinations.filter(dest => 
+    dest.name.toLowerCase().includes(searchQuery) ||
+    (dest.type && dest.type.toLowerCase().includes(searchQuery))
+  );
+  
+  // Display filtered results
+  const container = document.getElementById('destinationsList');
+  container.innerHTML = '';
+  
+  if (filtered.length > 0) {
+    filtered.forEach((dest, index) => {
+      const card = document.createElement('div');
+      card.className = 'destination-card';
+      card.onclick = () => showDestinationDetails(dest._id);
+      
+      const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
+      const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
+      
+      card.innerHTML = `
+        <div class="destination-image" style="
+          background-image: url('${imageUrl}');
+          background-size: cover;
+          background-position: center;
+          height: 200px;
+          border-radius: 12px 12px 0 0;
+          position: relative;
+        ">
+          <div style="
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          ">
+            ${dest.rating ? '⭐ ' + dest.rating : 'New'}
+          </div>
+        </div>
+        <div class="destination-info">
+          <h4>${dest.name}</h4>
+          <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">
+            <i class="fas fa-star" style="color: #ffa500;"></i> 
+            ${dest.rating || 'Not rated'} 
+            ${dest.reviews ? `(${dest.reviews} reviews)` : ''}
+          </p>
+          <span class="destination-type" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin: 8px 0;
+          ">${typeFormatted}</span>
+          <button class="btn-outline" onclick="event.stopPropagation(); addFavorite('${currentUser?._id}', '${dest._id}')" style="
+            width: 100%;
+            margin-top: 10px;
+          ">
+            <i class="fas fa-heart"></i> Add to Favorites
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+  
+  // Show notification
+  alert(`🔍 Found ${filtered.length} destinations matching "${query}"`);
+}
+
+// Handle Enter key in header search
+function handleHeaderSearchEnter(event) {
+  if (event.key === 'Enter') {
+    const resultsContainer = document.getElementById('headerSearchResults');
+    const firstResult = resultsContainer.querySelector('.header-search-result-item');
+    
+    if (firstResult) {
+      firstResult.click();
+    }
+  }
+}
+
+// Clear header search
+function clearHeaderSearch() {
+  document.getElementById('headerSearchInput').value = '';
+  document.getElementById('headerSearchResults').classList.remove('show');
+  document.querySelector('.header-clear-search').style.display = 'none';
+}
+
+// Close search results on outside click
+document.addEventListener('click', function(event) {
+  const searchBox = document.querySelector('.header-right .search-box');
+  const resultsContainer = document.getElementById('headerSearchResults');
+  
+  if (searchBox && !searchBox.contains(event.target)) {
+    resultsContainer.classList.remove('show');
+  }
+});
+
+console.log('✅ Header search functionality loaded');
