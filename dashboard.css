@@ -1215,47 +1215,6 @@ body {
   font-size: 1.1rem;
 }
 
-/* Support Stats */
-.support-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-.support-stats .stat-item {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 25px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: transform 0.3s ease;
-}
-
-.support-stats .stat-item:hover {
-  transform: translateY(-5px);
-}
-
-.support-stats .stat-item i {
-  font-size: 2.5rem;
-  opacity: 0.9;
-}
-
-.support-stats .stat-item strong {
-  display: block;
-  font-size: 1.8rem;
-  margin-bottom: 5px;
-  font-weight: 700;
-}
-
-.support-stats .stat-item span {
-  font-size: 0.9rem;
-  opacity: 0.95;
-}
-
 /* Support Grid (Only 2 cards now) */
 .support-grid {
   display: grid;
