@@ -1641,10 +1641,29 @@ function viewAllFAQs() {
 }
 
 // Resources
+// Resources
 function openResource(resourceType) {
   switch(resourceType) {
     case 'travel-guide':
-      window.open('https://www.incredibleindia.org/content/incredible-india-v2/en/destinations/tamil-nadu.html', '_blank');
+      alert('📚 Travel Guides\n\n' +
+            'Comprehensive travel guides for all destinations:\n\n' +
+            '🏖️ Beach Destinations\n' +
+            '• Marina Beach - Chennai\'s iconic beach\n' +
+            '• Rameshwaram - Sacred coastal town\n' +
+            '• Kanyakumari - Where three seas meet\n\n' +
+            '⛰️ Hill Stations\n' +
+            '• Ooty - Queen of Hill Stations\n' +
+            '• Kodaikanal - Princess of Hill Stations\n' +
+            '• Yercaud - Poor Man\'s Ooty\n\n' +
+            '🛕 Temple Destinations\n' +
+            '• Meenakshi Temple - Madurai\n' +
+            '• Rameshwaram Temple - Sacred pilgrimage\n' +
+            '• Thanjavur - Brihadeeswarar Temple\n\n' +
+            '🏛️ Heritage Sites\n' +
+            '• Mahabalipuram - UNESCO World Heritage\n' +
+            '• Thanjavur - Cultural capital\n' +
+            '• Chettinad - Architectural marvel\n\n' +
+            '💡 Tip: Click on any destination in the Destinations tab for detailed guides!');
       break;
     case 'safety-tips':
       alert('🛡️ Travel Safety Tips:\n\n' +
