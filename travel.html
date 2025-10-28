@@ -46,7 +46,6 @@
   <h1>Tamil Nadu Adventures</h1>
   <p>Explore the thrilling adventures that Tamil Nadu has to offer!</p>
   
-  <!-- Video Section -->
   <div class="video-section">
     <h2>Tamil Nadu Adventure Places</h2>
     <video controls>
@@ -64,7 +63,6 @@
   <h1>Tamil Nadu Famous Foods</h1>
   <p>Discover the delicious and famous foods of Tamil Nadu!</p>
   
-  <!-- Video Section -->
   <div class="video-section">
     <h2>Famous Foods of Tamil Nadu</h2>
     <video controls>
@@ -77,11 +75,12 @@
   <button onclick="showMainPage()" class="back-btn">Back to Home</button>
 </div>
 
-<!-- Login/Signup Modal -->
+<!-- Login / Signup Modal -->
 <div id="loginModal">
   <div class="modal-content">
     <span class="close-btn" onclick="closeModal()">&times;</span>
 
+    <!-- LOGIN FORM -->
     <div id="loginForm">
       <h2><i class="fas fa-user-circle"></i> Login</h2>
       <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
@@ -99,8 +98,10 @@
       <div class="toggle-link" onclick="showSignup()">
         Don't have an account? Sign up here
       </div>
+      <div class="toggle-link" onclick="openForgotPassword()">Forgot Password?</div>
     </div>
 
+    <!-- SIGNUP FORM -->
     <div id="signupForm" style="display:none">
       <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
       <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
@@ -121,6 +122,9 @@
       <div>
         <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
       </div>
+      <div>
+        <input type="text" id="signupHint" placeholder="Password Hint (for recovery)" autocomplete="off" />
+      </div>
       <button id="signupBtn">
         <i class="fas fa-user-plus"></i> Sign Up
       </button>
@@ -131,10 +135,24 @@
   </div>
 </div>
 
-<!-- Main Page (after login/signup) -->
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" style="display:none;">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeForgotPassword()">&times;</span>
+    <h2><i class="fas fa-key"></i> Forgot Password</h2>
+    <div id="forgotStep1">
+      <input type="text" id="forgotHint" placeholder="Enter your hint" />
+      <button onclick="verifyHint()">Submit</button>
+    </div>
+    <div id="forgotStep2" style="display:none;">
+      <input type="password" id="newPassword" placeholder="Enter new password" />
+      <input type="password" id="confirmPassword" placeholder="Confirm new password" />
+      <button onclick="updatePassword()">Submit</button>
+    </div>
+  </div>
+</div>
 
-
-<!-- Welcome Page (optional, can be removed if using mainPage) -->
+<!-- Welcome Page -->
 <div id="welcomePage" style="display:none;">
   <div class="welcome-content">
     <h1>Welcome!</h1>
