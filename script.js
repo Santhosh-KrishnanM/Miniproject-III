@@ -1,4 +1,45 @@
-// Navigation and Page Switching
+// =======================
+// 🎥 VIDEO SLIDESHOW LOGIC
+// =======================
+document.addEventListener("DOMContentLoaded", () => {
+  const videos = [
+    "videos/4328782.mp4",
+    "videos/14608262.mp4",
+    "videos/4328787.mp4"
+  ];
+
+  let videoIndex = 0;
+  const videoElement = document.getElementById("videoSlideshow");
+
+  // Fade in/out transition
+  function fadeInOut(element, duration, callback) {
+    element.style.transition = `opacity ${duration}ms ease-in-out`;
+    element.style.opacity = 0;
+
+    setTimeout(() => {
+      if (callback) callback();
+      element.style.opacity = 1;
+    }, duration);
+  }
+
+  function playNextVideo() {
+    fadeInOut(videoElement, 800, () => {
+      videoElement.src = videos[videoIndex];
+      videoElement.load();
+      videoElement.play();
+
+      videoIndex = (videoIndex + 1) % videos.length;
+    });
+  }
+
+  // Start slideshow
+  playNextVideo();
+  setInterval(playNextVideo, 4000);
+});
+
+// ============================
+// 🌐 PAGE NAVIGATION FUNCTIONS
+// ============================
 function openModal() {
   document.getElementById("loginModal").style.display = "flex";
 }
@@ -18,30 +59,32 @@ function showLogin() {
 }
 
 function showAdventurePage() {
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.querySelector('nav').style.display = 'none';
-  document.getElementById('adventurePage').style.display = 'block';
-  document.getElementById('foodPage').style.display = 'none';
+  document.querySelector(".slideshow-container").style.display = "none";
+  document.querySelector(".experiences").style.display = "none";
+  document.querySelector("nav").style.display = "none";
+  document.getElementById("adventurePage").style.display = "block";
+  document.getElementById("foodPage").style.display = "none";
 }
 
 function showFoodPage() {
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.querySelector('nav').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'block';
-  document.getElementById('adventurePage').style.display = 'none';
+  document.querySelector(".slideshow-container").style.display = "none";
+  document.querySelector(".experiences").style.display = "none";
+  document.querySelector("nav").style.display = "none";
+  document.getElementById("foodPage").style.display = "block";
+  document.getElementById("adventurePage").style.display = "none";
 }
 
 function showMainPage() {
-  document.querySelector('.slideshow-container').style.display = 'block';
-  document.querySelector('.experiences').style.display = 'block';
-  document.querySelector('nav').style.display = 'flex';
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'none';
+  document.querySelector(".slideshow-container").style.display = "block";
+  document.querySelector(".experiences").style.display = "block";
+  document.querySelector("nav").style.display = "flex";
+  document.getElementById("adventurePage").style.display = "none";
+  document.getElementById("foodPage").style.display = "none";
 }
 
-// Utility
+// ==========================
+// ⚙️ UTILITY FUNCTIONS
+// ==========================
 function showError(input, message) {
   clearError(input);
   let error = document.createElement("div");
@@ -58,15 +101,16 @@ function clearError(input) {
   input.style.borderColor = "";
 }
 
-// Store user data locally
+// ==========================
+// 💾 STORE USER DATA LOCALLY
+// ==========================
 function storeUserData(userData) {
-  localStorage.setItem('currentUser', JSON.stringify(userData));
-  sessionStorage.setItem('currentUser', JSON.stringify(userData));
+  localStorage.setItem("currentUser", JSON.stringify(userData));
+  sessionStorage.setItem("currentUser", JSON.stringify(userData));
 }
 
-// Check login state
 function checkExistingLogin() {
-  const data = localStorage.getItem('currentUser');
+  const data = localStorage.getItem("currentUser");
   if (!data) return null;
   try {
     return JSON.parse(data);
@@ -75,11 +119,13 @@ function checkExistingLogin() {
   }
 }
 
-// Signup Logic
-document.addEventListener('DOMContentLoaded', function() {
+// ==========================
+// 🧾 SIGNUP FUNCTIONALITY
+// ==========================
+document.addEventListener("DOMContentLoaded", function () {
   const signupBtn = document.getElementById("signupBtn");
   if (signupBtn) {
-    signupBtn.addEventListener("click", function(e) {
+    signupBtn.addEventListener("click", function (e) {
       e.preventDefault();
       let username = document.getElementById("signupUsername");
       let email = document.getElementById("signupEmail");
@@ -123,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
           phone: phone.value.trim(),
           address: address.value.trim(),
           password: password.value.trim(),
-          hint: hint.value.trim()
+          hint: hint.value.trim(),
         };
         storeUserData(userData);
         alert(`Welcome ${userData.username}! Registration successful.`);
@@ -132,10 +178,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Login Logic
+  // ======================
+  // 🔐 LOGIN FUNCTIONALITY
+  // ======================
   const loginBtn = document.getElementById("loginBtn");
   if (loginBtn) {
-    loginBtn.addEventListener("click", function(e) {
+    loginBtn.addEventListener("click", function (e) {
       e.preventDefault();
       let username = document.getElementById("loginUsername");
       let password = document.getElementById("loginPassword");
@@ -153,7 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (valid) {
         const userData = checkExistingLogin();
-        if (userData && username.value.trim() === userData.username && password.value.trim() === userData.password) {
+        if (
+          userData &&
+          username.value.trim() === userData.username &&
+          password.value.trim() === userData.password
+        ) {
           alert(`Welcome back ${userData.username}!`);
           closeModal();
         } else {
@@ -163,66 +215,70 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Input clears error
-  document.querySelectorAll("input").forEach(input => {
+  // Clear error when typing
+  document.querySelectorAll("input").forEach((input) => {
     input.addEventListener("input", () => clearError(input));
   });
 });
 
-// Forgot Password Modal Logic
+// ==========================
+// 🔑 FORGOT PASSWORD LOGIC
+// ==========================
 function openForgotPassword() {
-  document.getElementById('forgotPasswordModal').style.display = 'flex';
-  document.getElementById('forgotStep1').style.display = 'block';
-  document.getElementById('forgotStep2').style.display = 'none';
+  document.getElementById("forgotPasswordModal").style.display = "flex";
+  document.getElementById("forgotStep1").style.display = "block";
+  document.getElementById("forgotStep2").style.display = "none";
 }
 
 function closeForgotPassword() {
-  document.getElementById('forgotPasswordModal').style.display = 'none';
+  document.getElementById("forgotPasswordModal").style.display = "none";
 }
 
 function verifyHint() {
-  const hintInput = document.getElementById('forgotHint').value.trim();
-  const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+  const hintInput = document.getElementById("forgotHint").value.trim();
+  const savedUser = JSON.parse(localStorage.getItem("currentUser"));
 
   if (savedUser && savedUser.hint && hintInput === savedUser.hint) {
-    alert('Hint matched! Please set your new password.');
-    document.getElementById('forgotStep1').style.display = 'none';
-    document.getElementById('forgotStep2').style.display = 'block';
+    alert("Hint matched! Please set your new password.");
+    document.getElementById("forgotStep1").style.display = "none";
+    document.getElementById("forgotStep2").style.display = "block";
   } else {
-    alert('Hint does not match any account.');
+    alert("Hint does not match any account.");
   }
 }
 
 function updatePassword() {
-  const newPass = document.getElementById('newPassword').value.trim();
-  const confirmPass = document.getElementById('confirmPassword').value.trim();
+  const newPass = document.getElementById("newPassword").value.trim();
+  const confirmPass = document.getElementById("confirmPassword").value.trim();
 
   if (!newPass || !confirmPass) {
-    alert('Please fill all fields.');
+    alert("Please fill all fields.");
     return;
   }
   if (newPass !== confirmPass) {
-    alert('Passwords do not match.');
+    alert("Passwords do not match.");
     return;
   }
 
-  let user = JSON.parse(localStorage.getItem('currentUser'));
+  let user = JSON.parse(localStorage.getItem("currentUser"));
   if (user) {
     user.password = newPass;
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem("currentUser", JSON.stringify(user));
     alert(`Password changed successfully for ${user.username}!`);
     closeForgotPassword();
     closeModal();
     openModal(); // reopen login modal
   } else {
-    alert('User data not found. Please sign up again.');
+    alert("User data not found. Please sign up again.");
   }
 }
 
-// Logout
+// ==========================
+// 🚪 LOGOUT FUNCTION
+// ==========================
 function logout() {
-  localStorage.removeItem('currentUser');
-  sessionStorage.removeItem('currentUser');
+  localStorage.removeItem("currentUser");
+  sessionStorage.removeItem("currentUser");
   alert("You have been logged out!");
   showMainPage();
 }
