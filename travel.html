@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SNS Travel Aura - Tamil Nadu Tourism</title>
-  <link rel="icon" type="image/png" href="sns-logo.png">
+  <title>Tamil Nadu Tourism</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -13,17 +12,13 @@
 <!-- Navigation -->
 <nav>
   <ul>
-    <li class="logo">
-      <img src="sns-logo.png" alt="SNS Logo">
-      <span class="logo-text">SNS Travel Aura</span>
-    </li>
     <li class="login-btn" onclick="openModal()">
       <i class="fas fa-sign-in-alt"></i> Login
     </li>
   </ul>
 </nav>
 
-<!-- Slideshow Background (Image) -->
+<!-- Slideshow -->
 <div class="slideshow-container">
   <div class="slide"></div>
   <div class="overlay-text">
@@ -46,7 +41,7 @@
   </div>
 </section>
 
-<!-- Adventure Page -->
+<!-- Adventure Page Section -->
 <div class="adventure-page" id="adventurePage">
   <h1>Tamil Nadu Adventures</h1>
   <p>Explore the thrilling adventures that Tamil Nadu has to offer!</p>
@@ -63,7 +58,7 @@
   <button onclick="showMainPage()" class="back-btn">Back to Home</button>
 </div>
 
-<!-- Food Page -->
+<!-- Food Page Section -->
 <div class="food-page" id="foodPage">
   <h1>Tamil Nadu Famous Foods</h1>
   <p>Discover the delicious and famous foods of Tamil Nadu!</p>
@@ -88,30 +83,54 @@
     <!-- LOGIN FORM -->
     <div id="loginForm">
       <h2><i class="fas fa-user-circle"></i> Login</h2>
+      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+        <i class="fas fa-info-circle"></i> Login as Admin or Tourist
+      </p>
       <div>
-        <input type="text" id="loginUsername" placeholder="Username" />
+        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
       </div>
       <div>
-        <input type="password" id="loginPassword" placeholder="Password" />
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
       </div>
       <button id="loginBtn">
         <i class="fas fa-sign-in-alt"></i> Login
       </button>
-      <div class="toggle-link" onclick="showSignup()">Don't have an account? Sign up here</div>
+      <div class="toggle-link" onclick="showSignup()">
+        Don't have an account? Sign up here
+      </div>
       <div class="toggle-link" onclick="openForgotPassword()">Forgot Password?</div>
     </div>
 
     <!-- SIGNUP FORM -->
     <div id="signupForm" style="display:none">
       <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
-      <div><input type="text" id="signupUsername" placeholder="Username" /></div>
-      <div><input type="email" id="signupEmail" placeholder="Email" /></div>
-      <div><input type="tel" id="signupPhone" placeholder="Phone Number" /></div>
-      <div><input type="text" id="signupAddress" placeholder="Address" /></div>
-      <div><input type="password" id="signupPassword" placeholder="Password" /></div>
-      <div><input type="text" id="signupHint" placeholder="Password Hint (for recovery)" /></div>
-      <button id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
-      <div class="toggle-link" onclick="showLogin()">Already have an account? Login here</div>
+      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+        <i class="fas fa-info-circle"></i> Create a tourist account
+      </p>
+      <div>
+        <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
+      </div>
+      <div>
+        <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
+      </div>
+      <div>
+        <input type="tel" id="signupPhone" placeholder="Phone Number" autocomplete="tel" />
+      </div>
+      <div>
+        <input type="text" id="signupAddress" placeholder="Address" autocomplete="address-line1" />
+      </div>
+      <div>
+        <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
+      </div>
+      <div>
+        <input type="text" id="signupHint" placeholder="Password Hint (for recovery)" autocomplete="off" />
+      </div>
+      <button id="signupBtn">
+        <i class="fas fa-user-plus"></i> Sign Up
+      </button>
+      <div class="toggle-link" onclick="showLogin()">
+        Already have an account? Login here
+      </div>
     </div>
   </div>
 </div>
