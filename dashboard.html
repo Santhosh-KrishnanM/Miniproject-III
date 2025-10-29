@@ -1,673 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tamil Nadu Tourism - Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Aura - Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
 </head>
 <body>
   <div class="dashboard-container">
-    <nav class="sidebar">
+    <!-- Sidebar -->
+    <aside class="sidebar">
       <div class="sidebar-header">
         <h2><i class="fas fa-map-marked-alt"></i> Travel Aura</h2>
       </div>
       <ul class="sidebar-menu">
-        <li class="active">
-          <a href="#" onclick="showSection('overview')">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-          </a>
+        <li class="active" onclick="showSection('overview')">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
         </li>
-        <li>
-          <a href="#" onclick="showSection('destinations')">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>Destinations</span>
-          </a>
+        <li onclick="showSection('destinations')">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Destinations</span>
         </li>
-        <li>
-          <a href="#" onclick="showSection('bookings')">
-            <i class="fas fa-calendar-check"></i>
-            <span>My Bookings</span>
-          </a>
+        <li onclick="showSection('bookings')">
+          <i class="fas fa-calendar-check"></i>
+          <span>My Bookings</span>
         </li>
-        <li>
-          <a href="#" onclick="showSection('favorites')">
-            <i class="fas fa-heart"></i>
-            <span>Favorites</span>
-          </a>
+
+        <!-- ✅ NEW TRAVELS SECTION -->
+        <li onclick="showSection('travels')">
+          <i class="fas fa-bus"></i>
+          <span>Travels</span>
         </li>
-        <li>
-          <a href="#" onclick="showSection('profile')">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-          </a>
+
+        <li onclick="showSection('favorites')">
+          <i class="fas fa-heart"></i>
+          <span>Favorites</span>
         </li>
-        <li>
-          <a href="#" onclick="showSection('support')">
-            <i class="fas fa-headset"></i>
-            <span>Support</span>
-          </a>
+        <li onclick="showSection('profile')">
+          <i class="fas fa-user"></i>
+          <span>Profile</span>
+        </li>
+        <li onclick="showSection('support')">
+          <i class="fas fa-headset"></i>
+          <span>Support</span>
         </li>
       </ul>
       <div class="sidebar-footer">
-        <a href="#" id="logoutBtn" class="logout-btn">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Logout</span>
-        </a>
+        <button id="logoutBtn" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
-
-    </nav>
+    </aside>
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Header -->
-      <header class="dashboard-header">
-        <div class="header-left">
-          <button class="sidebar-toggle" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1 id="pageTitle">Dashboard</h1>
-        </div>
-        <div class="header-right">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" 
-                  id="headerSearchInput" 
-                  placeholder="Search destinations..." 
-                  onkeyup="headerSearchDestinations()"
-                  onkeydown="handleHeaderSearchEnter(event)">
-            <div id="headerSearchResults" class="header-search-results"></div>
-            
-            <!-- Clear Button -->
-            <button class="header-clear-search" onclick="clearHeaderSearch()" style="display: none;">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="user-profile">
-            <div class="user-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <span id="userName">Welcome!</span>
-          </div>
-        </div>
-      </header>
-
-      <!-- Dashboard Overview Section -->
+      <!-- Overview Section -->
       <section id="overview" class="content-section active">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-map-marked-alt"></i>
-            </div>
-            <div class="stat-info">
-              <h3 id="visitedCount">-</h3>
-              <p>Places Visited</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="stat-info">
-              <h3 id="upcomingCount">-</h3>
-              <p>Upcoming Trips</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-heart"></i>
-            </div>
-            <div class="stat-info">
-              <h3 id="favoriteCount">-</h3>
-              <p>Favorite Places</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-star"></i>
-            </div>
-            <div class="stat-info">
-              <h3 id="averageRating">-</h3>
-              <p>Average Rating</p>
-            </div>
-          </div>
-        </div>
+        <h1>Welcome Back to Travel Aura!</h1>
+        <p>Explore your profile, bookings, and personalized travel recommendations.</p>
 
-        <div class="dashboard-grid">
-          <!-- Quick Actions -->
-          <!-- Replace the Quick Actions card with Travel Insights -->
-          <div class="dashboard-card">
-            <div id="travelInsightsWidget" class="card-content">
-              <!-- Travel insights will be populated by JavaScript -->
-              <div style="text-align: center; padding: 40px; color: #999;">
-                  <i class ="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
-                  <p>Loading insights...</p>
-              </div>
-            </div>
+        <div class="overview-cards">
+          <div class="card">
+            <i class="fas fa-plane-departure"></i>
+            <h3>Upcoming Trips</h3>
+            <p id="tripCount">0</p>
           </div>
-
-          <!-- Recent Activities -->
-          <div class="dashboard-card">
-            <div class="card-header">
-              <h3><i class="fas fa-clock"></i> Recent Activities</h3>
-            </div>
-            <div class="activity-list" id="activityList">
-              <!-- JS will render activities here -->
-              <div class="activity-item">
-                <div class="activity-icon">
-                  <i class="fas fa-star"></i>
-                </div>
-                <div class="activity-details">
-                  <p style="text-align: center;">No Activity</p>
-                </div>
-              </div>
-            </div>
+          <div class="card">
+            <i class="fas fa-heart"></i>
+            <h3>Favorites</h3>
+            <p id="favCount">0</p>
           </div>
-
-          <!-- Popular Destinations -->
-          <div class="dashboard-card full-width">
-            <div class="card-header">
-              <h3><i class="fas fa-fire"></i> Popular Destinations</h3>
-              <a href="#" class="view-all">View All</a>
-            </div>
-            <div class="destinations-grid" id="popularDestinationsGrid">
-              <!-- JS will render popular destinations here -->
-              <div class="destination-card" onclick="showDestinationDetails('ooty')">
-                <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=300&q=80')"></div>
-                <div class="destination-info">
-                  <h4>Ooty</h4>
-                  <p><i class="fas fa-star"></i> 4.8 (1,234 reviews)</p>
-                  <span class="destination-type">Hill Station</span>
-                </div>
-              </div>
-              <div class="destination-card" onclick="showDestinationDetails('kodaikanal')">
-                <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=300&q=80')"></div>
-                <div class="destination-info">
-                  <h4>Kodaikanal</h4>
-                  <p><i class="fas fa-star"></i> 4.7 (892 reviews)</p>
-                  <span class="destination-type">Hill Station</span>
-                </div>
-              </div>
-              <div class="destination-card" onclick="showDestinationDetails('rameswaram')">
-                <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=300&q=80')"></div>
-                <div class="destination-info">
-                  <h4>Rameswaram</h4>
-                  <p><i class="fas fa-star"></i> 4.6 (756 reviews)</p>
-                  <span class="destination-type">Spiritual</span>
-                </div>
-              </div>
-              <div class="destination-card" onclick="showDestinationDetails('mahabalipuram')">
-                <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1545558014-8692077e9b5c?auto=format&fit=crop&w=300&q=80')"></div>
-                <div class="destination-info">
-                  <h4>Mahabalipuram</h4>
-                  <p><i class="fas fa-star"></i> 4.5 (634 reviews)</p>
-                  <span class="destination-type">Heritage</span>
-                </div>
-              </div>
-            </div>
+          <div class="card">
+            <i class="fas fa-calendar-check"></i>
+            <h3>Bookings</h3>
+            <p id="bookingCount">0</p>
           </div>
         </div>
       </section>
 
       <!-- Destinations Section -->
       <section id="destinations" class="content-section">
-        <div class="section-header">
-          <h2>Explore Destinations</h2>
-          <div class="filter-tabs">
-            <button class="filter-tab active" onclick="filterDestinations('all')">All</button>
-            <button class="filter-tab" onclick="filterDestinations('hill-station')">Hill Stations</button>
-            <button class="filter-tab" onclick="filterDestinations('beach')">Beaches</button>
-            <button class="filter-tab" onclick="filterDestinations('temple')">Temples</button>
-            <button class="filter-tab" onclick="filterDestinations('heritage')">Heritage</button>
-          </div>
-        </div>
-        <div class="destinations-list" id="destinationsList">
-          <div style="text-align: center; padding: 40px; color: #666;">
-               <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
-               <p>Loading destinations...</p>
+        <h2>Popular Destinations</h2>
+        <div class="destination-list" id="destinationList">
+          <!-- dynamically generated cards -->
         </div>
       </section>
 
       <!-- Bookings Section -->
-      <!-- Bookings Section -->
       <section id="bookings" class="content-section">
-      <div class="section-header">
-        <h2>My Bookings</h2>
-    <!-- ⬇️ CHANGE THIS LINE -->
-    <button class="btn-primary" onclick="openBookingForm()">
-      <i class="fas fa-plus"></i> New Booking
-    </button>
-  </div>
-  <div class="bookings-list" id="bookingsList">
-    <!-- Bookings will be populated by JavaScript -->
-  </div>
-</section>
+        <h2>Your Bookings</h2>
+        <div id="bookingsList" class="booking-list"></div>
+      </section>
 
-
-      <div id="dynamicPagesContainer" class="content-section" style="display:none;"></div>
-      
       <!-- Favorites Section -->
       <section id="favorites" class="content-section">
-        <div class="section-header">
-          <h2>My Favorite Places</h2>
+        <h2>Your Favorite Destinations</h2>
+        <div id="favoritesList" class="favorites-list"></div>
+      </section>
+      <!-- ✅ Travels Section -->
+      <section id="travels" class="content-section">
+        <h2>Book Your Travel Vehicle</h2>
+        <p>Select a vehicle to match your trip needs and budget!</p>
+
+        <div class="travel-options">
+          <!-- Tempo -->
+          <div class="travel-card" onclick="selectVehicle('Tempo', 17, 600, 'tempo.jpg')">
+            <img src="tempo.jpg" alt="Tempo Van">
+            <div class="travel-info">
+              <h3>Tempo</h3>
+              <p>Seats: 17</p>
+              <p>Cost: ₹600 / Day</p>
+            </div>
+          </div>
+
+          <!-- Thar -->
+          <div class="travel-card" onclick="selectVehicle('Thar', 4, 500, 'thar.jpg')">
+            <img src="thar.jpg" alt="Thar Jeep">
+            <div class="travel-info">
+              <h3>Thar</h3>
+              <p>Seats: 4</p>
+              <p>Cost: ₹500 / Day</p>
+            </div>
+          </div>
+
+          <!-- Travels -->
+          <div class="travel-card" onclick="selectVehicle('Travels', 60, 1000, 'travels.jpg')">
+            <img src="travels.jpg" alt="Bus Travels">
+            <div class="travel-info">
+              <h3>Travels</h3>
+              <p>Seats: 60</p>
+              <p>Cost: ₹1000 / Day</p>
+            </div>
+          </div>
         </div>
-        <div class="favorites-grid" id="favoritesGrid">
-          <!-- Favorites will be populated by JavaScript -->
+
+        <!-- ✅ Vehicle Booking Popup -->
+        <div id="vehiclePopup" class="popup hidden">
+          <div class="popup-content">
+            <span class="close-btn" onclick="closeVehiclePopup()">&times;</span>
+            <h3 id="popupVehicleName">Vehicle Name</h3>
+            <img id="popupVehicleImg" src="" alt="Selected Vehicle" class="popup-image">
+
+            <div class="popup-details">
+              <p><strong>Seats:</strong> <span id="popupSeats"></span></p>
+              <p><strong>Cost per Day:</strong> ₹<span id="popupCost"></span></p>
+            </div>
+
+            <h4>Your Booked Places:</h4>
+            <ul id="bookedPlacesList"></ul>
+
+            <div class="date-section">
+              <label>Start Date: <input type="date" id="startDate"></label>
+              <label>End Date: <input type="date" id="endDate"></label>
+            </div>
+
+            <div class="total-price">
+              <p><strong>Total Price:</strong> ₹<span id="totalPrice">0</span></p>
+            </div>
+
+            <button class="book-btn" onclick="bookTravel()">Book Travel</button>
+          </div>
         </div>
       </section>
 
       <!-- Profile Section -->
       <section id="profile" class="content-section">
-        <div class="profile-container">
-          <div class="profile-header">
-            <div class="profile-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <div class="profile-info">
-              <h2 id="profileName">User Name</h2>
-              <p id="profileEmail">user@example.com</p>
-            </div>
-            <button class="btn-primary" onclick="editProfile()">Edit Profile</button>
-          </div>
-          
-          <div class="profile-content">
-            <div class="profile-section">
-              <h3>Personal Information</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <label>Username</label>
-                  <span id="profileUsername">username</span>
-                </div>
-                <div class="info-item">
-                  <label>Email</label>
-                  <span id="profileEmailDetail">user@example.com</span>
-                </div>
-                <div class="info-item">
-                  <label>Phone</label>
-                  <span id="profilePhone">+91 9876543210</span>
-                </div>
-                <div class="info-item">
-                  <label>Address</label>
-                  <span id="profileAddress">Chennai, Tamil Nadu</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="profile-section">
-              <h3>Travel Preferences</h3>
-              <div class="preferences-grid">
-                <div class="preference-item">
-                  <i class="fas fa-mountain"></i>
-                  <span>Adventure Tourism</span>
-                </div>
-                <div class="preference-item">
-                  <i class="fas fa-utensils"></i>
-                  <span>Food Tourism</span>
-                </div>
-                <div class="preference-item">
-                  <i class="fas fa-camera"></i>
-                  <span>Photography</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <h2>Your Profile</h2>
+        <div id="profileInfo">
+          <p><strong>Name:</strong> <span id="profileName">N/A</span></p>
+          <p><strong>Email:</strong> <span id="profileEmail">N/A</span></p>
         </div>
       </section>
 
-      <!-- Support Section - Simplified Enhanced -->
+      <!-- Support Section -->
       <section id="support" class="content-section">
-        <div class="support-container">
-          <div class="support-header">
-            <h2><i class="fas fa-headset"></i> Help & Support</h2>
-            <p>We're here to help you 24/7. Choose how you'd like to reach us.</p>
-          </div>
-
-          <!-- Contact Methods Grid (Simplified) -->
-          <div class="support-grid">
-            <!-- Email Support -->
-            <div class="support-card">
-              <div class="support-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <i class="fas fa-envelope"></i>
-              </div>
-              <h3>Email Support</h3>
-              <p>Send us an email and we'll get back to you within 2 hours during business hours.</p>
-              <div class="support-meta">
-                <span class="email-address"><i class="fas fa-at"></i> support@travelaura.com</span>
-                <span class="response-time">Response: 2 hours</span>
-              </div>
-              <button class="btn-primary" onclick="openEmailForm()">
-                <i class="fas fa-paper-plane"></i> Send Email
-              </button>
-            </div>
-
-            <!-- WhatsApp Support -->
-            <div class="support-card">
-              <div class="support-icon" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);">
-                <i class="fab fa-whatsapp"></i>
-              </div>
-              <h3>WhatsApp Support</h3>
-              <p>Message us on WhatsApp for quick assistance. Share screenshots and documents easily.</p>
-              <div class="support-meta">
-                <span class="status-badge online"><i class="fas fa-circle"></i> Active</span>
-                <span class="response-time">Instant messaging</span>
-              </div>
-              <button class="btn-primary" onclick="openWhatsApp()">
-                <i class="fab fa-whatsapp"></i> Chat on WhatsApp
-              </button>
-            </div>
-          </div>
-
-          <!-- FAQ Section -->
-          <div class="faq-section">
-            <h3><i class="fas fa-question-circle"></i> Frequently Asked Questions</h3>
-            <div class="faq-grid">
-              <div class="faq-category">
-                <h4><i class="fas fa-ticket-alt"></i> Bookings</h4>
-                <ul>
-                  <li onclick="openFAQ('How do I book a trip?')">
-                    <i class="fas fa-chevron-right"></i> How do I book a trip?
-                  </li>
-                  <li onclick="openFAQ('Can I modify my booking?')">
-                    <i class="fas fa-chevron-right"></i> Can I modify my booking?
-                  </li>
-                  <li onclick="openFAQ('What is the cancellation policy?')">
-                    <i class="fas fa-chevron-right"></i> What is the cancellation policy?
-                  </li>
-                  <li onclick="openFAQ('How do I get my booking confirmation?')">
-                    <i class="fas fa-chevron-right"></i> How do I get my booking confirmation?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="faq-category">
-                <h4><i class="fas fa-credit-card"></i> Payments</h4>
-                <ul>
-                  <li onclick="openFAQ('What payment methods do you accept?')">
-                    <i class="fas fa-chevron-right"></i> What payment methods do you accept?
-                  </li>
-                  <li onclick="openFAQ('Is my payment information secure?')">
-                    <i class="fas fa-chevron-right"></i> Is my payment information secure?
-                  </li>
-                  <li onclick="openFAQ('How do I get a refund?')">
-                    <i class="fas fa-chevron-right"></i> How do I get a refund?
-                  </li>
-                  <li onclick="openFAQ('Can I pay in installments?')">
-                    <i class="fas fa-chevron-right"></i> Can I pay in installments?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="faq-category">
-                <h4><i class="fas fa-map-marked-alt"></i> Destinations</h4>
-                <ul>
-                  <li onclick="openFAQ('How do I choose the right destination?')">
-                    <i class="fas fa-chevron-right"></i> How do I choose the right destination?
-                  </li>
-                  <li onclick="openFAQ('What documents do I need?')">
-                    <i class="fas fa-chevron-right"></i> What documents do I need?
-                  </li>
-                  <li onclick="openFAQ('Are destinations family-friendly?')">
-                    <i class="fas fa-chevron-right"></i> Are destinations family-friendly?
-                  </li>
-                  <li onclick="openFAQ('What is the best time to visit?')">
-                    <i class="fas fa-chevron-right"></i> What is the best time to visit?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="faq-category">
-                <h4><i class="fas fa-user-shield"></i> Account</h4>
-                <ul>
-                  <li onclick="openFAQ('How do I reset my password?')">
-                    <i class="fas fa-chevron-right"></i> How do I reset my password?
-                  </li>
-                  <li onclick="openFAQ('How do I update my profile?')">
-                    <i class="fas fa-chevron-right"></i> How do I update my profile?
-                  </li>
-                  <li onclick="openFAQ('How do I delete my account?')">
-                    <i class="fas fa-chevron-right"></i> How do I delete my account?
-                  </li>
-                  <li onclick="openFAQ('How do I change my email?')">
-                    <i class="fas fa-chevron-right"></i> How do I change my email?
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <button class="btn-outline" onclick="viewAllFAQs()" style="margin-top: 20px;">
-              <i class="fas fa-book-open"></i> View All FAQs
-            </button>
-          </div>
-
-          <!-- Help Center Resources (Simplified) -->
-          <div class="resources-section">
-            <h3><i class="fas fa-book"></i> Help Center Resources</h3>
-            <div class="resources-grid">
-              <div class="resource-card" onclick="openResource('travel-guide')">
-                <i class="fas fa-map"></i>
-                <h4>Travel Guides</h4>
-                <p>Comprehensive guides for all destinations</p>
-              </div>
-              <div class="resource-card" onclick="openResource('safety-tips')">
-                <i class="fas fa-shield-alt"></i>
-                <h4>Safety Tips</h4>
-                <p>Stay safe during your travels</p>
-              </div>
-              <div class="resource-card" onclick="openResource('blog')">
-                <i class="fas fa-newspaper"></i>
-                <h4>Travel Blog</h4>
-                <p>Tips, stories, and inspiration</p>
-              </div>
-              <div class="resource-card" onclick="openResource('destination-finder')">
-                <i class="fas fa-compass"></i>
-                <h4>Destination Finder</h4>
-                <p>Find your perfect travel spot</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Feedback Section -->
-          <div class="feedback-section">
-            <div class="feedback-card">
-              <h3><i class="fas fa-comment-alt"></i> Have Feedback?</h3>
-              <p>Help us improve! Share your thoughts, suggestions, or report issues.</p>
-              <button class="btn-primary" onclick="openFeedbackForm()">
-                <i class="fas fa-paper-plane"></i> Send Feedback
-              </button>
-            </div>
-            <div class="feedback-card">
-              <h3><i class="fas fa-bug"></i> Report a Bug</h3>
-              <p>Found a technical issue? Let us know so we can fix it quickly.</p>
-              <button class="btn-outline" onclick="openBugReportForm()">
-                <i class="fas fa-exclamation-triangle"></i> Report Issue
-              </button>
-            </div>
-          </div>
-
-          <!-- Contact Information -->
-          <div class="contact-info-section">
-            <h3><i class="fas fa-info-circle"></i> Contact Information</h3>
-            <div class="contact-info-grid">
-              <div class="contact-info-item">
-                <i class="fas fa-envelope"></i>
-                <div>
-                  <strong>Email</strong>
-                  <p>support@travelaura.com</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fab fa-whatsapp"></i>
-                <div>
-                  <strong>WhatsApp</strong>
-                  <p>+91 98765 43210</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <strong>Address</strong>
-                  <p>123 Travel Street, Chennai, Tamil Nadu</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <strong>Business Hours</strong>
-                  <p>24/7 Support Available</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
+        <h2>Support</h2>
+        <p>Need help? Reach us at <strong>support@travelaura.com</strong></p>
       </section>
-
-<!-- Email Support Modal -->
-<div id="emailModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeEmailForm()">&times;</span>
-    <h2><i class="fas fa-envelope"></i> Email Support</h2>
-    <form id="emailSupportForm" onsubmit="submitEmailSupport(event)">
-      <div class="form-group">
-        <label>Your Name *</label>
-        <input type="text" id="supportName" required>
-      </div>
-      <div class="form-group">
-        <label>Email Address *</label>
-        <input type="email" id="supportEmail" required>
-      </div>
-      <div class="form-group">
-        <label>Subject *</label>
-        <select id="supportSubject" required>
-          <option value="">Select a topic</option>
-          <option value="booking">Booking Issue</option>
-          <option value="payment">Payment Problem</option>
-          <option value="cancellation">Cancellation Request</option>
-          <option value="account">Account Help</option>
-          <option value="destination">Destination Inquiry</option>
-          <option value="feedback">General Feedback</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Message *</label>
-        <textarea id="supportMessage" rows="6" required placeholder="Describe your issue or question in detail..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Attachment (Optional)</label>
-        <input type="file" id="supportAttachment" accept="image/*,.pdf">
-        <small>Supported: JPG, PNG, PDF (Max 5MB)</small>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" onclick="closeEmailForm()">Cancel</button>
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-paper-plane"></i> Send Email
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- FAQ Detail Modal -->
-<div id="faqModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeFAQModal()">&times;</span>
-    <h2 id="faqQuestion"></h2>
-    <div id="faqAnswer"></div>
-    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
-      <p style="margin-bottom: 15px; color: #666;">Was this helpful?</p>
-      <button class="btn-outline" onclick="faqFeedback('yes')" style="margin: 0 5px;">
-        <i class="fas fa-thumbs-up"></i> Yes
-      </button>
-      <button class="btn-outline" onclick="faqFeedback('no')" style="margin: 0 5px;">
-        <i class="fas fa-thumbs-down"></i> No
-      </button>
-    </div>
-  </div>
-</div>
-      <!-- Booking Form Modal -->
-      <div id="bookingModal" class="modal" style="display:none;">
-        <div class="modal-content">
-          <span class="close-btn" onclick="closeBookingForm()">&times;</span>
-          <h2>New Booking</h2>
-          
-          <label for="destinationSearch">Search Destination</label>
-          <input type="text" id="destinationSearch" placeholder="Type destination..." onkeyup="filterDestinationsList()">
-          <ul id="destinationResults" class="search-results"></ul>
-
-          <div class="form-group">
-            <label>Start Date</label>
-            <input type="date" id="startDate" min="">            
-          </div>
-          
-          <div class="form-group">
-            <label>End Date</label>
-            <input type="date" id="endDate" min="">
-          </div>
-          
-          <div class="form-group">
-            <label>Travelers</label>
-            <input type="number" id="travelers" min="1" value="1">
-          </div>
-
-          <button class="btn-primary" onclick="submitBooking()">Confirm Booking</button>
-        </div>
-      </div>
-      <!-- Modify Booking Modal -->
-      <div id="modifyBookingModal" class="modal" style="display:none;">
-        <div class="modal-content">
-    <span class="close-btn" onclick="closeModifyForm()">&times;</span>
-    <h2>Modify Booking</h2>
-
-    <input type="hidden" id="modifyBookingId">
-
-    <div class="form-group">
-      <label>Start Date</label>
-      <input type="date" id="modifyStartDate">
-    </div>
-
-    <div class="form-group">
-      <label>End Date</label>
-      <input type="date" id="modifyEndDate">
-    </div>
-
-    <div class="form-group">
-      <label>Travelers</label>
-      <input type="number" id="modifyTravelers" min="1">
-    </div>
-
-    <button class="btn-primary" onclick="submitBookingModification()">Save Changes</button>
-  </div>
-</div>
-
-      <!-- Edit Profile Modal -->
-      <div id="editProfileModal" class="modal" style="display:none;">
-        <div class="modal-content">
-          <span class="close-btn" onclick="closeEditProfileForm()">&times;</span>
-          <h2>Edit Profile</h2>
-          <div class="form-group">
-            <label>Username</label>
-              <input type="text" id="editUsername">
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="editEmail">
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="text" id="editPhone">
-          </div>  
-          <div class="form-group">
-            <label>Address</label>
-            <input type="text" id="editAddress">
-          </div>
-          <button class="btn-primary" onclick="submitProfileEdit()">Save Changes</button>
-        </div>
-      </div>  
-
-
     </main>
   </div>
 
