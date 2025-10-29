@@ -490,11 +490,7 @@ async function renderActivities() {
 
   // ✅ Filter out cancelled booking activities
   const filteredActivities = activities.filter(act => {
-    // Exclude activities that mention "Cancelled" or "cancelled"
-    if (act.content && act.content.toLowerCase().includes('cancelled')) {
-      return false;
-    }
-    return true;
+    return !(act.content && act.content.toLowerCase().includes('cancelled'));
   });
 
   if (!filteredActivities.length) {
@@ -509,21 +505,24 @@ async function renderActivities() {
     return;
   }
 
-  // Show only the 5 most recent activities
+  // ✅ Display username instead of ID
   filteredActivities.slice(0, 5).forEach(act => {
     const icon = act.type === 'favorite' ? 'heart' : act.type === 'booking' ? 'calendar-check' : 'star';
+    const userName = currentUser?.username || 'You';
+
     const item = document.createElement('div');
     item.className = 'activity-item';
     item.innerHTML = `
       <div class="activity-icon"><i class="fas fa-${icon}"></i></div>
       <div class="activity-details">
-        <p>${act.content || act.type}</p>
+        <p><strong>${userName}</strong> ${act.content || act.type}</p>
         <span>${formatDateTime(act.createdAt)}</span>
       </div>
     `;
     container.appendChild(item);
   });
 }
+
 
 // --------- NEW: RENDER TRAVEL INSIGHTS WIDGET ------------
 async function renderTravelInsights() {
@@ -878,6 +877,7 @@ function showBookingDetailsModal(booking) {
     <div class="modal-content" style="max-width: 500px;">
       <span class="close-btn" onclick="closeBookingDetailsModal()">&times;</span>
       <h2><i class="fas fa-info-circle"></i> Booking Details</h2>
+      
       
       <div class="booking-details-content">
         <div class="detail-section">
