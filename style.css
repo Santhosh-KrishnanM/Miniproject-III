@@ -38,6 +38,32 @@ nav ul li:hover {
   color: #ffcc00;
 }
 
+nav ul li ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 10px 0;
+  border-radius: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 999;
+}
+
+nav ul li:hover ul {
+  display: block;
+}
+
+nav ul li ul li {
+  padding: 10px 20px;
+  white-space: nowrap;
+}
+
+nav ul li ul li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .slideshow-container {
   height: 100vh;
   width: 100vw;
@@ -177,7 +203,7 @@ nav ul li:hover {
   border-radius: 10px;
 }
 
-#loginModal, #forgotPasswordModal {
+#loginModal {
   display: none;
   position: fixed;
   top: 0; left: 0;
@@ -197,12 +223,6 @@ nav ul li:hover {
   width: 320px;
   color: white;
   position: relative;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {opacity: 0; transform: scale(0.95);}
-  to {opacity: 1; transform: scale(1);}
 }
 
 .modal-content h2 {
@@ -216,8 +236,6 @@ nav ul li:hover {
   margin: 10px 0;
   border: none;
   border-radius: 8px;
-  background-color: rgba(255,255,255,0.9);
-  color: #000;
 }
 
 .modal-content button {
@@ -231,20 +249,12 @@ nav ul li:hover {
   cursor: pointer;
 }
 
-.modal-content button:hover {
-  background-color: #ffdd33;
-}
-
 .toggle-link {
   margin-top: 15px;
   color: #ffd;
   text-align: center;
   cursor: pointer;
   font-size: 0.9em;
-}
-
-.toggle-link:hover {
-  text-decoration: underline;
 }
 
 .close-btn {
@@ -256,6 +266,16 @@ nav ul li:hover {
   cursor: pointer;
 }
 
+.login-btn {
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  color: #ffcc00;
+}
+
 .error-msg {
   color: #ffcc00;
   font-size: 0.9em;
@@ -264,42 +284,11 @@ nav ul li:hover {
   text-align: left;
 }
 
-/* Forgot Password Modal Styling */
-#forgotPasswordModal .modal-content {
-  width: 300px;
-}
-
-#forgotPasswordModal input {
-  width: 100%;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-}
-
-#forgotPasswordModal button {
-  width: 100%;
-  padding: 10px;
-  background-color: #ffcc00;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-#forgotPasswordModal button:hover {
-  background-color: #ffd633;
-}
-
-/* Back and Welcome Page Styling */
 .back-btn {
-  margin: 20px; padding: 10px;
-  background-color: #ffcc00;
-  border: none; border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
+  margin: 20px; padding: 10px; background-color: #ffcc00; border: none; border-radius: 8px; cursor: pointer;
 }
 
+/* Welcome Page styling */
 #welcomePage {
   display: flex;
   align-items: center;
@@ -330,4 +319,78 @@ nav ul li:hover {
 .welcome-content p {
   font-size: 1.2rem;
   margin-bottom: 30px;
+}
+
+/* Main Page styling */
+#mainPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 3000;
+}
+
+.main-content {
+  background: rgba(255,255,255,0.09);
+  padding: 45px 36px;
+  border-radius: 20px;
+  box-shadow: 0 0 24px rgba(255,255,255,0.16);
+  color: #fff;
+  text-align: center;
+}
+
+.main-content h1 {
+  font-size: 2.3rem;
+  margin-bottom: 15px;
+  color: #ffcc00;
+}
+
+.main-content p {
+  font-size: 1.1rem;
+  margin-bottom: 28px;
+}
+
+.main-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+}
+
+.main-actions button {
+  min-width: 140px;
+  font-size: 1rem;
+}
+
+/* Updated navigation for minimal menu */
+nav ul {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  list-style: none;
+  padding: 0 30px;
+  margin: 0;
+}
+
+nav ul li.login-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 25px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 500;
+}
+
+nav ul li.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+nav ul li.login-btn i {
+  margin-right: 8px;
 }
