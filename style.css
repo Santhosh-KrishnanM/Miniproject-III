@@ -1,4 +1,4 @@
-* {
+{
   margin: 0; padding: 0; box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -24,6 +24,10 @@ nav ul {
   list-style: none;
   display: flex;
   gap: 30px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 30px;
+  margin: 0;
 }
 
 nav ul li {
@@ -38,52 +42,45 @@ nav ul li:hover {
   color: #ffcc00;
 }
 
-nav ul li ul {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: rgba(0, 0, 0, 0.85);
-  padding: 10px 0;
-  border-radius: 5px;
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 999;
+nav ul li.login-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 25px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 500;
 }
 
-nav ul li:hover ul {
-  display: block;
+nav ul li.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
-nav ul li ul li {
-  padding: 10px 20px;
-  white-space: nowrap;
+nav ul li.login-btn i {
+  margin-right: 8px;
 }
 
-nav ul li ul li:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
+/* Background video styles */
 .slideshow-container {
+  position: relative;
   height: 100vh;
   width: 100vw;
-  position: relative;
+  overflow: hidden;
 }
 
-.slide {
+#bg-video {
   position: absolute;
   top: 0; left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('2.jpg');
-  background-size: cover;
-  background-position: center;
-  opacity: 1;
+  object-fit: cover;
   z-index: 1;
 }
 
 .overlay-text {
-  position: absolute;
+  position: relative;
+  z-index: 2;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -91,7 +88,8 @@ nav ul li ul li:hover {
   text-align: center;
   text-shadow: 0 0 15px rgba(0,0,0,0.7);
   max-width: 90vw;
-  z-index: 2;
+  max-height: 90vh;
+  margin: 0 auto;
 }
 
 .overlay-text h1 {
@@ -364,33 +362,4 @@ nav ul li ul li:hover {
 .main-actions button {
   min-width: 140px;
   font-size: 1rem;
-}
-
-/* Updated navigation for minimal menu */
-nav ul {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  list-style: none;
-  padding: 0 30px;
-  margin: 0;
-}
-
-nav ul li.login-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 10px 25px;
-  border-radius: 25px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: white;
-  font-weight: 500;
-}
-
-nav ul li.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-nav ul li.login-btn i {
-  margin-right: 8px;
 }

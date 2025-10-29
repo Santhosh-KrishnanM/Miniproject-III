@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tamil Nadu Tourism</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
 
@@ -18,9 +18,12 @@
   </ul>
 </nav>
 
-<!-- Slideshow -->
+<!-- Slideshow with Background Video -->
 <div class="slideshow-container">
-  <div class="slide"></div>
+  <video autoplay muted loop id="bg-video">
+    <source src="1.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
   <div class="overlay-text">
     <h1>Welcome to Tamil Nadu</h1>
     <p>Discover the Land of Temples, Culture, and Natural Beauty</p>
@@ -37,7 +40,9 @@
     <div class="box eat" onclick="showFoodPage()">
       <div class="text">Eat & Drink</div>
     </div>
-    <div class="box spiritual"><div class="text">Spiritual</div></div>
+    <div class="box spiritual">
+      <div class="text">Spiritual</div>
+    </div>
   </div>
 </section>
 
@@ -50,7 +55,7 @@
   <div class="video-section">
     <h2>Tamil Nadu Adventure Places</h2>
     <video controls>
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Adventures in Tamil Nadu_free.mp4" type="video/mp4">
+      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Adventures in Tamil Nadu_free.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
     <p>Explore the breathtaking adventure spots in Tamil Nadu!</p>
@@ -68,7 +73,7 @@
   <div class="video-section">
     <h2>Famous Foods of Tamil Nadu</h2>
     <video controls>
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Famous Foods of Tamil Nadu_free.mp4" type="video/mp4">
+      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Famous Foods of Tamil Nadu_free.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
     <p>Explore the culinary delights of Tamil Nadu!</p>
@@ -131,10 +136,7 @@
   </div>
 </div>
 
-<!-- Main Page (after login/signup) -->
-
-
-<!-- Welcome Page (optional, can be removed if using mainPage) -->
+<!-- Welcome Page -->
 <div id="welcomePage" style="display:none;">
   <div class="welcome-content">
     <h1>Welcome!</h1>
