@@ -255,60 +255,63 @@
 
       <div id="dynamicPagesContainer" class="content-section" style="display:none;"></div>
 
-      <!-- Travels Section -->
-<section id="travels" class="content-section">
-  <div class="section-header">
-    <h2>Travels</h2>
-  </div>
+       <!-- Travels section -->
+    <section id="travelsSection" class="content-section">
+      <h1>Book Your Travel Vehicle</h1>
+      <div class="vehicle-container">
 
-  <div style="padding:20px;">
-    <p>Click a vehicle to offer travel for a selected booking.</p>
+        <!-- Tempo Traveller -->
+        <div class="vehicle-box" onclick="openTravelModal('Tempo Traveller', 17, 600, 'images/tempo.jpg')">
+          <img src="images/tempo.jpg" alt="Tempo Traveller">
+          <div class="vehicle-info">
+            <h3>Tempo Traveller</h3>
+            <p>Seats: 17</p>
+            <p>Price/Day: ₹600</p>
+          </div>
+        </div>
 
-    <div class="travels-grid" id="travelsGrid">
-      <!-- JS will render vehicle cards (Tempo, Thar, Travels) -->
-    </div>
-  </div>
-</section>
+        <!-- Thar -->
+        <div class="vehicle-box" onclick="openTravelModal('Thar', 6, 450, 'images/thar.jpg')">
+          <img src="images/thar.jpg" alt="Thar">
+          <div class="vehicle-info">
+            <h3>Thar</h3>
+            <p>Seats: 6</p>
+            <p>Price/Day: ₹450</p>
+          </div>
+        </div>
 
-<!-- Travel booking popup (re-used when user clicks a vehicle) -->
-<div id="travelPopup" class="modal" style="display:none;">
-  <div class="modal-content" style="max-width:520px;">
-    <span id="closePopup" class="close-btn" onclick="closeTravelPopup()">&times;</span>
-    <h2 id="popupName">Vehicle</h2>
+        <!-- Traveller Bus -->
+        <div class="vehicle-box" onclick="openTravelModal('Traveller Bus', 60, 1000, 'images/travels.jpg')">
+          <img src="images/travels.jpg" alt="Traveller Bus">
+          <div class="vehicle-info">
+            <h3>Traveller Bus</h3>
+            <p>Seats: 60</p>
+            <p>Price/Day: ₹1000</p>
+          </div>
+        </div>
 
-    <div style="display:flex; gap:16px; align-items:center; margin-bottom:10px;">
-      <img id="popupImage" src="" alt="vehicle" style="width:140px; height:90px; object-fit:cover; border-radius:8px;"/>
-      <div>
-        <p id="popupSeats">Seats: -</p>
-        <p id="popupCost">Per day: ₹-</p>
       </div>
-    </div>
+    </section>
+  </div>
 
-    <div class="form-group">
-      <label>Select one of your bookings for this destination</label>
-      <select id="userBookingsSelect" style="width:100%; padding:10px; border-radius:6px;">
-        <option value="">— Select booking —</option>
+  <!-- Travel Booking Modal -->
+  <div id="travelModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeTravelModal()">&times;</span>
+      <h2 id="travelTitle"></h2>
+      <img id="travelImage" src="" alt="Vehicle" />
+      <p id="travelDetails"></p>
+
+      <label for="placeSelect">Select a booked place:</label>
+      <select id="placeSelect">
+        <option value="">-- Select Place --</option>
       </select>
-      <small style="color:#666; display:block; margin-top:6px;">Pick a previously created booking to assign this vehicle</small>
-    </div>
 
-    <div class="form-group">
-      <label>Total price</label>
-      <div id="totalPrice" style="font-weight:700; font-size:1.1rem;">₹0</div>
-    </div>
+      <div id="priceCalc" style="margin-top:10px;"></div>
 
-    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
-      <button class="btn-outline" onclick="closeTravelPopup()">Cancel</button>
-      <button class="btn-primary" id="confirmBooking">Book Travels</button>
+      <button class="book-btn" onclick="bookTravel()">Book Travel</button>
     </div>
   </div>
-</div>
-
-<!-- small success toast -->
-<div id="successPopup" style="position:fixed; bottom:24px; right:24px; background:#1e90ff; color:#fff; padding:14px 18px; border-radius:8px; display:none; z-index:4000;">
-  Travel added to booking!
-</div>
-
       
       <!-- Favorites Section -->
       <section id="favorites" class="content-section">

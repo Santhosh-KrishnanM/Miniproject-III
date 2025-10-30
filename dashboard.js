@@ -2170,30 +2170,52 @@ async function confirmTravelBooking() {
     return;
   }
 
-  // Prepare payload (add assignedTravel field). Adjust if your backend expects other shape.
-  const payload = {
-    assignedTravel: {
-      name: vehicle.name,
-      costPerDay: vehicle.cost,
-      totalPrice: total
+  // Fetch current booking details first (to send full object back)
+  let currentBooking = null;
+  try {
+    const res = await fetch(`/api/bookings/${bookingId}`);
+    if (res.ok) {
+      currentBooking = await res.json();
+    } else {
+      alert('Could not load booking details. Try again.');
+      return;
     }
+  } catch (err) {
+    console.error('Error fetching booking details', err);
+    alert('Error fetching booking details.');
+    return;
+  }
+
+  // Validation: check if booking has already ended
+  const today = new Date();
+  const end = new Date(currentBooking.endDate);
+  if (end < today) {
+    alert('⚠️ This trip has already ended — you cannot book a travel for it.');
+    return;
+  }
+
+  // Add or replace travel info
+  currentBooking.assignedTravel = {
+    name: vehicle.name,
+    costPerDay: vehicle.cost,
+    totalPrice: total
   };
 
+  // Send full object back
   try {
     const res = await fetch(`/api/bookings/${bookingId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(currentBooking)
     });
 
     if (res.ok) {
-      // success: update UI and activities
       closeTravelPopup();
-      showSuccessToast('Travel assigned to booking!');
+      showSuccessToast('✅ Travel booked successfully!');
       await loadUserBookings(currentUser._id);
       await renderAllSections();
 
-      // try to add a simple activity (if your /activities endpoint exists)
+      // Optional: add to activities log
       try {
         await fetch('/activities', {
           method: 'POST',
@@ -2201,13 +2223,12 @@ async function confirmTravelBooking() {
           body: JSON.stringify({
             userId: currentUser._id,
             type: 'booking',
-            content: `${currentUser.username} assigned ${vehicle.name} to a booking for ${bookingId}`,
+            content: `${currentUser.username} booked ${vehicle.name} for a travel.`,
             createdAt: new Date().toISOString()
           })
         });
-      } catch (err) {
-        // ignore if backend not available
-        console.warn('Activities endpoint not available or failed', err);
+      } catch (e) {
+        console.warn('Activity logging failed', e);
       }
     } else {
       const errText = await res.text();
@@ -2218,19 +2239,3 @@ async function confirmTravelBooking() {
     alert('Error assigning travel. See console.');
   }
 }
-
-// small toast helper
-function showSuccessToast(msg) {
-  const t = document.getElementById('successPopup');
-  if (!t) return;
-  t.textContent = msg || 'Saved!';
-  t.style.display = 'block';
-  setTimeout(() => { t.style.display = 'none'; }, 2200);
-}
-
-// When showing the Dashboard or when DOM content loads, render travels grid
-document.addEventListener('DOMContentLoaded', () => {
-  renderTravelsSection();
-});
-
-// Also re-render travels grid when user logs in / sections update (call when appropriate)
