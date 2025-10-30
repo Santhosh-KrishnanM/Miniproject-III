@@ -338,7 +338,7 @@ app.delete('/destinations/:id', async (req, res) => {
 
 
 
-const Travel = require('../models/Travel');
+const Travel = require('../Travel');
 
 // ✅ Get all travels
 router.get('/travels', async (req, res) => {
