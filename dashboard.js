@@ -2041,3 +2041,196 @@ document.addEventListener('click', function(event) {
 });
 
 console.log('✅ Header search functionality loaded');
+/* ================= TRAVELS FEATURE ================= */
+// vehicles data (images should be in your project root or adjust paths)
+const TRAVEL_VEHICLES = [
+  { id: 'tempo', name: 'Tempo Traveller', seats: 17, cost: 600, img: 'tempo.jpg' },
+  { id: 'thar', name: 'Thar', seats: 6, cost: 450, img: 'thar.jpg' },
+  { id: 'travels', name: 'Travels', seats: 60, cost: 1000, img: 'travels.jpg' }
+];
+
+function renderTravelsSection() {
+  const container = document.getElementById('travelsGrid');
+  if (!container) return;
+  container.innerHTML = '';
+  TRAVEL_VEHICLES.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'travel-card';
+    card.dataset.name = v.name;
+    card.dataset.seats = v.seats;
+    card.dataset.cost = v.cost;
+    card.innerHTML = `
+      <img src="${v.img}" alt="${v.name}">
+      <div class="travel-info">
+        <h4>${v.name}</h4>
+        <div class="meta">Seats: ${v.seats} · ₹${v.cost} / day</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openTravelPopup(v));
+    container.appendChild(card);
+  });
+}
+
+// open the popup and populate the booking select
+async function openTravelPopup(vehicle) {
+  const popup = document.getElementById('travelPopup');
+  if (!popup) return;
+  document.getElementById('popupImage').src = vehicle.img;
+  document.getElementById('popupName').textContent = vehicle.name;
+  document.getElementById('popupSeats').textContent = `Seats: ${vehicle.seats}`;
+  document.getElementById('popupCost').textContent = `Per Day Cost: ₹${vehicle.cost}`;
+  document.getElementById('totalPrice').textContent = `₹0`;
+  popup.style.display = 'flex';
+
+  // populate user's bookings (filter by selectedDestinationId if available)
+  let bookings = [];
+  try {
+    if (currentUser && currentUser._id) {
+      bookings = await getUserBookings(currentUser._id);
+    }
+  } catch (err) {
+    console.error('Error fetching user bookings for travels popup', err);
+  }
+
+  const select = document.getElementById('userBookingsSelect');
+  select.innerHTML = '<option value="">— Select booking —</option>';
+  // Filter bookings (if selectedDestinationId present, show bookings for that dest)
+  const filtered = selectedDestinationId ? bookings.filter(b => {
+    // booking.destination may be object or id depending on your API
+    const bid = b.destination?._id || b.destination;
+    return bid === selectedDestinationId;
+  }) : bookings;
+
+  if (filtered.length === 0) {
+    // show all bookings but indicate none for this destination
+    select.innerHTML += `<option value="" disabled>No bookings for this destination</option>`;
+  } else {
+    filtered.forEach(b => {
+      const start = b.startDate ? b.startDate.slice(0,10) : '';
+      const end = b.endDate ? b.endDate.slice(0,10) : '';
+      const title = `${b.destination?.name || 'Booking'} — ${start} → ${end} (${b._id.slice(-6)})`;
+      select.innerHTML += `<option value="${b._id}" data-start="${b.startDate}" data-end="${b.endDate}">${escapeHtml(title)}</option>`;
+    });
+  }
+
+  // on booking selection, calculate total
+  select.onchange = function() {
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) {
+      document.getElementById('totalPrice').textContent = `₹0`;
+      return;
+    }
+    const start = opt.dataset.start;
+    const end = opt.dataset.end;
+    if (!start || !end) {
+      document.getElementById('totalPrice').textContent = `₹0`;
+      return;
+    }
+    const days = calcDaysInclusive(start, end);
+    const total = days * vehicle.cost;
+    document.getElementById('totalPrice').textContent = `₹${total}`;
+    // store selection temporarily
+    popup.dataset.selectedBooking = opt.value;
+    popup.dataset.selectedVehicle = JSON.stringify(vehicle);
+    popup.dataset.selectedTotal = total;
+  };
+
+  // bind confirm button
+  document.getElementById('confirmBooking').onclick = confirmTravelBooking;
+}
+
+function closeTravelPopup() {
+  const popup = document.getElementById('travelPopup');
+  if (popup) popup.style.display = 'none';
+}
+
+// Helper: calculate inclusive days between ISO dates
+function calcDaysInclusive(startISO, endISO) {
+  const s = new Date(startISO.slice(0,10));
+  const e = new Date(endISO.slice(0,10));
+  const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24)) + 1;
+  return diff > 0 ? diff : 0;
+}
+
+// Helper: escape text for safety in option values
+function escapeHtml(txt) {
+  if (!txt) return '';
+  return txt.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Confirm booking — updates server booking with assigned travel info
+async function confirmTravelBooking() {
+  const popup = document.getElementById('travelPopup');
+  const bookingId = popup.dataset.selectedBooking;
+  const vehicle = popup.dataset.selectedVehicle ? JSON.parse(popup.dataset.selectedVehicle) : null;
+  const total = popup.dataset.selectedTotal ? parseInt(popup.dataset.selectedTotal) : 0;
+
+  if (!bookingId || !vehicle) {
+    alert('Please select one of your bookings to assign this vehicle.');
+    return;
+  }
+
+  // Prepare payload (add assignedTravel field). Adjust if your backend expects other shape.
+  const payload = {
+    assignedTravel: {
+      name: vehicle.name,
+      costPerDay: vehicle.cost,
+      totalPrice: total
+    }
+  };
+
+  try {
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      // success: update UI and activities
+      closeTravelPopup();
+      showSuccessToast('Travel assigned to booking!');
+      await loadUserBookings(currentUser._id);
+      await renderAllSections();
+
+      // try to add a simple activity (if your /activities endpoint exists)
+      try {
+        await fetch('/activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser._id,
+            type: 'booking',
+            content: `${currentUser.username} assigned ${vehicle.name} to a booking for ${bookingId}`,
+            createdAt: new Date().toISOString()
+          })
+        });
+      } catch (err) {
+        // ignore if backend not available
+        console.warn('Activities endpoint not available or failed', err);
+      }
+    } else {
+      const errText = await res.text();
+      alert('Failed to save travel data: ' + errText);
+    }
+  } catch (err) {
+    console.error('confirmTravelBooking error', err);
+    alert('Error assigning travel. See console.');
+  }
+}
+
+// small toast helper
+function showSuccessToast(msg) {
+  const t = document.getElementById('successPopup');
+  if (!t) return;
+  t.textContent = msg || 'Saved!';
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2200);
+}
+
+// When showing the Dashboard or when DOM content loads, render travels grid
+document.addEventListener('DOMContentLoaded', () => {
+  renderTravelsSection();
+});
+
+// Also re-render travels grid when user logs in / sections update (call when appropriate)

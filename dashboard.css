@@ -1856,3 +1856,69 @@ body {
     max-height: 300px;
   }
 }
+/* ---------- TRAVELS / VEHICLE CARDS ---------- */
+.travels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.travel-card {
+  background: linear-gradient(180deg, #fff 0%, #f7f9fc 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(30,40,80,0.08);
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  padding: 12px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.travel-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(30,40,80,0.12);
+}
+
+.travel-card img {
+  width: 110px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.travel-card .travel-info {
+  flex:1;
+}
+
+.travel-card .travel-info h4 {
+  margin-bottom:6px;
+  font-size:1.05rem;
+  color:#1f2b46;
+}
+
+.travel-card .meta {
+  color:#555;
+  font-size:0.92rem;
+}
+
+/* popup tweaks: keep modal white and consistent with other modal styles */
+#travelPopup .modal-content {
+  background:#fff;
+  color:#222;
+}
+
+#travelPopup #totalPrice {
+  color:#1a73e8;
+  font-size:1.2rem;
+}
+
+/* small responsive */
+@media (max-width:700px) {
+  .travel-card { padding:10px; }
+  .travel-card img { width: 84px; height:66px; }
+}
+
