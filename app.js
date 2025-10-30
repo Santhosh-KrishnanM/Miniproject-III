@@ -338,12 +338,12 @@ app.delete('/destinations/:id', async (req, res) => {
 
 
 
-const Travel = require('./Travel');
+const travels = require('./travels');
 
 // ✅ Get all travels
 router.get('/travels', async (req, res) => {
   try {
-    const travels = await Travel.find();
+    const travels = await travels.find();
     res.json(travels);
   } catch (err) {
     console.error('Error fetching travels:', err);
