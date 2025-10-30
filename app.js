@@ -335,6 +335,68 @@ app.delete('/destinations/:id', async (req, res) => {
   }
 });
 
+
+
+
+const Travel = require('../models/Travel');
+
+// ✅ Get all travels
+router.get('/api/travels', async (req, res) => {
+  try {
+    const travels = await Travel.find();
+    res.json(travels);
+  } catch (err) {
+    console.error('Error fetching travels:', err);
+    res.status(500).json({ error: 'Failed to fetch travel options' });
+  }
+});
+
+// ✅ Add new travel (Admin use)
+router.post('/api/travels', async (req, res) => {
+  try {
+    const { name, seats, costPerDay, imageUrl } = req.body;
+    if (!name || !seats || !costPerDay || !imageUrl) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const newTravel = new Travel({ name, seats, costPerDay, imageUrl });
+    await newTravel.save();
+    res.status(201).json(newTravel);
+  } catch (err) {
+    console.error('Error adding travel:', err);
+    res.status(500).json({ error: 'Failed to add travel' });
+  }
+});
+
+// ✅ Update travel details (optional)
+router.put('/api/travels/:id', async (req, res) => {
+  try {
+    const updated = await Travel.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: false }
+    );
+    res.json(updated);
+  } catch (err) {
+    console.error('Error updating travel:', err);
+    res.status(500).json({ error: 'Failed to update travel' });
+  }
+});
+
+// ✅ Delete travel
+router.delete('/api/travels/:id', async (req, res) => {
+  try {
+    await Travel.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Travel removed successfully' });
+  } catch (err) {
+    console.error('Error deleting travel:', err);
+    res.status(500).json({ error: 'Failed to delete travel' });
+  }
+});
+
+module.exports = router;
+
+
 // ---------------------- FAVORITES ----------------------
 
 app.post('/favorites', async (req, res) => {
