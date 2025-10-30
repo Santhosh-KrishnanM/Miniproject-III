@@ -341,7 +341,7 @@ app.delete('/destinations/:id', async (req, res) => {
 const Travel = require('../models/Travel');
 
 // ✅ Get all travels
-router.get('/api/travels', async (req, res) => {
+router.get('/travels', async (req, res) => {
   try {
     const travels = await Travel.find();
     res.json(travels);
@@ -352,7 +352,7 @@ router.get('/api/travels', async (req, res) => {
 });
 
 // ✅ Add new travel (Admin use)
-router.post('/api/travels', async (req, res) => {
+router.post('/travels', async (req, res) => {
   try {
     const { name, seats, costPerDay, imageUrl } = req.body;
     if (!name || !seats || !costPerDay || !imageUrl) {
@@ -369,7 +369,7 @@ router.post('/api/travels', async (req, res) => {
 });
 
 // ✅ Update travel details (optional)
-router.put('/api/travels/:id', async (req, res) => {
+router.put('/travels/:id', async (req, res) => {
   try {
     const updated = await Travel.findByIdAndUpdate(
       req.params.id,
@@ -384,7 +384,7 @@ router.put('/api/travels/:id', async (req, res) => {
 });
 
 // ✅ Delete travel
-router.delete('/api/travels/:id', async (req, res) => {
+router.delete('/travels/:id', async (req, res) => {
   try {
     await Travel.findByIdAndDelete(req.params.id);
     res.json({ message: 'Travel removed successfully' });
