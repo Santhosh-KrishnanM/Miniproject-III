@@ -2273,19 +2273,21 @@ async function confirmTravelBooking() {
 
   // ✅ Step 2: Validate booking date (block past trips)
   try {
+  // ✅ Skip date validation if missing, just log warning instead
+  if (!currentBooking.startDate || !currentBooking.endDate) {
+    console.warn("⚠️ Booking missing start/end date — proceeding without validation.");
+  } else {
     const now = new Date();
     const bookingEnd = new Date(currentBooking.endDate);
-    if (isNaN(bookingEnd.getTime())) {
-      alert("Booking end date invalid or missing. Cannot assign travel.");
-      return;
-    }
     if (bookingEnd < now.setHours(0, 0, 0, 0)) {
       alert("This trip has already ended. Cannot assign travel for completed trips.");
       return;
     }
-  } catch (err) {
-    console.warn("Date validation warning", err);
   }
+} catch (err) {
+  console.warn("Date validation warning", err);
+}
+
 
   // ✅ Step 3: Prepare safe update payload with required fields
   const updatePayload = {
