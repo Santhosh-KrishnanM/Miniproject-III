@@ -196,8 +196,33 @@ app.get('/api/bookings/:userId', async (req, res) => {
 // ---------------------- UPDATE BOOKING ----------------------
 app.put('/api/bookings/:id', async (req, res) => {
   try {
-    const { startDate, endDate, travelers } = req.body;
+    const body = req.body;
 
+    // If assignedTravel is being added (when booking travels)
+    if (body.assignedTravel) {
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        req.params.id,
+        { $set: { assignedTravel: body.assignedTravel } },
+        { new: true }
+      ).populate("destination");
+
+      if (!updatedBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      // Log this activity
+      await Activity.create({
+        userId: updatedBooking.userId,
+        type: 'travel',
+        content: `Booked travel ${body.assignedTravel.name} for ${updatedBooking.destination.name}`,
+        destinationId: updatedBooking.destination._id
+      });
+
+      return res.json(updatedBooking);
+    }
+
+    // Else, handle normal booking update (dates, travelers, etc.)
+    const { startDate, endDate, travelers } = body;
     if (!startDate || !endDate || !travelers) {
       return res.status(400).json({ error: "All fields are required" });
     }
