@@ -2235,7 +2235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Also re-render travels grid when user logs in / sections update (call when appropriate)
 
-/* ===================== TRAVELS: Simplified Confirm Booking ===================== */
+/* ===================== TRAVELS: Simplified Confirm Booking (safe version) ===================== */
 async function confirmTravelBooking() {
   const popup = document.getElementById('travelPopup') || document.getElementById('travelModal');
   const bookingId = popup?.dataset?.selectedBooking;
@@ -2262,7 +2262,14 @@ async function confirmTravelBooking() {
     return;
   }
 
-  // 2️⃣ Just attach the travel (no date validation)
+  // 2️⃣ Ensure all required fields are still present
+  if (!currentBooking.destination || !currentBooking.startDate || !currentBooking.endDate || !currentBooking.userId) {
+    alert('Booking data missing required fields. Please rebook the destination first.');
+    console.error('Invalid booking object:', currentBooking);
+    return;
+  }
+
+  // 3️⃣ Attach assigned travel safely
   currentBooking.assignedTravel = {
     name: vehicle.name,
     costPerDay: vehicle.cost,
@@ -2270,7 +2277,7 @@ async function confirmTravelBooking() {
     bookedAt: new Date().toISOString()
   };
 
-  // 3️⃣ Save updated booking
+  // 4️⃣ PUT full booking object back
   try {
     const resPut = await fetch(`/api/bookings/${bookingId}`, {
       method: 'PUT',
@@ -2278,25 +2285,25 @@ async function confirmTravelBooking() {
       body: JSON.stringify(currentBooking)
     });
 
+    const text = await resPut.text();
     if (!resPut.ok) {
-      const text = await resPut.text();
       alert('Failed to save travel data: ' + text);
       console.error('PUT /api/bookings error:', text);
       return;
     }
 
-    // 4️⃣ Close popup + show success
+    // 5️⃣ Close popup + show success
     closeTravelPopup?.() || closeTravelModal?.();
     const destName = currentBooking.destination?.name || currentBooking.destination || 'your destination';
     showCenteredSuccess(`${vehicle.name} booked for ${destName}`);
 
-    // 5️⃣ Update UI (reload bookings & add recent activity)
+    // 6️⃣ Update UI
     if (typeof loadUserBookings === 'function') {
       await loadUserBookings(currentUser?._id || currentUser?.id);
     }
     if (typeof renderAllSections === 'function') renderAllSections();
 
-    // Log activity (optional)
+    // 7️⃣ Log activity
     await fetch('/activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2312,6 +2319,5 @@ async function confirmTravelBooking() {
     alert('Error saving travel booking.');
   }
 }
-
 
 
