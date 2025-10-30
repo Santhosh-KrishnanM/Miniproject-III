@@ -338,13 +338,14 @@ app.delete('/destinations/:id', async (req, res) => {
 
 
 
-const travels = require('./travels');
+// ---------------------- TRAVELS ----------------------
+const Travel = require('./travels');
 
 // ✅ Get all travels
-router.get('/travels', async (req, res) => {
+app.get('/api/travels', async (req, res) => {
   try {
-    const travels = await travels.find();
-    res.json(travels);
+    const allTravels = await Travel.find();
+    res.json(allTravels);
   } catch (err) {
     console.error('Error fetching travels:', err);
     res.status(500).json({ error: 'Failed to fetch travel options' });
@@ -352,7 +353,7 @@ router.get('/travels', async (req, res) => {
 });
 
 // ✅ Add new travel (Admin use)
-router.post('/travels', async (req, res) => {
+app.post('/api/travels', async (req, res) => {
   try {
     const { name, seats, costPerDay, imageUrl } = req.body;
     if (!name || !seats || !costPerDay || !imageUrl) {
@@ -369,14 +370,14 @@ router.post('/travels', async (req, res) => {
 });
 
 // ✅ Update travel details (optional)
-router.put('/travels/:id', async (req, res) => {
+app.put('/api/travels/:id', async (req, res) => {
   try {
-    const updated = await Travel.findByIdAndUpdate(
+    const updatedTravel = await Travel.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: false }
     );
-    res.json(updated);
+    res.json(updatedTravel);
   } catch (err) {
     console.error('Error updating travel:', err);
     res.status(500).json({ error: 'Failed to update travel' });
@@ -384,7 +385,7 @@ router.put('/travels/:id', async (req, res) => {
 });
 
 // ✅ Delete travel
-router.delete('/travels/:id', async (req, res) => {
+app.delete('/api/travels/:id', async (req, res) => {
   try {
     await Travel.findByIdAndDelete(req.params.id);
     res.json({ message: 'Travel removed successfully' });
@@ -394,7 +395,6 @@ router.delete('/travels/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
 
 
 // ---------------------- FAVORITES ----------------------
