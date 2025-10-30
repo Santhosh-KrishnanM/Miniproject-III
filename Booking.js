@@ -11,8 +11,16 @@ const bookingSchema = new mongoose.Schema({
     enum: ['Confirmed', 'Pending', 'Cancelled'], 
     default: 'Pending' 
   },
+
+  // ✅ NEW FIELD: assigned travel details
+  assignedTravel: {
+    name: { type: String },
+    costPerDay: { type: Number },
+    totalPrice: { type: Number },
+    bookedAt: { type: Date }
+  },
+
   createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
-

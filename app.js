@@ -193,81 +193,41 @@ app.get('/api/bookings/:userId', async (req, res) => {
   }
 });
 
-// ---------------------- UPDATE BOOKING ----------------------
+// ✅ UPDATE BOOKING OR ASSIGN TRAVEL
 app.put('/api/bookings/:id', async (req, res) => {
   try {
-    const body = req.body;
+    const updateData = req.body;
 
-    // If assignedTravel is being added (when booking travels)
-    if (body.assignedTravel) {
-      const updatedBooking = await Booking.findByIdAndUpdate(
-        req.params.id,
-        { $set: { assignedTravel: body.assignedTravel } },
-        { new: true }
-      ).populate("destination");
-
-      if (!updatedBooking) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-
-      // Log this activity
-      await Activity.create({
-        userId: updatedBooking.userId,
-        type: 'travel',
-        content: `Booked travel ${body.assignedTravel.name} for ${updatedBooking.destination.name}`,
-        destinationId: updatedBooking.destination._id
-      });
-
-      return res.json(updatedBooking);
+    // 🛠️ Validate base booking data
+    if (!updateData.startDate || !updateData.endDate) {
+      return res.status(400).json({ error: "Start and End dates are required" });
     }
 
-    // Else, handle normal booking update (dates, travelers, etc.)
-    const { startDate, endDate, travelers } = body;
-    if (!startDate || !endDate || !travelers) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
+    // ✅ If assignedTravel is included, no need to block it
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { startDate, endDate, travelers },
-      { new: true }
+      { $set: updateData },
+      { new: true, runValidators: false }
     ).populate("destination");
 
     if (!updatedBooking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
+    // 📝 Log activity (optional)
     await Activity.create({
       userId: updatedBooking.userId,
-      type: 'booking',
-      content: `Modified booking for ${updatedBooking.destination.name}`,
+      type: updateData.assignedTravel ? 'travel' : 'booking',
+      content: updateData.assignedTravel
+        ? `Assigned ${updateData.assignedTravel.name} for ${updatedBooking.destination.name}`
+        : `Modified booking for ${updatedBooking.destination.name}`,
       destinationId: updatedBooking.destination._id
     });
 
     res.json(updatedBooking);
   } catch (err) {
+    console.error("Booking update error:", err);
     res.status(500).json({ error: "Failed to update booking", details: err.message });
-  }
-});
-
-// ---------------------- DELETE BOOKING ----------------------
-app.delete('/api/bookings/:id', async (req, res) => {
-  try {
-    const booking = await Booking.findByIdAndDelete(req.params.id);
-    if (!booking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
-
-    await Activity.create({
-      userId: booking.userId,
-      type: 'booking',
-      content: `Cancelled booking for ${booking.destination}`,
-      destinationId: booking.destination
-    });
-
-    res.json({ message: "Booking cancelled successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete booking", details: err.message });
   }
 });
 
