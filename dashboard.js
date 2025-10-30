@@ -2235,7 +2235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Also re-render travels grid when user logs in / sections update (call when appropriate)
 
-/* ===================== TRAVELS: Simplified Confirm Booking (safe version) ===================== */
+/* ===================== TRAVELS: Final Simplified Booking ===================== */
 async function confirmTravelBooking() {
   const popup = document.getElementById('travelPopup') || document.getElementById('travelModal');
   const bookingId = popup?.dataset?.selectedBooking;
@@ -2247,7 +2247,7 @@ async function confirmTravelBooking() {
     return;
   }
 
-  // 1️⃣ Get the current booking from backend
+  // 1️⃣ Fetch current booking
   let currentBooking;
   try {
     const resGet = await fetch(`/api/bookings/${bookingId}`);
@@ -2258,18 +2258,11 @@ async function confirmTravelBooking() {
     currentBooking = await resGet.json();
   } catch (err) {
     console.error('Error fetching booking:', err);
-    alert('Server error while loading booking.');
+    alert('Error fetching booking details.');
     return;
   }
 
-  // 2️⃣ Ensure all required fields are still present
-  if (!currentBooking.destination || !currentBooking.startDate || !currentBooking.endDate || !currentBooking.userId) {
-    alert('Booking data missing required fields. Please rebook the destination first.');
-    console.error('Invalid booking object:', currentBooking);
-    return;
-  }
-
-  // 3️⃣ Attach assigned travel safely
+  // 2️⃣ Assign selected travel
   currentBooking.assignedTravel = {
     name: vehicle.name,
     costPerDay: vehicle.cost,
@@ -2277,7 +2270,7 @@ async function confirmTravelBooking() {
     bookedAt: new Date().toISOString()
   };
 
-  // 4️⃣ PUT full booking object back
+  // 3️⃣ Update backend
   try {
     const resPut = await fetch(`/api/bookings/${bookingId}`, {
       method: 'PUT',
@@ -2292,18 +2285,17 @@ async function confirmTravelBooking() {
       return;
     }
 
-    // 5️⃣ Close popup + show success
+    // 4️⃣ Success: close popup + show confirmation
     closeTravelPopup?.() || closeTravelModal?.();
     const destName = currentBooking.destination?.name || currentBooking.destination || 'your destination';
     showCenteredSuccess(`${vehicle.name} booked for ${destName}`);
 
-    // 6️⃣ Update UI
+    // 5️⃣ Refresh bookings & log activity
     if (typeof loadUserBookings === 'function') {
       await loadUserBookings(currentUser?._id || currentUser?.id);
     }
     if (typeof renderAllSections === 'function') renderAllSections();
 
-    // 7️⃣ Log activity
     await fetch('/activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
