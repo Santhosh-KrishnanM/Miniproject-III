@@ -2235,81 +2235,216 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Also re-render travels grid when user logs in / sections update (call when appropriate)
 
-/* ===================== TRAVELS: Final Simplified Booking ===================== */
+/* ===================== TRAVELS: Confirm & UI update (Fixed Version) ===================== */
 async function confirmTravelBooking() {
-  const popup = document.getElementById('travelPopup') || document.getElementById('travelModal');
+  const popup =
+    document.getElementById("travelPopup") ||
+    document.getElementById("travelModal") ||
+    document.getElementById("travelModalAlt");
+
   const bookingId = popup?.dataset?.selectedBooking;
-  const vehicle = popup?.dataset?.selectedVehicle ? JSON.parse(popup.dataset.selectedVehicle) : null;
-  const total = popup?.dataset?.selectedTotal ? parseInt(popup.dataset.selectedTotal) : 0;
+  const vehicle = popup?.dataset?.selectedVehicle
+    ? JSON.parse(popup.dataset.selectedVehicle)
+    : null;
+  const total = popup?.dataset?.selectedTotal
+    ? parseInt(popup.dataset.selectedTotal)
+    : 0;
 
   if (!bookingId || !vehicle) {
-    alert('Please select a destination and vehicle before confirming.');
+    alert("Please select a booking from the dropdown before confirming.");
     return;
   }
 
-  // 1️⃣ Fetch current booking
+  // ✅ Step 1: Fetch the full booking details from backend
   let currentBooking;
   try {
     const resGet = await fetch(`/api/bookings/${bookingId}`);
     if (!resGet.ok) {
-      alert('Unable to load booking details from server.');
+      const t = await resGet.text().catch(() => null);
+      alert("Unable to load booking details: " + (t || resGet.status));
       return;
     }
     currentBooking = await resGet.json();
   } catch (err) {
-    console.error('Error fetching booking:', err);
-    alert('Error fetching booking details.');
+    console.error("Error fetching booking", err);
+    alert("Error fetching booking details from server.");
     return;
   }
 
-  // 2️⃣ Assign selected travel
-  currentBooking.assignedTravel = {
-    name: vehicle.name,
-    costPerDay: vehicle.cost,
-    totalPrice: total,
-    bookedAt: new Date().toISOString()
+  // ✅ Step 2: Validate booking date (block past trips)
+  try {
+    const now = new Date();
+    const bookingEnd = new Date(currentBooking.endDate);
+    if (isNaN(bookingEnd.getTime())) {
+      alert("Booking end date invalid or missing. Cannot assign travel.");
+      return;
+    }
+    if (bookingEnd < now.setHours(0, 0, 0, 0)) {
+      alert("This trip has already ended. Cannot assign travel for completed trips.");
+      return;
+    }
+  } catch (err) {
+    console.warn("Date validation warning", err);
+  }
+
+  // ✅ Step 3: Prepare safe update payload with required fields
+  const updatePayload = {
+    startDate: currentBooking.startDate,
+    endDate: currentBooking.endDate,
+    travelers: currentBooking.travelers || 1,
+    assignedTravel: {
+      name: vehicle.name,
+      seats: vehicle.seats,
+      costPerDay: vehicle.costPerDay || vehicle.cost,
+      totalPrice: total,
+      bookedAt: new Date().toISOString(),
+    },
   };
 
-  // 3️⃣ Update backend
+  // ✅ Step 4: PUT updated booking back to server
   try {
     const resPut = await fetch(`/api/bookings/${bookingId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentBooking)
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatePayload),
     });
 
-    const text = await resPut.text();
     if (!resPut.ok) {
-      alert('Failed to save travel data: ' + text);
-      console.error('PUT /api/bookings error:', text);
+      const text = await resPut.text().catch(() => null);
+      alert("Failed to save travel data: " + (text || resPut.status));
+      console.error("PUT /api/bookings error:", text || resPut.status);
       return;
     }
 
-    // 4️⃣ Success: close popup + show confirmation
+    // ✅ Step 5: Success — show popup & update UI
     closeTravelPopup?.() || closeTravelModal?.();
-    const destName = currentBooking.destination?.name || currentBooking.destination || 'your destination';
+    const destName =
+      currentBooking.destination?.name ||
+      currentBooking.destination ||
+      "your destination";
     showCenteredSuccess(`${vehicle.name} booked for ${destName}`);
 
-    // 5️⃣ Refresh bookings & log activity
-    if (typeof loadUserBookings === 'function') {
-      await loadUserBookings(currentUser?._id || currentUser?.id);
+    // ✅ Step 6: Update bookings UI
+    try {
+      if (
+        typeof loadUserBookings === "function" &&
+        typeof renderAllSections === "function"
+      ) {
+        await loadUserBookings(currentUser?._id || currentUser?.id);
+        await renderAllSections();
+      } else {
+        refreshBookingsList();
+      }
+    } catch (err) {
+      console.warn("Could not reload bookings", err);
+      refreshBookingsList();
     }
-    if (typeof renderAllSections === 'function') renderAllSections();
 
-    await fetch('/activities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: currentUser?._id || currentUser?.id,
-        type: 'travel',
-        content: `${vehicle.name} booked for ${destName}`,
-        createdAt: new Date().toISOString()
-      })
-    });
+    // ✅ Step 7: Add to recent activities
+    try {
+      await fetch("/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser?._id || currentUser?.id,
+          type: "travel",
+          content: `${vehicle.name} booked for ${destName}`,
+          createdAt: new Date().toISOString(),
+        }),
+      });
+    } catch (e) {
+      console.warn("Activity logging failed", e);
+    }
   } catch (err) {
-    console.error('confirmTravelBooking error:', err);
-    alert('Error saving travel booking.');
+    console.error("confirmTravelBooking error", err);
+    alert("Error saving travel — check console for details.");
   }
 }
 
+/* ---------- helper: show centered success popup (vehicle booked) ---------- */
+function showCenteredSuccess(message) {
+  let s = document.getElementById("centeredSuccessToast");
+  if (!s) {
+    s = document.createElement("div");
+    s.id = "centeredSuccessToast";
+    Object.assign(s.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%,-50%)",
+      background: "rgba(17, 25, 40, 0.95)",
+      color: "#5ec5ff",
+      padding: "18px 26px",
+      borderRadius: "12px",
+      zIndex: 99999,
+      boxShadow: "0 0 30px rgba(94,197,255,0.45)",
+      fontWeight: "700",
+      fontSize: "1.05rem",
+      textAlign: "center",
+    });
+    document.body.appendChild(s);
+  }
+  s.textContent = message;
+  s.style.display = "block";
+  setTimeout(() => {
+    s.style.display = "none";
+  }, 2200);
+}
 
+/* ---------- fallback: refresh bookings ---------- */
+async function refreshBookingsList() {
+  const bookingsListEl =
+    document.getElementById("bookingsList") ||
+    document.getElementById("bookingsListContainer");
+  if (!bookingsListEl) return;
+
+  try {
+    const res = await fetch("/api/bookings");
+    if (!res.ok) {
+      console.warn("Could not refresh bookings list - server returned", res.status);
+      return;
+    }
+    const allBookings = await res.json();
+    bookingsListEl.innerHTML = "";
+    (allBookings || []).forEach((b) => {
+      const card = document.createElement("div");
+      card.className = "booking-card";
+      const destName =
+        b.destination?.name || b.destination || "Destination";
+      let travelInfo = "";
+      if (b.assignedTravel) {
+        travelInfo = `<div class="assigned-travel">Travels: ${escapeHtml(
+          b.assignedTravel.name
+        )} — ₹${b.assignedTravel.totalPrice}</div>`;
+      }
+      card.innerHTML = `
+        <h3>${escapeHtml(destName)}</h3>
+        <p>From: ${escapeHtml(
+          b.startDate?.slice(0, 10) || ""
+        )} To: ${escapeHtml(b.endDate?.slice(0, 10) || "")}</p>
+        ${travelInfo}
+        <div style="margin-top:8px;"><button onclick="openTravelFromBooking('${
+          b._id
+        }')">Book/Change Travels</button></div>
+      `;
+      bookingsListEl.appendChild(card);
+    });
+  } catch (err) {
+    console.error("refreshBookingsList error", err);
+  }
+}
+
+/* ---------- open travel popup preselect booking ---------- */
+function openTravelFromBooking(bookingId) {
+  try {
+    showSection && showSection("travels");
+  } catch (e) {}
+  if (typeof renderTravelsSection === "function") renderTravelsSection();
+
+  setTimeout(() => {
+    const popup =
+      document.getElementById("travelPopup") ||
+      document.getElementById("travelModal");
+    if (popup) popup.dataset.preselectBooking = bookingId;
+  }, 200);
+}
