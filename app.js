@@ -226,46 +226,57 @@ app.put('/api/bookings/:id', async (req, res) => {
 });
 
 // ✅ UPDATE BOOKING OR ASSIGN TRAVEL
-// ✅ UPDATE BOOKING OR ASSIGN TRAVEL
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // 🧠 Check if request is a travel assignment (no date check needed)
-    const isTravelAssignment = !!updateData.assignedTravel;
+    // 🧩 If this is a travel assignment, skip field validation
+    if (updateData.assignedTravel) {
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        req.params.id,
+        { $set: updateData },
+        { new: true, runValidators: false }
+      ).populate('destination');
 
-    // 🧩 Only require start/end dates if NOT travel assignment
-    if (!isTravelAssignment) {
-      if (!updateData.startDate || !updateData.endDate) {
-        return res.status(400).json({ error: "Start and End dates are required" });
-      }
+      if (!updatedBooking)
+        return res.status(404).json({ error: 'Booking not found' });
+
+      await Activity.create({
+        userId: updatedBooking.userId,
+        type: 'travel',
+        content: `Booked ${updateData.assignedTravel.name} for ${updatedBooking.destination?.name || 'destination'}`,
+        destinationId: updatedBooking.destination?._id
+      });
+
+      return res.json(updatedBooking);
     }
 
-    // ✅ Proceed to update booking
+    // 🧩 Else it's a normal booking update — still validate dates
+    const { startDate, endDate, travelers } = updateData;
+    if (!startDate || !endDate || !travelers) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { $set: updateData },
-      { new: true, runValidators: false }
-    ).populate("destination");
+      { startDate, endDate, travelers },
+      { new: true }
+    ).populate('destination');
 
-    if (!updatedBooking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
+    if (!updatedBooking)
+      return res.status(404).json({ error: 'Booking not found' });
 
-    // 📝 Log activity (optional)
     await Activity.create({
       userId: updatedBooking.userId,
-      type: updateData.assignedTravel ? 'travel' : 'booking',
-      content: updateData.assignedTravel
-        ? `Assigned ${updateData.assignedTravel.name} for ${updatedBooking.destination.name}`
-        : `Modified booking for ${updatedBooking.destination.name}`,
+      type: 'booking',
+      content: `Modified booking for ${updatedBooking.destination.name}`,
       destinationId: updatedBooking.destination._id
     });
 
     res.json(updatedBooking);
   } catch (err) {
-    console.error("Booking update error:", err);
-    res.status(500).json({ error: "Failed to update booking", details: err.message });
+    console.error('Booking update error:', err);
+    res.status(500).json({ error: 'Failed to update booking', details: err.message });
   }
 });
 
