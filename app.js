@@ -226,19 +226,22 @@ app.put('/api/bookings/:id', async (req, res) => {
 });
 
 // ✅ UPDATE BOOKING OR ASSIGN TRAVEL
+// ✅ UPDATE BOOKING OR ASSIGN TRAVEL
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // 🧠 If this request is only assigning travel, skip date validation
+    // 🧠 Check if request is a travel assignment (no date check needed)
     const isTravelAssignment = !!updateData.assignedTravel;
 
+    // 🧩 Only require start/end dates if NOT travel assignment
     if (!isTravelAssignment) {
       if (!updateData.startDate || !updateData.endDate) {
         return res.status(400).json({ error: "Start and End dates are required" });
       }
     }
 
+    // ✅ Proceed to update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
@@ -265,6 +268,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     res.status(500).json({ error: "Failed to update booking", details: err.message });
   }
 });
+
 
 
 // ---------------------- DELETE BOOKING ----------------------
