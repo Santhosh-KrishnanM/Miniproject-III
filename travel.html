@@ -18,13 +18,12 @@
   </ul>
 </nav>
 
-<!-- Slideshow with Background Video -->
-<div class="slideshow-contain er">
-  <video autoplay muted loop id="bg-video">
-    <source src="videos/k1.mp4" type="video/mp4" />
-    Your browser does not support the video tag.
-  </video>
-  <div class="overlay-text">
+<!-- Slideshow / Hero Section with Background Image -->
+<div class="slideshow-container" style="position: relative; height: 100vh; overflow: hidden;">
+  <img src="2.jpg" alt="Tamil Nadu Background" id="bg-image" 
+       style="width:100%; height:100%; object-fit:cover; filter:brightness(0.75);" />
+  
+  <div class="overlay-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:white;">
     <h1>Welcome to Tamil Nadu</h1>
     <p>Discover the Land of Temples, Culture, and Natural Beauty</p>
   </div>
@@ -46,39 +45,33 @@
   </div>
 </section>
 
-<!-- Adventure Page Section -->
-<div class="adventure-page" id="adventurePage">
+<!-- Adventure Page -->
+<div class="adventure-page" id="adventurePage" style="display:none;">
   <h1>Tamil Nadu Adventures</h1>
   <p>Explore the thrilling adventures that Tamil Nadu has to offer!</p>
   
-  <!-- Video Section -->
   <div class="video-section">
     <h2>Tamil Nadu Adventure Places</h2>
     <video controls>
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Adventures in Tamil Nadu_free.mp4" type="video/mp4" />
+      <source src="videos/adventure.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
-    <p>Explore the breathtaking adventure spots in Tamil Nadu!</p>
   </div>
-
   <button onclick="showMainPage()" class="back-btn">Back to Home</button>
 </div>
 
-<!-- Food Page Section -->
-<div class="food-page" id="foodPage">
+<!-- Food Page -->
+<div class="food-page" id="foodPage" style="display:none;">
   <h1>Tamil Nadu Famous Foods</h1>
   <p>Discover the delicious and famous foods of Tamil Nadu!</p>
   
-  <!-- Video Section -->
   <div class="video-section">
     <h2>Famous Foods of Tamil Nadu</h2>
     <video controls>
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Famous Foods of Tamil Nadu_free.mp4" type="video/mp4" />
+      <source src="videos/foods.mp4" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
-    <p>Explore the culinary delights of Tamil Nadu!</p>
   </div>
-
   <button onclick="showMainPage()" class="back-btn">Back to Home</button>
 </div>
 
@@ -92,46 +85,24 @@
       <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
         <i class="fas fa-info-circle"></i> Login as Admin or Tourist
       </p>
-      <div>
-        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
-      </div>
-      <div>
-        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
-      </div>
-      <button id="loginBtn">
-        <i class="fas fa-sign-in-alt"></i> Login
-      </button>
-      <div class="toggle-link" onclick="showSignup()">
-        Don't have an account? Sign up here
-      </div>
+      <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
+      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+      <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      <div class="toggle-link" onclick="showSignup()">Don't have an account? Sign up here</div>
     </div>
 
-    <div id="signupForm" style="display:none">
+    <div id="signupForm" style="display:none;">
       <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
       <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
         <i class="fas fa-info-circle"></i> Create a tourist account
       </p>
-      <div>
-        <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
-      </div>
-      <div>
-        <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
-      </div>
-      <div>
-        <input type="tel" id="signupPhone" placeholder="Phone Number" autocomplete="tel" />
-      </div>
-      <div>
-        <input type="text" id="signupAddress" placeholder="Address" autocomplete="address-line1" />
-      </div>
-      <div>
-        <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
-      </div>
-      <button id="signupBtn">
-        <i class="fas fa-user-plus"></i> Sign Up
-      </button>
-      <div class="toggle-link" onclick="showLogin()">
-        Already have an account? Login here
-      </div>
+      <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
+      <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
+      <input type="tel" id="signupPhone" placeholder="Phone Number" autocomplete="tel" />
+      <input type="text" id="signupAddress" placeholder="Address" autocomplete="address-line1" />
+      <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
+      <button id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
+      <div class="toggle-link" onclick="showLogin()">Already have an account? Login here</div>
     </div>
   </div>
 </div>
@@ -146,3 +117,5 @@
 </div>
 
 <script src="script.js"></script>
+</body>
+</html>
