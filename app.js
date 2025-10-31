@@ -232,6 +232,34 @@ app.put('/api/bookings/:id', async (req, res) => {
 });
 
 
+// ✅ DELETE BOOKING (Cancel a booking)
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate("destination");
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // ✅ Delete the booking
+    await Booking.findByIdAndDelete(req.params.id);
+
+    // ✅ Log activity
+    await Activity.create({
+      userId: booking.userId,
+      type: 'booking',
+      content: `Cancelled booking for ${booking.destination?.name || "a destination"}`,
+      destinationId: booking.destination?._id
+    });
+
+    res.json({ message: "Booking cancelled successfully" });
+  } catch (err) {
+    console.error("❌ Error cancelling booking:", err);
+    res.status(500).json({ error: "Failed to delete booking", details: err.message });
+  }
+});
+
+
+
 // ---------------------- DESTINATIONS ----------------------
 
 // Create destination
