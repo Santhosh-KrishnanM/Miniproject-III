@@ -394,3 +394,11 @@ nav ul li.login-btn:hover {
 nav ul li.login-btn i {
   margin-right: 8px;
 }
+#bg-video{
+  object-fit: cover;
+  width: 100vw;
+  height: 100vh; /* Positions the video relative to the viewport */
+  top: 0;
+  left: 0;
+  
+}
