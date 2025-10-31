@@ -193,17 +193,52 @@ app.get('/api/bookings/:userId', async (req, res) => {
   }
 });
 
+// ---------------------- UPDATE BOOKING ----------------------
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const { startDate, endDate, travelers } = req.body;
+
+    if (!startDate || !endDate || !travelers) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { startDate, endDate, travelers },
+      { new: true }
+    ).populate("destination");
+
+    if (!updatedBooking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    await Activity.create({
+      userId: updatedBooking.userId,
+      type: 'booking',
+      content: `Modified booking for ${updatedBooking.destination.name}`,
+      destinationId: updatedBooking.destination._id
+    });
+
+    res.json(updatedBooking);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update booking", details: err.message });
+  }
+});
+
 // ✅ UPDATE BOOKING OR ASSIGN TRAVEL
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // 🛠️ Validate base booking data
-    if (!updateData.startDate || !updateData.endDate) {
-      return res.status(400).json({ error: "Start and End dates are required" });
+    // 🧠 If this request is only assigning travel, skip date validation
+    const isTravelAssignment = !!updateData.assignedTravel;
+
+    if (!isTravelAssignment) {
+      if (!updateData.startDate || !updateData.endDate) {
+        return res.status(400).json({ error: "Start and End dates are required" });
+      }
     }
 
-    // ✅ If assignedTravel is included, no need to block it
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
@@ -232,32 +267,26 @@ app.put('/api/bookings/:id', async (req, res) => {
 });
 
 
-// ✅ DELETE BOOKING (Cancel a booking)
+// ---------------------- DELETE BOOKING ----------------------
 app.delete('/api/bookings/:id', async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id).populate("destination");
+    const booking = await Booking.findByIdAndDelete(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // ✅ Delete the booking
-    await Booking.findByIdAndDelete(req.params.id);
-
-    // ✅ Log activity
     await Activity.create({
       userId: booking.userId,
       type: 'booking',
-      content: `Cancelled booking for ${booking.destination?.name || "a destination"}`,
-      destinationId: booking.destination?._id
+      content: `Cancelled booking for ${booking.destination}`,
+      destinationId: booking.destination
     });
 
     res.json({ message: "Booking cancelled successfully" });
   } catch (err) {
-    console.error("❌ Error cancelling booking:", err);
     res.status(500).json({ error: "Failed to delete booking", details: err.message });
   }
 });
-
 
 
 // ---------------------- DESTINATIONS ----------------------
@@ -351,62 +380,6 @@ app.delete('/destinations/:id', async (req, res) => {
 
 
 
-// ---------------------- TRAVELS ----------------------
-const Travel = require('./travels');
-
-// ✅ Get all travels
-app.get('/api/travels', async (req, res) => {
-  try {
-    const allTravels = await Travel.find();
-    res.json(allTravels);
-  } catch (err) {
-    console.error('Error fetching travels:', err);
-    res.status(500).json({ error: 'Failed to fetch travel options' });
-  }
-});
-
-// ✅ Add new travel (Admin use)
-app.post('/api/travels', async (req, res) => {
-  try {
-    const { name, seats, costPerDay, imageUrl } = req.body;
-    if (!name || !seats || !costPerDay || !imageUrl) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
-    const newTravel = new Travel({ name, seats, costPerDay, imageUrl });
-    await newTravel.save();
-    res.status(201).json(newTravel);
-  } catch (err) {
-    console.error('Error adding travel:', err);
-    res.status(500).json({ error: 'Failed to add travel' });
-  }
-});
-
-// ✅ Update travel details (optional)
-app.put('/api/travels/:id', async (req, res) => {
-  try {
-    const updatedTravel = await Travel.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: false }
-    );
-    res.json(updatedTravel);
-  } catch (err) {
-    console.error('Error updating travel:', err);
-    res.status(500).json({ error: 'Failed to update travel' });
-  }
-});
-
-// ✅ Delete travel
-app.delete('/api/travels/:id', async (req, res) => {
-  try {
-    await Travel.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Travel removed successfully' });
-  } catch (err) {
-    console.error('Error deleting travel:', err);
-    res.status(500).json({ error: 'Failed to delete travel' });
-  }
-});
 
 
 

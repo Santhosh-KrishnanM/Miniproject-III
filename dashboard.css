@@ -1932,33 +1932,3 @@ i:hover {
   transform: rotate(360deg);
 }
 
-/* === BOX GLOW EFFECT ON HOVER === */
-.dashboard-card,
-.stat-card,
-.support-card,
-.resource-card,
-.feedback-card,
-.profile-header,
-.profile-content,
-.booking-card,
-.destination-card,
-.travel-card {
-  transition: box-shadow 0.4s ease, transform 0.3s ease;
-}
-
-.dashboard-card:hover,
-.stat-card:hover,
-.support-card:hover,
-.resource-card:hover,
-.feedback-card:hover,
-.profile-header:hover,
-.profile-content:hover,
-.booking-card:hover,
-.destination-card:hover,
-.travel-card:hover {
-  box-shadow: 0 0 25px 5px gold;
-  transform: translateY(-5px);
-}
-
-
-
