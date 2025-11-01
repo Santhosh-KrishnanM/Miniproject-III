@@ -1042,7 +1042,7 @@ function renderMyBookings(bookings) {
   container.innerHTML = "";
 
   if (!bookings || bookings.length === 0) {
-    container.innerHTML = `<p class="no-bookings">No bookings found yet.</p>`;
+    container.innerHTML = `<p class="no-bookings">No bookings yet.</p>`;
     return;
   }
 
@@ -1050,16 +1050,16 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
-    // ✅ if travel is booked, show it inside the booking box
+    // ✅ travel info — shows below “travelers” line
     const travelInfo = travel
       ? `
-        <div class="travel-info booked">
-          <strong>Travels:</strong> ${travel.name}<br>
+        <div class="travel-info">
+          <strong>Travels:</strong> ${travel.name} <br>
           <span class="travel-status booked">✅ Booked — ₹${travel.totalPrice}</span>
         </div>`
       : `
-        <div class="travel-info not-booked">
-          <span class="travel-status">🚗 No travel assigned</span><br>
+        <div class="travel-info">
+          <span class="travel-status not-booked">🚗 No travels assigned yet</span>
           <button class="assign-travel-btn" onclick="openTravelFromBooking('${b._id}')">
             Assign Travel
           </button>
@@ -1070,6 +1070,7 @@ function renderMyBookings(bookings) {
     card.innerHTML = `
       <h3>${destName}</h3>
       <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
+      <p><strong>Travelers:</strong> ${b.travelers || 1}</p>
       ${travelInfo}
     `;
 
