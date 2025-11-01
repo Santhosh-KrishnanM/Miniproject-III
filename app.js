@@ -226,50 +226,53 @@ app.put('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// ✅ UPDATE BOOKING OR ASSIGN TRAVEL
+// ✅ UPDATE BOOKING OR ASSIGN TRAVEL (Final Working Version)
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // Step 1: Ensure base booking exists
+    // 🧩 Step 1: Find existing booking
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // Step 2: Validate required dates
-    if (!booking.startDate || !booking.endDate) {
-      return res.status(400).json({ error: "Start and End dates are required" });
+    // 🧩 Step 2: Ensure we have userId always set
+    const userId = booking.userId; // ✅ fixed here
+    if (!userId) {
+      return res.status(400).json({ error: "userId is not defined in booking" });
     }
 
-    // Step 3: Merge data
+    // 🧩 Step 3: Prepare merged update
     const finalUpdate = {
+      userId: userId,
+      destination: booking.destination,
       startDate: booking.startDate,
       endDate: booking.endDate,
       travelers: booking.travelers || 1,
-      destination: booking.destination,
-      userId: booking.userId, // ✅ important fix
-      ...updateData
+      ...updateData // may include assignedTravel, etc.
     };
 
-    // Step 4: Update booking
+    // 🧩 Step 4: Perform update
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: finalUpdate },
       { new: true }
     ).populate("destination");
 
-    // Step 5: Log activity
+    // 🧩 Step 5: Log activity (optional)
     await Activity.create({
-      userId: booking.userId,
+      userId: userId,
       type: updateData.assignedTravel ? "travel" : "booking",
       content: updateData.assignedTravel
         ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination.name}`
-        : `Modified booking for ${updatedBooking.destination.name}`,
+        : `Updated booking for ${updatedBooking.destination.name}`,
       destinationId: booking.destination
     });
 
+    // ✅ Success response
     res.json(updatedBooking);
+
   } catch (err) {
     console.error("❌ Booking update error:", err);
     res.status(500).json({ error: "Failed to update booking", details: err.message });
