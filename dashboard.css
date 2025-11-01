@@ -1931,4 +1931,17 @@ i {
 i:hover {
   transform: rotate(360deg);
 }
+.travel-info {
+  background: rgba(255, 215, 0, 0.1);
+  border-left: 3px solid gold;
+  padding: 6px 10px;
+  margin-top: 8px;
+  border-radius: 6px;
+}
+
+.travel-status {
+  color: gold;
+  font-weight: 600;
+}
+
 
