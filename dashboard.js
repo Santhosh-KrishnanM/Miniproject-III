@@ -952,6 +952,7 @@ async function loadUserBookings(userId) {
   try {
     const res = await fetch(`/api/bookings/${userId}`);
     const bookings = await res.json();
+    renderMyBookings(bookings);
     const container = document.getElementById("bookingsList");
     container.innerHTML = "";
 
@@ -1034,6 +1035,40 @@ async function loadUserBookings(userId) {
     console.error("Error loading bookings:", err);
     alert("Failed to load bookings.");
   }
+}
+function renderMyBookings(bookings) {
+  const container = document.getElementById("myBookingsList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (!bookings || bookings.length === 0) {
+    container.innerHTML = `<p class="no-bookings">No bookings found yet.</p>`;
+    return;
+  }
+
+  bookings.forEach(b => {
+    const destName = b.destination?.name || "Destination";
+    const travel = b.assignedTravel;
+
+    const travelInfo = travel
+      ? `<div class="travel-info">
+            <strong>Travels:</strong> ${travel.name} <br>
+            <span class="travel-status">✅ Booked (₹${travel.totalPrice})</span>
+         </div>`
+      : `<div class="travel-info">
+            <span class="travel-status">🚗 No travels assigned yet</span>
+         </div>`;
+
+    const card = document.createElement("div");
+    card.className = "booking-card";
+    card.innerHTML = `
+      <h3>${destName}</h3>
+      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
+      ${travelInfo}
+    `;
+
+    container.appendChild(card);
+  });
 }
 
 // --------- UPDATE STATS ------------
