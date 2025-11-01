@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tamil Nadu Tourism</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -18,12 +18,19 @@
   </ul>
 </nav>
 
+
 <!-- Slideshow / Hero Section with Background Image -->
 <div class="slideshow-container" style="position: relative; height: 100vh; overflow: hidden;">
   <img src="2.jpg" alt="Tamil Nadu Background" id="bg-image" 
        style="width:100%; height:100%; object-fit:cover; filter:brightness(0.75);" />
   
   <div class="overlay-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:white;">
+
+<!-- Slideshow -->
+<div class="slideshow-container">
+  <div class="slide"></div>
+  <div class="overlay-text">
+
     <h1>Welcome to Tamil Nadu</h1>
     <p>Discover the Land of Temples, Culture, and Natural Beauty</p>
   </div>
@@ -39,9 +46,7 @@
     <div class="box eat" onclick="showFoodPage()">
       <div class="text">Eat & Drink</div>
     </div>
-    <div class="box spiritual">
-      <div class="text">Spiritual</div>
-    </div>
+    <div class="box spiritual"><div class="text">Spiritual</div></div>
   </div>
 </section>
 
@@ -53,7 +58,10 @@
   <div class="video-section">
     <h2>Tamil Nadu Adventure Places</h2>
     <video controls>
-      <source src="videos/adventure.mp4" type="video/mp4" />
+
+      <source src="videos/adventure.mp4" type="video/mp4" /
+      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Adventures in Tamil Nadu_free.mp4" type="video/mp4">
+
       Your browser does not support the video tag.
     </video>
   </div>
@@ -68,7 +76,11 @@
   <div class="video-section">
     <h2>Famous Foods of Tamil Nadu</h2>
     <video controls>
+
       <source src="videos/foods.mp4" type="video/mp4" />
+
+      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Famous Foods of Tamil Nadu_free.mp4" type="video/mp4">
+
       Your browser does not support the video tag.
     </video>
   </div>
@@ -107,7 +119,10 @@
   </div>
 </div>
 
-<!-- Welcome Page -->
+<!-- Main Page (after login/signup) -->
+
+
+<!-- Welcome Page (optional, can be removed if using mainPage) -->
 <div id="welcomePage" style="display:none;">
   <div class="welcome-content">
     <h1>Welcome!</h1>
@@ -118,4 +133,8 @@
 
 <script src="script.js"></script>
 </body>
+
 </html>
+
+</html>
+
