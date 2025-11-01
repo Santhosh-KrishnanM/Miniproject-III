@@ -1979,4 +1979,38 @@ i:hover {
   color: #00ffb3;
   font-weight: bold;
 }
+.travel-booked-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.travel-booked-card {
+  background: #1b2430;
+  color: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  width: 260px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.travel-booked-card h4 {
+  margin-bottom: 8px;
+  color: #00c3ff;
+}
+
+.travel-booked-card button {
+  margin-top: 10px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.travel-booked-card button:hover {
+  background: #ff6666;
+}
 

@@ -2216,6 +2216,61 @@ async function confirmTravelBooking() {
     return;
   }
 
+  /* ===================== RENDER TRAVEL BOOKINGS LIST ===================== */
+async function renderTravelBookingsList() {
+  const container = document.getElementById("travelBookingsList");
+  if (!container) return;
+
+  container.innerHTML = "<p>Loading...</p>";
+
+  try {
+    const res = await fetch(`/api/bookings/${currentUser?._id || currentUser?.id}`);
+    const bookings = await res.json();
+
+    const withTravel = bookings.filter(b => b.assignedTravel);
+    if (withTravel.length === 0) {
+      container.innerHTML = `<p>No travels booked yet.</p>`;
+      return;
+    }
+
+    container.innerHTML = withTravel.map(b => `
+      <div class="travel-booked-card">
+        <h4>${b.destination?.name || "Destination"}</h4>
+        <p>Travels: <strong>${b.assignedTravel.name}</strong></p>
+        <p>Price: ₹${b.assignedTravel.totalPrice}</p>
+        <button onclick="deleteTravel('${b._id}')">🗑️ Delete</button>
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error("Failed to load travel list", err);
+    container.innerHTML = `<p>Error loading travel bookings.</p>`;
+  }
+}
+
+/* ===================== DELETE TRAVEL BOOKING ===================== */
+async function deleteTravel(bookingId) {
+  if (!confirm("Are you sure you want to remove this travel?")) return;
+  try {
+    const res = await fetch(`/api/bookings/${bookingId}/travel`, { method: "DELETE" });
+    if (res.ok) {
+      showCenteredSuccess("Travel removed successfully ✅");
+      await renderTravelBookingsList(); // refresh list
+    } else {
+      alert("Failed to delete travel.");
+    }
+  } catch (err) {
+    console.error("Delete travel error:", err);
+    alert("Something went wrong.");
+  }
+}
+
+/* Auto render booked travels below the travels page */
+document.addEventListener("DOMContentLoaded", () => {
+  renderTravelsSection?.();
+  renderTravelBookingsList();
+});
+
+
   // ✅ Step 1: Fetch the full booking details
   let currentBooking;
   try {
