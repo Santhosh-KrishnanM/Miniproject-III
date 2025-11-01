@@ -1932,16 +1932,38 @@ i:hover {
   transform: rotate(360deg);
 }
 .travel-info {
-  background: rgba(255, 215, 0, 0.1);
-  border-left: 3px solid gold;
-  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 8px;
   margin-top: 8px;
-  border-radius: 6px;
+  font-size: 0.95rem;
 }
 
-.travel-status {
-  color: gold;
-  font-weight: 600;
+.travel-info.booked {
+  border-left: 4px solid #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.travel-info.not-booked {
+  border-left: 4px solid #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.assign-travel-btn {
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: #ffca28;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  transition: 0.3s;
+}
+
+.assign-travel-btn:hover {
+  background: #ffc107;
+  transform: scale(1.05);
 }
 
 

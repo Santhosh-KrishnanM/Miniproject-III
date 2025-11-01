@@ -1050,14 +1050,20 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
+    // ✅ if travel is booked, show it inside the booking box
     const travelInfo = travel
-      ? `<div class="travel-info">
-            <strong>Travels:</strong> ${travel.name} <br>
-            <span class="travel-status">✅ Booked (₹${travel.totalPrice})</span>
-         </div>`
-      : `<div class="travel-info">
-            <span class="travel-status">🚗 No travels assigned yet</span>
-         </div>`;
+      ? `
+        <div class="travel-info booked">
+          <strong>Travels:</strong> ${travel.name}<br>
+          <span class="travel-status booked">✅ Booked — ₹${travel.totalPrice}</span>
+        </div>`
+      : `
+        <div class="travel-info not-booked">
+          <span class="travel-status">🚗 No travel assigned</span><br>
+          <button class="assign-travel-btn" onclick="openTravelFromBooking('${b._id}')">
+            Assign Travel
+          </button>
+        </div>`;
 
     const card = document.createElement("div");
     card.className = "booking-card";
