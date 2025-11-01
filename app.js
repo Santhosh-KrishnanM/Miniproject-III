@@ -185,14 +185,11 @@ app.post('/api/bookings', async (req, res) => {
 });
 
 app.get('/api/bookings/:userId', async (req, res) => {
-  try {
-    const bookings = await Booking.find({ userId: req.params.userId })
-      .populate("destination")
-      .lean();
-    res.json(bookings);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch bookings", details: err.message });
-  }
+  const bookings = await Booking.find({ userId: req.params.userId })
+    .populate("destination")
+    .populate("assignedTravel")  // ✅ ADD THIS LINE
+    .lean();
+  res.json(bookings);
 });
 
 
