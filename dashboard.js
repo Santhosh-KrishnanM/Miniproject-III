@@ -1036,7 +1036,7 @@ async function loadUserBookings(userId) {
     alert("Failed to load bookings.");
   }
 }
-// ✅ Render My Bookings with assigned travel info
+// ✅ Updated renderMyBookings - shows assigned travel below "Travelers"
 function renderMyBookings(bookings) {
   const container = document.getElementById("bookingsList");
   if (!container) return;
@@ -1051,6 +1051,7 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
+    // ✅ Travel Info shown below Travelers
     const travelInfo = travel
       ? `<div class="travel-info" style="margin-top: 6px;">
            <strong>Travels:</strong> ${travel.name}<br>
@@ -1073,6 +1074,7 @@ function renderMyBookings(bookings) {
     container.appendChild(card);
   });
 }
+
 
 
 // --------- UPDATE STATS ------------
