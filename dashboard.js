@@ -2155,213 +2155,194 @@ function escapeHtml(txt) {
   return txt.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ===================== TRAVELS: Confirm & UI update (Fixed Version) ===================== */
-async function confirmTravelBooking() {
-  const popup =
-    document.getElementById("travelPopup") ||
-    document.getElementById("travelModal") ||
-    document.getElementById("travelModalAlt");
+//* ================= TRAVELS FEATURE ================= */
+// vehicles data (images should be in your project root or adjust paths)
+const TRAVEL_VEHICLES = [
+  { id: 'tempo', name: 'Tempo Traveller', seats: 17, cost: 600, img: 'tempo.jpg' },
+  { id: 'thar', name: 'Thar', seats: 6, cost: 450, img: 'thar.jpg' },
+  { id: 'travels', name: 'Travels Bus', seats: 60, cost: 1000, img: 'travels.jpg' }
+];
 
-  const bookingId = popup?.dataset?.selectedBooking;
-  const vehicle = popup?.dataset?.selectedVehicle
-    ? JSON.parse(popup.dataset.selectedVehicle)
-    : null;
-  const total = popup?.dataset?.selectedTotal
-    ? parseInt(popup.dataset.selectedTotal)
-    : 0;
+function renderTravelsSection() {
+  const container = document.getElementById('travelsGrid');
+  if (!container) return;
+  container.innerHTML = '';
+  TRAVEL_VEHICLES.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'travel-card';
+    card.dataset.name = v.name;
+    card.dataset.seats = v.seats;
+    card.dataset.cost = v.cost;
+    card.innerHTML = `
+      <img src="${v.img}" alt="${v.name}">
+      <div class="travel-info">
+        <h4>${v.name}</h4>
+        <div class="meta">Seats: ${v.seats} · ₹${v.cost} / day</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openTravelPopup(v));
+    container.appendChild(card);
+  });
+}
 
-  if (!bookingId || !vehicle) {
-    alert("Please select a booking from the dropdown before confirming.");
-    return;
+async function openTravelPopup(vehicle) {
+  const popup = document.getElementById('travelPopup');
+  if (!popup) return;
+  document.getElementById('popupImage').src = vehicle.img;
+  document.getElementById('popupName').textContent = vehicle.name;
+  document.getElementById('popupSeats').textContent = `Seats: ${vehicle.seats}`;
+  document.getElementById('popupCost').textContent = `Per Day Cost: ₹${vehicle.cost}`;
+  document.getElementById('totalPrice').textContent = `₹0`;
+  popup.style.display = 'flex';
+
+  let bookings = [];
+  try {
+    if (currentUser && currentUser._id) {
+      const res = await fetch(`/api/bookings/${currentUser._id}`);
+      if (res.ok) bookings = await res.json();
+    }
+  } catch (err) {
+    console.error('Error fetching user bookings for travels popup', err);
   }
 
-  // ✅ Step 1: Fetch the full booking details
-  let currentBooking;
-  try {
-    const resGet = await fetch(`/api/bookings/${bookingId}`);
-    if (!resGet.ok) {
-      const t = await resGet.text().catch(() => null);
-      alert("Unable to load booking details: " + (t || resGet.status));
+  const select = document.getElementById('userBookingsSelect');
+  select.innerHTML = '<option value="">— Select booking —</option>';
+
+  const filtered = bookings.filter(b => b.destination);
+  if (filtered.length === 0) {
+    select.innerHTML += `<option value="" disabled>No active bookings found</option>`;
+  } else {
+    filtered.forEach(b => {
+      const start = b.startDate ? b.startDate.slice(0,10) : '';
+      const end = b.endDate ? b.endDate.slice(0,10) : '';
+      const title = `${b.destination?.name || 'Booking'} — ${start} → ${end}`;
+      select.innerHTML += `<option value="${b._id}" data-start="${b.startDate}" data-end="${b.endDate}">${title}</option>`;
+    });
+  }
+
+  select.onchange = function() {
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) {
+      document.getElementById('totalPrice').textContent = `₹0`;
       return;
     }
-    currentBooking = await resGet.json();
-  } catch (err) {
-    console.error("Error fetching booking", err);
-    alert("Error fetching booking details from server.");
+    const start = opt.dataset.start;
+    const end = opt.dataset.end;
+    const days = calcDaysInclusive(start, end);
+    const total = days * vehicle.cost;
+    document.getElementById('totalPrice').textContent = `₹${total}`;
+    popup.dataset.selectedBooking = opt.value;
+    popup.dataset.selectedVehicle = JSON.stringify(vehicle);
+    popup.dataset.selectedTotal = total;
+  };
+
+  document.getElementById('confirmBooking').onclick = confirmTravelBooking;
+}
+
+function closeTravelPopup() {
+  const popup = document.getElementById('travelPopup');
+  if (popup) popup.style.display = 'none';
+}
+
+function calcDaysInclusive(startISO, endISO) {
+  const s = new Date(startISO.slice(0,10));
+  const e = new Date(endISO.slice(0,10));
+  const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24)) + 1;
+  return diff > 0 ? diff : 0;
+}
+
+/* ===================== FIXED confirmTravelBooking ===================== */
+async function confirmTravelBooking() {
+  const popup = document.getElementById("travelPopup");
+  const bookingId = popup?.dataset?.selectedBooking;
+  const vehicle = popup?.dataset?.selectedVehicle ? JSON.parse(popup.dataset.selectedVehicle) : null;
+  const total = popup?.dataset?.selectedTotal ? parseInt(popup.dataset.selectedTotal) : 0;
+
+  if (!bookingId || !vehicle) {
+    alert("Please select a booking before confirming travel.");
     return;
   }
 
-  // ✅ Step 2: Validate booking date
+  let currentBooking;
   try {
-    if (!currentBooking.startDate || !currentBooking.endDate) {
-      console.warn("⚠️ Booking missing start/end date — proceeding without validation.");
-    } else {
-      const now = new Date();
-      const bookingEnd = new Date(currentBooking.endDate);
-      if (bookingEnd < now.setHours(0, 0, 0, 0)) {
-        alert("This trip has already ended. Cannot assign travel for completed trips.");
-        return;
-      }
+    const res = await fetch(`/api/bookings/${bookingId}`);
+    if (!res.ok) {
+      alert("Failed to load booking details from server.");
+      return;
     }
+    currentBooking = await res.json();
   } catch (err) {
-    console.warn("Date validation warning", err);
+    console.error("Error fetching booking", err);
+    alert("Error loading booking data.");
+    return;
   }
 
-  // ✅ Step 3: Prepare safe update payload (added userId fix)
-  const updatePayload = {
-    userId: currentUser?._id || currentUser?.id, // 🔧 added fix
+  if (!currentBooking.userId && currentUser?._id) {
+    currentBooking.userId = currentUser._id; // ✅ add userId if missing
+  }
+
+  const now = new Date();
+  const bookingEnd = new Date(currentBooking.endDate);
+  if (bookingEnd < now.setHours(0,0,0,0)) {
+    alert("This trip has already ended. Cannot assign travel for completed trips.");
+    return;
+  }
+
+  const payload = {
+    userId: currentBooking.userId,
     startDate: currentBooking.startDate,
     endDate: currentBooking.endDate,
     travelers: currentBooking.travelers || 1,
     assignedTravel: {
       name: vehicle.name,
       seats: vehicle.seats,
-      costPerDay: vehicle.costPerDay || vehicle.cost,
+      costPerDay: vehicle.cost,
       totalPrice: total,
-      bookedAt: new Date().toISOString(),
-    },
+      bookedAt: new Date().toISOString()
+    }
   };
 
-  // ✅ Step 4: PUT updated booking to server
   try {
-    const resPut = await fetch(`/api/bookings/${bookingId}`, {
+    const res = await fetch(`/api/bookings/${bookingId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatePayload),
+      body: JSON.stringify(payload)
     });
 
-    if (!resPut.ok) {
-      const text = await resPut.text().catch(() => null);
-      alert("Failed to save travel data: " + (text || resPut.status));
-      console.error("PUT /api/bookings error:", text || resPut.status);
+    if (!res.ok) {
+      const msg = await res.text();
+      alert("Failed to save travel data: " + msg);
       return;
     }
 
-    // ✅ Step 5: Success
     closeTravelPopup();
-    const destName = currentBooking.destination?.name || currentBooking.destination || "your destination";
-    showCenteredSuccess(`${vehicle.name} booked for ${destName}`);
+    showSuccessToast(`✅ ${vehicle.name} booked successfully!`);
 
-    // ✅ Step 6: Update bookings UI
-    try {
-      if (typeof loadUserBookings === "function" && typeof renderAllSections === "function") {
-        await loadUserBookings(currentUser?._id || currentUser?.id);
-        await renderAllSections();
-      } else {
-        refreshBookingsList();
-      }
-    } catch (err) {
-      console.warn("Could not reload bookings", err);
-      refreshBookingsList();
-    }
-
-    // ✅ Step 7: Log activity
-    try {
-      await fetch("/activities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: currentUser?._id || currentUser?.id,
-          type: "travel",
-          content: `${vehicle.name} booked for ${destName}`,
-          createdAt: new Date().toISOString(),
-        }),
-      });
-    } catch (e) {
-      console.warn("Activity logging failed", e);
+    if (typeof loadUserBookings === "function") {
+      await loadUserBookings(currentUser._id);
     }
   } catch (err) {
     console.error("confirmTravelBooking error", err);
-    alert("Error saving travel — check console for details.");
+    alert("Error saving travel booking. Check console for details.");
   }
 }
 
-/* ---------- helper: show centered success popup ---------- */
-function showCenteredSuccess(message) {
-  let s = document.getElementById("centeredSuccessToast");
-  if (!s) {
-    s = document.createElement("div");
-    s.id = "centeredSuccessToast";
-    Object.assign(s.style, {
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%,-50%)",
-      background: "rgba(17, 25, 40, 0.95)",
-      color: "#5ec5ff",
-      padding: "18px 26px",
-      borderRadius: "12px",
-      zIndex: 99999,
-      boxShadow: "0 0 30px rgba(94,197,255,0.45)",
-      fontWeight: "700",
-      fontSize: "1.05rem",
-      textAlign: "center",
-    });
-    document.body.appendChild(s);
-  }
-  s.textContent = message;
-  s.style.display = "block";
-  setTimeout(() => {
-    s.style.display = "none";
-  }, 2200);
+function showSuccessToast(msg) {
+  const toast = document.createElement('div');
+  toast.textContent = msg;
+  toast.style.position = 'fixed';
+  toast.style.bottom = '30px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.background = '#333';
+  toast.style.color = '#fff';
+  toast.style.padding = '10px 20px';
+  toast.style.borderRadius = '8px';
+  toast.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+  toast.style.zIndex = 9999;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
 }
 
-/* ---------- fallback: refresh bookings ---------- */
-async function refreshBookingsList() {
-  const bookingsListEl =
-    document.getElementById("bookingsList") ||
-    document.getElementById("bookingsListContainer");
-  if (!bookingsListEl) return;
-
-  try {
-    const res = await fetch("/api/bookings");
-    if (!res.ok) {
-      console.warn("Could not refresh bookings list - server returned", res.status);
-      return;
-    }
-    const allBookings = await res.json();
-    bookingsListEl.innerHTML = "";
-    (allBookings || []).forEach((b) => {
-      const card = document.createElement("div");
-      card.className = "booking-card";
-      const destName = b.destination?.name || b.destination || "Destination";
-      let travelInfo = "";
-      if (b.assignedTravel) {
-        travelInfo = `<div class="assigned-travel">Travels: ${escapeHtml(
-          b.assignedTravel.name
-        )} — ₹${b.assignedTravel.totalPrice}</div>`;
-      }
-      card.innerHTML = `
-        <h3>${escapeHtml(destName)}</h3>
-        <p>From: ${escapeHtml(
-          b.startDate?.slice(0, 10) || ""
-        )} To: ${escapeHtml(b.endDate?.slice(0, 10) || "")}</p>
-        ${travelInfo}
-        <div style="margin-top:8px;"><button onclick="openTravelFromBooking('${
-          b._id
-        }')">Book/Change Travels</button></div>
-      `;
-      bookingsListEl.appendChild(card);
-    });
-  } catch (err) {
-    console.error("refreshBookingsList error", err);
-  }
-}
-
-/* ---------- open travel popup preselect booking ---------- */
-function openTravelFromBooking(bookingId) {
-  try {
-    showSection && showSection("travels");
-  } catch (e) {}
-  if (typeof renderTravelsSection === "function") renderTravelsSection();
-
-  setTimeout(() => {
-    const popup =
-      document.getElementById("travelPopup") ||
-      document.getElementById("travelModal");
-    if (popup) popup.dataset.preselectBooking = bookingId;
-  }, 200);
-}
-
-// Render travel cards when DOM loads
 document.addEventListener('DOMContentLoaded', renderTravelsSection);
+
