@@ -2406,3 +2406,56 @@ function openTravelFromBooking(bookingId) {
 
 // Render travel cards when DOM loads
 document.addEventListener('DOMContentLoaded', renderTravelsSection);
+
+
+
+
+/* ===================== USER TRAVEL LIST ===================== */
+async function loadUserTravels() {
+  const listContainer = document.getElementById("userTravelList");
+  if (!listContainer || !currentUser?._id) return;
+
+  try {
+    const res = await fetch(`/api/bookings/${currentUser._id}`);
+    const bookings = await res.json();
+    const bookedTravels = bookings.filter(b => b.assignedTravel);
+
+    listContainer.innerHTML = "";
+    if (bookedTravels.length === 0) {
+      listContainer.innerHTML = `<p class="no-travel">No booked travels yet.</p>`;
+      return;
+    }
+
+    bookedTravels.forEach(b => {
+      const t = b.assignedTravel;
+      const div = document.createElement("div");
+      div.className = "travel-list-item";
+      div.innerHTML = `
+        <h4>${b.destination?.name}</h4>
+        <p><strong>Vehicle:</strong> ${t.name}</p>
+        <p><strong>Total Price:</strong> ₹${t.totalPrice}</p>
+        <button class="delete-btn" onclick="deleteTravel('${b._id}')">Delete</button>
+        <button class="pay-btn" onclick="goToPayment('${b._id}')">Proceed to Payment</button>
+      `;
+      listContainer.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading user travels", err);
+  }
+}
+
+async function deleteTravel(bookingId) {
+  if (!confirm("Are you sure you want to delete this travel?")) return;
+
+  try {
+    const res = await fetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
+    if (res.ok) {
+      alert("Travel deleted successfully!");
+      loadUserTravels();
+    } else {
+      alert("Failed to delete travel");
+    }
+  } catch (err) {
+    console.error("Delete travel error", err);
+  }
+}

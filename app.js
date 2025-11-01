@@ -236,6 +236,22 @@ app.put("/api/bookings/:id", async (req, res) => {
   }
 });
 
+
+
+// DELETE a booking (Travel cancel)
+app.delete("/api/bookings/:id", async (req, res) => {
+  try {
+    const deleted = await Booking.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+    res.json({ message: "Booking deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete booking", details: err.message });
+  }
+});
+
+
 // ---------------------- DESTINATIONS ----------------------
 
 // Create destination
