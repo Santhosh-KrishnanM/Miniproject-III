@@ -1037,12 +1037,12 @@ async function loadUserBookings(userId) {
   }
 }
 function renderMyBookings(bookings) {
-  const container = document.getElementById("myBookingsList");
+  const container = document.getElementById("bookingsList");
   if (!container) return;
   container.innerHTML = "";
 
   if (!bookings || bookings.length === 0) {
-    container.innerHTML = `<p class="no-bookings">No bookings yet.</p>`;
+    container.innerHTML = `<p class="no-bookings">No bookings found yet.</p>`;
     return;
   }
 
@@ -1050,33 +1050,35 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
-    // ✅ travel info — shows below “travelers” line
+    // ✅ Travel info shown below Travelers
     const travelInfo = travel
-      ? `
-        <div class="travel-info">
-          <strong>Travels:</strong> ${travel.name} <br>
-          <span class="travel-status booked">✅ Booked — ₹${travel.totalPrice}</span>
-        </div>`
-      : `
-        <div class="travel-info">
-          <span class="travel-status not-booked">🚗 No travels assigned yet</span>
-          <button class="assign-travel-btn" onclick="openTravelFromBooking('${b._id}')">
-            Assign Travel
-          </button>
-        </div>`;
+      ? `<div class="travel-info" style="margin-top:6px; color:#0078ff; font-weight:600;">
+           <i class="fas fa-bus"></i> ${travel.name} — ₹${travel.totalPrice} (Booked)
+         </div>`
+      : `<div class="travel-info" style="margin-top:6px; color:#999;">
+           <i class="fas fa-bus"></i> No travels booked yet
+         </div>`;
 
     const card = document.createElement("div");
     card.className = "booking-card";
     card.innerHTML = `
       <h3>${destName}</h3>
-      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
+      <p><strong>From:</strong> ${b.startDate?.slice(0, 10)} → 
+         <strong>To:</strong> ${b.endDate?.slice(0, 10)}</p>
       <p><strong>Travelers:</strong> ${b.travelers || 1}</p>
       ${travelInfo}
+      <div style="margin-top:10px;">
+        <button class="btn-outline" onclick="openTravelFromBooking('${b._id}')">
+          <i class="fas fa-car-side"></i> Book / Change Travels
+        </button>
+      </div>
     `;
 
     container.appendChild(card);
   });
 }
+
+
 
 // --------- UPDATE STATS ------------
 async function updateStats() {
