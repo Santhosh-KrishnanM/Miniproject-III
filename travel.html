@@ -3,136 +3,136 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tamil Nadu Tourism</title>
+  <title>Travel Aura - Tamil Nadu Tourism</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
 </head>
+
 <body>
+  <!-- ====== NAVBAR ====== -->
+  <nav>
+    <ul>
+      <li class="login-btn" onclick="openModal()">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </li>
+    </ul>
+  </nav>
 
-<!-- Navigation -->
-<nav>
-  <ul>
-    <li class="login-btn" onclick="openModal()">
-      <i class="fas fa-sign-in-alt"></i> Login
-    </li>
-  </ul>
-</nav>
-
-<!--Slideshow / Hero Section with Background Image -->
-<div class="slideshow-container" style="position: relative; height: 100vh; overflow: hidden;">
-  <img src="2.jpg" alt="Tamil Nadu Background" id="bg-image" 
-       style="width:100%; height:100%; object-fit:cover; filter:brightness(0.75);" />
-  
-  <div class="overlay-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:white;">
-
-<!-- Slideshow -->
-<div class="slideshow-container">
-  <div class="slide"></div>
-  <div class="overlay-text">
-
-    <h1>Welcome to Tamil Nadu</h1>
-    <p>Discover the Land of Temples, Culture, and Natural Beauty</p>
-  </div>
-</div>
-
-<!-- Experiences Section -->
-<section class="experiences">
-  <h2>Experiences</h2>
-  <div class="boxes">
-    <div class="box adventure" onclick="showAdventurePage()">
-      <div class="text">Adventure</div>
+  <!-- ====== HERO SECTION ====== -->
+  <section class="hero">
+    <img src="2.jpg" alt="Tamil Nadu Tourism" class="hero-bg" />
+    <div class="overlay-text">
+      <h1>Travel Aura</h1>
+      <p>Discover the Land of Temples, Culture, and Natural Beauty</p>
     </div>
-    <div class="box eat" onclick="showFoodPage()">
-      <div class="text">Eat & Drink</div>
+  </section>
+
+  <!-- ====== EXPERIENCES SECTION ====== -->
+  <section class="experiences">
+    <h2>Experiences</h2>
+    <div class="boxes">
+      <div class="box adventure" onclick="showAdventurePage()">
+        <div class="text">Adventure</div>
+      </div>
+      <div class="box eat" onclick="showFoodPage()">
+        <div class="text">Eat & Drink</div>
+      </div>
+      <div class="box spiritual">
+        <div class="text">Spiritual</div>
+      </div>
     </div>
-    <div class="box spiritual"><div class="text">Spiritual</div></div>
-  </div>
-</section>
+  </section>
 
-<!-- Adventure Page -->
-<div class="adventure-page" id="adventurePage" style="display:none;">
-  <h1>Tamil Nadu Adventures</h1>
-  <p>Explore the thrilling adventures that Tamil Nadu has to offer!</p>
-  
-  <div class="video-section">
-    <h2>Tamil Nadu Adventure Places</h2>
-    <video controls>
+  <!-- ====== ADVENTURE PAGE ====== -->
+  <div class="adventure-page" id="adventurePage">
+    <h1>Tamil Nadu Adventures</h1>
+    <p>Explore the thrilling adventures that Tamil Nadu has to offer!</p>
 
-      <source src="videos/adventure.mp4" type="video/mp4" /
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Adventures in Tamil Nadu_free.mp4" type="video/mp4">
-
-      Your browser does not support the video tag.
-    </video>
-  </div>
-  <button onclick="showMainPage()" class="back-btn">Back to Home</button>
-</div>
-
-<!-- Food Page -->
-<div class="food-page" id="foodPage" style="display:none;">
-  <h1>Tamil Nadu Famous Foods</h1>
-  <p>Discover the delicious and famous foods of Tamil Nadu!</p>
-  
-  <div class="video-section">
-    <h2>Famous Foods of Tamil Nadu</h2>
-    <video controls>
-
-      <source src="videos/foods.mp4" type="video/mp4" />
-
-      <source src="F:\Mini Project\Miniproject III\TravelAura\Videos\Famous Foods of Tamil Nadu_free.mp4" type="video/mp4">
-
-      Your browser does not support the video tag.
-    </video>
-  </div>
-  <button onclick="showMainPage()" class="back-btn">Back to Home</button>
-</div>
-
-<!-- Login/Signup Modal -->
-<div id="loginModal">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeModal()">&times;</span>
-
-    <div id="loginForm">
-      <h2><i class="fas fa-user-circle"></i> Login</h2>
-      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
-        <i class="fas fa-info-circle"></i> Login as Admin or Tourist
-      </p>
-      <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
-      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
-      <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
-      <div class="toggle-link" onclick="showSignup()">Don't have an account? Sign up here</div>
+    <div class="video-section">
+      <h2>Tamil Nadu Adventure Places</h2>
+      <img
+        src="https://images.unsplash.com/photo-1558981403-c5f9891c97a9"
+        alt="Adventure in Tamil Nadu"
+        style="width: 80%; max-width: 900px; border-radius: 10px;"
+      />
+      <p>Explore the breathtaking adventure spots in Tamil Nadu!</p>
     </div>
 
-    <div id="signupForm" style="display:none;">
-      <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
-      <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
-        <i class="fas fa-info-circle"></i> Create a tourist account
-      </p>
-      <input type="text" id="signupUsername" placeholder="Username" autocomplete="username" />
-      <input type="email" id="signupEmail" placeholder="Email" autocomplete="email" />
-      <input type="tel" id="signupPhone" placeholder="Phone Number" autocomplete="tel" />
-      <input type="text" id="signupAddress" placeholder="Address" autocomplete="address-line1" />
-      <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password" />
-      <button id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
-      <div class="toggle-link" onclick="showLogin()">Already have an account? Login here</div>
+    <button onclick="showMainPage()" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Back to Home
+    </button>
+  </div>
+
+  <!-- ====== FOOD PAGE ====== -->
+  <div class="food-page" id="foodPage">
+    <h1>Tamil Nadu Famous Foods</h1>
+    <p>Discover the delicious and famous foods of Tamil Nadu!</p>
+
+    <div class="video-section">
+      <h2>Famous Foods of Tamil Nadu</h2>
+      <img
+        src="https://images.unsplash.com/photo-1551218808-94e220e084d2"
+        alt="Tamil Nadu Food"
+        style="width: 80%; max-width: 900px; border-radius: 10px;"
+      />
+      <p>Explore the culinary delights of Tamil Nadu!</p>
+    </div>
+
+    <button onclick="showMainPage()" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Back to Home
+    </button>
+  </div>
+
+  <!-- ====== LOGIN / SIGNUP MODAL ====== -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+
+      <!-- Login Form -->
+      <div id="loginForm">
+        <h2><i class="fas fa-user-circle"></i> Login</h2>
+        <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+          <i class="fas fa-info-circle"></i> Login as Admin or Tourist
+        </p>
+        <input type="text" id="loginUsername" placeholder="Username" />
+        <input type="password" id="loginPassword" placeholder="Password" />
+        <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+        <div class="toggle-link" onclick="showSignup()">
+          Don't have an account? Sign up here
+        </div>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signupForm" style="display: none;">
+        <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
+        <p style="font-size: 0.9em; color: #ddd; margin-bottom: 15px;">
+          <i class="fas fa-info-circle"></i> Create a tourist account
+        </p>
+        <input type="text" id="signupUsername" placeholder="Username" />
+        <input type="email" id="signupEmail" placeholder="Email" />
+        <input type="tel" id="signupPhone" placeholder="Phone Number" />
+        <input type="text" id="signupAddress" placeholder="Address" />
+        <input type="password" id="signupPassword" placeholder="Password" />
+        <button id="signupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
+        <div class="toggle-link" onclick="showLogin()">
+          Already have an account? Login here
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Main Page (after login/signup) -->
-
-
-<!-- Welcome Page (optional, can be removed if using mainPage) -->
-<div id="welcomePage" style="display:none;">
-  <div class="welcome-content">
-    <h1>Welcome!</h1>
-    <p>You have successfully logged in or signed up.</p>
-    <button onclick="logout()" class="back-btn">Logout</button>
+  <!-- ====== WELCOME PAGE ====== -->
+  <div id="welcomePage" style="display: none;">
+    <div class="welcome-content">
+      <h1>Welcome to Travel Aura!</h1>
+      <p>You have successfully logged in or signed up.</p>
+      <button onclick="logout()" class="back-btn">Logout</button>
+    </div>
   </div>
-</div>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
-
-</html>
-
 </html>
