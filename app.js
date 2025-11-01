@@ -185,68 +185,56 @@ app.post('/api/bookings', async (req, res) => {
 });
 
 app.get('/api/bookings/:userId', async (req, res) => {
-  const bookings = await Booking.find({ userId: req.params.userId })
-    .populate("destination")
-    .populate("assignedTravel")  // ✅ ADD THIS LINE
-    .lean();
-  res.json(bookings);
+  try {
+    const bookings = await Booking.find({ userId: req.params.userId })
+      .populate("destination")
+      .lean(); // ✅ added .lean() so assignedTravel shows up properly
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch bookings", details: err.message });
+  }
 });
 
 
 
-
-// ✅ FINAL FIXED UPDATE BOOKING ROUTE
-app.put('/api/bookings/:id', async (req, res) => {
+app.put("/api/bookings/:id", async (req, res) => {
   try {
-    const updateData = req.body;
-
-    // 1️⃣ Find existing booking
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // 2️⃣ Properly define userId
-    const userId = booking.userId || updateData.userId;
-    if (!userId) {
-      return res.status(400).json({ error: "userId is not defined in booking or request" });
-    }
+    // Merge update data safely
+    const updateData = req.body;
 
-    // 3️⃣ Merge booking data with new updates (safe)
-    const finalUpdate = {
-      startDate: booking.startDate,
-      endDate: booking.endDate,
-      travelers: booking.travelers || 1,
-      destination: booking.destination,
-      userId: userId,
-      ...updateData // includes assignedTravel, etc.
-    };
+    // ✅ Ensure userId is preserved (this fixes your "userId not defined" issue)
+    updateData.userId = booking.userId;
 
-    // 4️⃣ Update the booking
+    // Update the booking (either date changes or assigning travel)
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { $set: finalUpdate },
+      { $set: updateData },
       { new: true }
     ).populate("destination");
 
-    // 5️⃣ Log an activity
+    // Log activity (optional)
     await Activity.create({
-      userId,
+      userId: booking.userId,
       type: updateData.assignedTravel ? "travel" : "booking",
       content: updateData.assignedTravel
-        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination?.name || "trip"}`
-        : `Updated booking for ${updatedBooking.destination?.name || "trip"}`,
-      destinationId: updatedBooking.destination?._id || null
+        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination.name}`
+        : `Modified booking for ${updatedBooking.destination.name}`,
+      destinationId: booking.destination
     });
 
     res.json(updatedBooking);
-
   } catch (err) {
-    console.error("❌ Booking update error:", err);
-    res.status(500).json({ error: "Failed to update booking", details: err.message });
+    console.error("Booking update error:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to update booking", details: err.message });
   }
 });
-
 
 // ---------------------- DESTINATIONS ----------------------
 
