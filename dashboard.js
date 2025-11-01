@@ -1040,7 +1040,6 @@ async function loadUserBookings(userId) {
 function renderMyBookings(bookings) {
   const container = document.getElementById("bookingsList");
   if (!container) return;
-
   container.innerHTML = "";
 
   if (!bookings || bookings.length === 0) {
@@ -1052,29 +1051,28 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
-    // Show travel info if booked
     const travelInfo = travel
-      ? `<div class="travel-details">
-           <strong>Travels:</strong> ${travel.name} <br>
-           <span class="travel-price">💰 ₹${travel.totalPrice}</span>
+      ? `<div class="travel-info" style="margin-top: 6px;">
+           <strong>Travels:</strong> ${travel.name}<br>
+           <span class="travel-status">✅ Booked (₹${travel.totalPrice})</span>
          </div>`
-      : `<div class="travel-details none">
-           <span>🚗 No travels booked yet</span>
+      : `<div class="travel-info" style="margin-top: 6px;">
+           <span class="travel-status">🚗 No travels assigned yet</span>
          </div>`;
 
     const card = document.createElement("div");
     card.className = "booking-card";
     card.innerHTML = `
       <h3>${destName}</h3>
-      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
-      <p><strong>Travelers:</strong> ${b.travelers || 1}</p>
+      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → 
+         <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
+      <p><strong>Travelers:</strong> ${b.travelers}</p>
       ${travelInfo}
     `;
 
     container.appendChild(card);
   });
 }
-
 
 
 // --------- UPDATE STATS ------------
