@@ -1037,7 +1037,7 @@ async function loadUserBookings(userId) {
   }
 }
 function renderMyBookings(bookings) {
-  const container = document.getElementById("bookingsList");
+  const container = document.getElementById("bookingsList") || document.getElementById("myBookingsList");
   if (!container) return;
   container.innerHTML = "";
 
@@ -1050,21 +1050,34 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
-    // ✅ Travel info shown below Travelers
     const travelInfo = travel
-      ? `<div class="travel-info" style="margin-top:6px; color:#0078ff; font-weight:600;">
-           <i class="fas fa-bus"></i> ${travel.name} — ₹${travel.totalPrice} (Booked)
+      ? `<div class="travel-info" style="
+            background: rgba(0,255,0,0.1);
+            border-left: 4px solid #00c851;
+            padding: 6px 10px;
+            margin-top: 6px;
+            border-radius: 6px;
+            color: #00c851;
+            font-weight: 600;
+            ">
+            🚗 Travel Booked: ${travel.name} (₹${travel.totalPrice})
          </div>`
-      : `<div class="travel-info" style="margin-top:6px; color:#999;">
-           <i class="fas fa-bus"></i> No travels booked yet
+      : `<div class="travel-info" style="
+            background: rgba(255,255,255,0.05);
+            padding: 6px 10px;
+            margin-top: 6px;
+            border-radius: 6px;
+            color: #aaa;
+            ">
+            🚗 No travel booked yet
          </div>`;
 
     const card = document.createElement("div");
     card.className = "booking-card";
     card.innerHTML = `
       <h3>${destName}</h3>
-      <p><strong>From:</strong> ${b.startDate?.slice(0, 10)} → 
-         <strong>To:</strong> ${b.endDate?.slice(0, 10)}</p>
+      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → 
+         <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
       <p><strong>Travelers:</strong> ${b.travelers || 1}</p>
       ${travelInfo}
       <div style="margin-top:10px;">
@@ -1073,7 +1086,6 @@ function renderMyBookings(bookings) {
         </button>
       </div>
     `;
-
     container.appendChild(card);
   });
 }
