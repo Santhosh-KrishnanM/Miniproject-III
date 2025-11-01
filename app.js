@@ -193,40 +193,8 @@ app.get('/api/bookings/:userId', async (req, res) => {
   }
 });
 
-// ---------------------- UPDATE BOOKING ----------------------
-app.put('/api/bookings/:id', async (req, res) => {
-  try {
-    const { startDate, endDate, travelers } = req.body;
 
-   if (!userId || !destination || !travelId) {
-  return res.status(400).json({ error: "Missing required fields: userId, destination, or travelId" });
-}
-
-
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      { startDate, endDate, travelers },
-      { new: true }
-    ).populate("destination");
-
-    if (!updatedBooking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
-
-    await Activity.create({
-      userId: updatedBooking.userId,
-      type: 'booking',
-      content: `Modified booking for ${updatedBooking.destination.name}`,
-      destinationId: updatedBooking.destination._id
-    });
-
-    res.json(updatedBooking);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update booking", details: err.message });
-  }
-});
-
-/// ✅ Final working version — fixes userId undefined issue
+// ✅ FINAL FIXED UPDATE BOOKING ROUTE
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
@@ -237,30 +205,30 @@ app.put('/api/bookings/:id', async (req, res) => {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // 2️⃣ Define userId properly (fix)
+    // 2️⃣ Properly define userId
     const userId = booking.userId || updateData.userId;
     if (!userId) {
-      return res.status(400).json({ error: "userId is not defined in booking" });
+      return res.status(400).json({ error: "userId is not defined in booking or request" });
     }
 
-    // 3️⃣ Merge booking with new update
+    // 3️⃣ Merge booking data with new updates (safe)
     const finalUpdate = {
       startDate: booking.startDate,
       endDate: booking.endDate,
       travelers: booking.travelers || 1,
       destination: booking.destination,
       userId: userId,
-      ...updateData // this includes assignedTravel
+      ...updateData // includes assignedTravel, etc.
     };
 
-    // 4️⃣ Update and populate
+    // 4️⃣ Update the booking
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: finalUpdate },
       { new: true }
     ).populate("destination");
 
-    // 5️⃣ Log activity
+    // 5️⃣ Log an activity
     await Activity.create({
       userId,
       type: updateData.assignedTravel ? "travel" : "booking",
