@@ -1036,9 +1036,11 @@ async function loadUserBookings(userId) {
     alert("Failed to load bookings.");
   }
 }
+// ✅ Render My Bookings with assigned travel info
 function renderMyBookings(bookings) {
-  const container = document.getElementById("bookingsList") || document.getElementById("myBookingsList");
+  const container = document.getElementById("bookingsList");
   if (!container) return;
+
   container.innerHTML = "";
 
   if (!bookings || bookings.length === 0) {
@@ -1050,42 +1052,25 @@ function renderMyBookings(bookings) {
     const destName = b.destination?.name || "Destination";
     const travel = b.assignedTravel;
 
+    // Show travel info if booked
     const travelInfo = travel
-      ? `<div class="travel-info" style="
-            background: rgba(0,255,0,0.1);
-            border-left: 4px solid #00c851;
-            padding: 6px 10px;
-            margin-top: 6px;
-            border-radius: 6px;
-            color: #00c851;
-            font-weight: 600;
-            ">
-            🚗 Travel Booked: ${travel.name} (₹${travel.totalPrice})
+      ? `<div class="travel-details">
+           <strong>Travels:</strong> ${travel.name} <br>
+           <span class="travel-price">💰 ₹${travel.totalPrice}</span>
          </div>`
-      : `<div class="travel-info" style="
-            background: rgba(255,255,255,0.05);
-            padding: 6px 10px;
-            margin-top: 6px;
-            border-radius: 6px;
-            color: #aaa;
-            ">
-            🚗 No travel booked yet
+      : `<div class="travel-details none">
+           <span>🚗 No travels booked yet</span>
          </div>`;
 
     const card = document.createElement("div");
     card.className = "booking-card";
     card.innerHTML = `
       <h3>${destName}</h3>
-      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → 
-         <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
+      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
       <p><strong>Travelers:</strong> ${b.travelers || 1}</p>
       ${travelInfo}
-      <div style="margin-top:10px;">
-        <button class="btn-outline" onclick="openTravelFromBooking('${b._id}')">
-          <i class="fas fa-car-side"></i> Book / Change Travels
-        </button>
-      </div>
     `;
+
     container.appendChild(card);
   });
 }

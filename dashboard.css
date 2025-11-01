@@ -1967,3 +1967,16 @@ i:hover {
   background: #ffb300;
   transform: scale(1.05);
 }
+.travel-details {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: #ffd700;
+}
+.travel-details.none {
+  color: #bbb;
+}
+.travel-price {
+  color: #00ffb3;
+  font-weight: bold;
+}
+
