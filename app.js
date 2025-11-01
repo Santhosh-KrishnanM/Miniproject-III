@@ -231,35 +231,35 @@ app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // 🧩 Step 1: Ensure base booking exists
+    // Step 1: Ensure base booking exists
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // 🧩 Step 2: Validate required fields (only when creating)
+    // Step 2: Validate required dates
     if (!booking.startDate || !booking.endDate) {
       return res.status(400).json({ error: "Start and End dates are required" });
     }
 
-    // 🧩 Step 3: Merge existing booking fields with new ones
+    // Step 3: Merge data
     const finalUpdate = {
       startDate: booking.startDate,
       endDate: booking.endDate,
       travelers: booking.travelers || 1,
       destination: booking.destination,
-      userId: booking.userId, // ✅ ensure userId always present
-      ...updateData // may contain assignedTravel or similar
+      userId: booking.userId, // ✅ important fix
+      ...updateData
     };
 
-    // 🧩 Step 4: Update booking
+    // Step 4: Update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: finalUpdate },
       { new: true }
     ).populate("destination");
 
-    // 🧩 Step 5: Log activity
+    // Step 5: Log activity
     await Activity.create({
       userId: booking.userId,
       type: updateData.assignedTravel ? "travel" : "booking",
@@ -275,6 +275,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     res.status(500).json({ error: "Failed to update booking", details: err.message });
   }
 });
+
 
 // ---------------------- DESTINATIONS ----------------------
 
