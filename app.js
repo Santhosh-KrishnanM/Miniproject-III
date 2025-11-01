@@ -226,51 +226,50 @@ app.put('/api/bookings/:id', async (req, res) => {
   }
 });
 
-// ✅ UPDATE BOOKING OR ASSIGN TRAVEL (Final Working Version)
+/// ✅ Final working version — fixes userId undefined issue
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const updateData = req.body;
 
-    // 🧩 Step 1: Find existing booking
+    // 1️⃣ Find existing booking
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: "Booking not found" });
     }
 
-    // 🧩 Step 2: Ensure we have userId always set
-    const userId = booking.userId; // ✅ fixed here
+    // 2️⃣ Define userId properly (fix)
+    const userId = booking.userId || updateData.userId;
     if (!userId) {
       return res.status(400).json({ error: "userId is not defined in booking" });
     }
 
-    // 🧩 Step 3: Prepare merged update
+    // 3️⃣ Merge booking with new update
     const finalUpdate = {
-      userId: userId,
-      destination: booking.destination,
       startDate: booking.startDate,
       endDate: booking.endDate,
       travelers: booking.travelers || 1,
-      ...updateData // may include assignedTravel, etc.
+      destination: booking.destination,
+      userId: userId,
+      ...updateData // this includes assignedTravel
     };
 
-    // 🧩 Step 4: Perform update
+    // 4️⃣ Update and populate
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: finalUpdate },
       { new: true }
     ).populate("destination");
 
-    // 🧩 Step 5: Log activity (optional)
+    // 5️⃣ Log activity
     await Activity.create({
-      userId: userId,
+      userId,
       type: updateData.assignedTravel ? "travel" : "booking",
       content: updateData.assignedTravel
-        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination.name}`
-        : `Updated booking for ${updatedBooking.destination.name}`,
-      destinationId: booking.destination
+        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination?.name || "trip"}`
+        : `Updated booking for ${updatedBooking.destination?.name || "trip"}`,
+      destinationId: updatedBooking.destination?._id || null
     });
 
-    // ✅ Success response
     res.json(updatedBooking);
 
   } catch (err) {
