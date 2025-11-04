@@ -13,14 +13,18 @@ const bookingSchema = new mongoose.Schema({
   },
 
   // ✅ NEW FIELD: assigned travel details
-  assignedTravel: {
-    name: { type: String },
-    costPerDay: { type: Number },
-    totalPrice: { type: Number },
-    bookedAt: { type: Date }
+   assignedTravel: {
+    name: String,
+    seats: Number,
+    costPerDay: Number,
+    totalPrice: Number,
+    bookedAt: Date
   },
 
   createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
+
+
+
