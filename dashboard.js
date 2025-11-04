@@ -2302,6 +2302,7 @@ async function deleteTravel(bookingId) {
 document.addEventListener("DOMContentLoaded", () => {
   renderTravelsSection?.();
   renderTravelBookingsList();
+  renderBookedTravels();
 });
 
 
