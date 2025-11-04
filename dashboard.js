@@ -1074,6 +1074,40 @@ function renderMyBookings(bookings) {
     container.appendChild(card);
   });
 }
+async function renderBookedTravels() {
+  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
+  const travels = await res.json();
+  const container = document.getElementById("bookedTravelsList");
+  container.innerHTML = "";
+
+  if (!travels.length) {
+    container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
+    return;
+  }
+
+  travels.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "travel-booked-item";
+    item.innerHTML = `
+      <div>
+        <strong>${t.travelName}</strong><br>
+        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
+      </div>
+      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
+    `;
+    container.appendChild(item);
+  });
+}
+async function deleteBookedTravel(travelId) {
+  if (!confirm("Are you sure you want to remove this travel?")) return;
+  const res = await fetch(`/api/travels-booked/${travelId}`, { method: "DELETE" });
+  if (res.ok) {
+    alert("✅ Travel removed!");
+    renderBookedTravels();
+  } else {
+    alert("Failed to delete travel");
+  }
+}
 
 
 

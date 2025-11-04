@@ -2014,3 +2014,53 @@ i:hover {
   background: #ff6666;
 }
 
+
+.booked-travels-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  margin-top: 30px;
+}
+
+.booked-travels-box h2 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.4rem;
+}
+
+#bookedTravelsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.travel-booked-item {
+  background: #f7f9fc;
+  border-radius: 10px;
+  padding: 12px 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.travel-booked-item span {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.delete-travel-btn {
+  background: #ff4d4d;
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.delete-travel-btn:hover {
+  background: #e63939;
+}
+
