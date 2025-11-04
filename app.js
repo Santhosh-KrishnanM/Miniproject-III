@@ -508,6 +508,39 @@ app.get('/admin/destinations', async (req, res) => {
   }
 });
 
+
+// ================== ADMIN: GET ALL TRAVEL BOOKINGS ==================
+app.get("/api/admin/travels", async (req, res) => {
+  try {
+    const bookings = await Booking.find({ "assignedTravel.name": { $exists: true } })
+      .populate("userId", "username email")
+      .populate("destination", "name")
+      .lean();
+    res.json(bookings);
+  } catch (err) {
+    console.error("Admin travels fetch error:", err);
+    res.status(500).json({ error: "Failed to load travel bookings", details: err.message });
+  }
+});
+
+// ================== ADMIN: DELETE A TRAVEL BOOKING ==================
+app.delete("/api/admin/travels/:id", async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking || !booking.assignedTravel) {
+      return res.status(404).json({ error: "Travel not found for this booking" });
+    }
+
+    booking.assignedTravel = undefined; // remove assigned travel
+    await booking.save();
+    res.json({ success: true, message: "Travel deleted successfully" });
+  } catch (err) {
+    console.error("Admin delete travel error:", err);
+    res.status(500).json({ error: "Failed to delete travel", details: err.message });
+  }
+});
+
+
 // ---------------------- HEALTH CHECK ----------------------
 
 app.get('/health', (req, res) => {
@@ -532,3 +565,6 @@ mongoose.connect(process.env.MONGO_URI)
     console.error("❌ DB connection failed:", err.message);
     process.exit(1);
   });
+
+
+

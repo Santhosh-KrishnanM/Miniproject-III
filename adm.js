@@ -411,3 +411,62 @@ console.log(`
 📅 Time: ${new Date().toLocaleString()}
 👤 Admin: ${currentAdmin?.username || 'Not logged in'}
 `);
+
+async function loadTravels() {
+  try {
+    const res = await fetch("/api/admin/travels");
+    const travels = await res.json();
+    const tbody = document.querySelector("#travelsTable tbody");
+    tbody.innerHTML = "";
+
+    if (!travels.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No travels booked yet.</td></tr>`;
+      return;
+    }
+
+    travels.forEach(t => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${t.userId?.username || "Unknown"}</td>
+        <td>${t.destination?.name || "—"}</td>
+        <td>${t.assignedTravel?.name || "—"}</td>
+        <td>₹${t.assignedTravel?.totalPrice || 0}</td>
+        <td>${t.assignedTravel?.bookedAt ? new Date(t.assignedTravel.bookedAt).toLocaleString() : "—"}</td>
+        <td><button class="delete-btn" onclick="deleteTravel('${t._id}')">Delete</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Error loading travels", err);
+  }
+}
+
+async function deleteTravel(id) {
+  if (!confirm("Are you sure you want to delete this travel booking?")) return;
+  try {
+    const res = await fetch(`/api/admin/travels/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      alert("Travel deleted successfully");
+      loadTravels();
+    } else {
+      const err = await res.text();
+      alert("Error deleting travel: " + err);
+    }
+  } catch (err) {
+    console.error("Delete travel failed", err);
+  }
+}
+
+// Auto-load when switching to Travels tab
+function showTab(tabName) {
+  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+  document.querySelectorAll(".tab-buttons button").forEach(btn => btn.classList.remove("active"));
+
+  document.getElementById(tabName).classList.add("active");
+  document.querySelector(`.tab-buttons button[onclick="showTab('${tabName}')"]`).classList.add("active");
+
+  if (tabName === "travels") loadTravels();
+  if (tabName === "users") loadUsers();
+  if (tabName === "bookings") loadBookings();
+  if (tabName === "destinations") loadDestinations();
+}
