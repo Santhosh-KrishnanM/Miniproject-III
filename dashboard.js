@@ -2250,51 +2250,67 @@ async function confirmTravelBooking() {
     return;
   }
 
-  /* ===================== RENDER TRAVEL BOOKINGS LIST ===================== */
-async function renderTravelBookingsList() {
-  const container = document.getElementById("travelBookingsList");
-  if (!container) return;
+ // ==================== RENDER BOOKED TRAVELS ====================
+async function renderBookedTravels() {
+  if (!currentUser?._id) return;
 
-  container.innerHTML = "<p>Loading...</p>";
+  const container = document.getElementById("bookedTravelsList");
+  if (!container) return;
+  container.innerHTML = `<p style="color:#888;">Loading your booked travels...</p>`;
 
   try {
-    const res = await fetch(`/api/bookings/${currentUser?._id || currentUser?.id}`);
+    const res = await fetch(`/api/bookings/${currentUser._id}`);
     const bookings = await res.json();
 
-    const withTravel = bookings.filter(b => b.assignedTravel);
-    if (withTravel.length === 0) {
-      container.innerHTML = `<p>No travels booked yet.</p>`;
+    const withTravels = bookings.filter(b => b.assignedTravel);
+    container.innerHTML = "";
+
+    if (withTravels.length === 0) {
+      container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
       return;
     }
 
-    container.innerHTML = withTravel.map(b => `
-      <div class="travel-booked-card">
-        <h4>${b.destination?.name || "Destination"}</h4>
-        <p>Travels: <strong>${b.assignedTravel.name}</strong></p>
-        <p>Price: ₹${b.assignedTravel.totalPrice}</p>
-        <button onclick="deleteTravel('${b._id}')">🗑️ Delete</button>
-      </div>
-    `).join("");
+    withTravels.forEach(b => {
+      const t = b.assignedTravel;
+      const div = document.createElement("div");
+      div.className = "travel-booked-item";
+      div.innerHTML = `
+        <div>
+          <strong>${t.name}</strong><br>
+          <span>${b.destination?.name || "Unknown"} — 
+          ${new Date(t.bookedAt).toLocaleString()}</span>
+        </div>
+        <button class="delete-travel-btn" onclick="deleteBookedTravel('${b._id}')">Delete</button>
+      `;
+      container.appendChild(div);
+    });
   } catch (err) {
-    console.error("Failed to load travel list", err);
-    container.innerHTML = `<p>Error loading travel bookings.</p>`;
+    console.error("Error loading booked travels:", err);
+    container.innerHTML = `<p class="no-travels">Failed to load travels.</p>`;
   }
 }
 
-/* ===================== DELETE TRAVEL BOOKING ===================== */
-async function deleteTravel(bookingId) {
-  if (!confirm("Are you sure you want to remove this travel?")) return;
+// ==================== DELETE BOOKED TRAVEL ====================
+async function deleteBookedTravel(bookingId) {
+  if (!confirm("Are you sure you want to remove this booked travel?")) return;
+
   try {
-    const res = await fetch(`/api/bookings/${bookingId}/travel`, { method: "DELETE" });
+    const res = await fetch(`/api/bookings/${bookingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignedTravel: null })
+    });
+
     if (res.ok) {
-      showCenteredSuccess("Travel removed successfully ✅");
-      await renderTravelBookingsList(); // refresh list
+      alert("✅ Travel removed successfully!");
+      renderBookedTravels();
     } else {
-      alert("Failed to delete travel.");
+      const data = await res.json();
+      alert("Failed to delete travel: " + (data.error || "Unknown error"));
     }
   } catch (err) {
     console.error("Delete travel error:", err);
-    alert("Something went wrong.");
+    alert("Error removing travel. Please try again later.");
   }
 }
 
@@ -2304,6 +2320,52 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTravelBookingsList();
   renderBookedTravels();
 });
+
+
+async function renderBookedTravels() {
+  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
+  const travels = await res.json();
+  const container = document.getElementById("bookedTravelsList");
+  container.innerHTML = "";
+
+  if (!travels.length) {
+    container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
+    return;
+  }
+
+  travels.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "travel-booked-item";
+    item.innerHTML = `
+      <div>
+        <strong>${t.travelName}</strong><br>
+        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
+      </div>
+      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+async function deleteBookedTravel(id) {
+  if (!confirm("Are you sure you want to delete this travel?")) return;
+  const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
+  if (res.ok) {
+    showSuccess("Travel deleted successfully!");
+    renderBookedTravels();
+  } else {
+    alert("Failed to delete travel.");
+  }
+}
+
+function showSection(sectionId) {
+  document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
+  document.getElementById(sectionId).classList.add("active");
+  document.getElementById("pageTitle").textContent =
+    sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
+
+  if (sectionId === "travels") renderBookedTravels();
+}
 
 
   // ✅ Step 1: Fetch the full booking details
