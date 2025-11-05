@@ -255,19 +255,27 @@
 
       <div id="dynamicPagesContainer" class="content-section" style="display:none;"></div>
     
- <!-- TRAVELS -->
-    <section id="travels" class="content-section">
-      <h2>Available Travels</h2>
-      <div id="travelList" class="travel-list"></div>
+<!-- ✅ Travels Section -->
+<section id="travels" class="content-section">
+  <div class="section-header">
+    <h2>Travels</h2>
+  </div>
 
-      <!-- ✅ Travels Booked Box -->
-      <div id="bookedTravelsSection" class="booked-travels-box">
-        <h3>Travels Booked</h3>
-        <div id="bookedTravelsList" class="booked-travels-list">
-          <p class="no-travels">Loading your booked travels...</p>
-        </div>
+  <div style="padding:20px;">
+    <p>Click a vehicle to offer travel for a selected booking.</p>
+
+    <!-- where travel cards (Tempo, Thar, etc.) will appear -->
+    <div class="travels-grid" id="travelsGrid"></div>
+
+    <!-- ✅ Booked Travels Box -->
+    <div class="booked-travels-box" style="margin-top:40px;">
+      <h2>🧳 Travels Booked</h2>
+      <div id="bookedTravelsList">
+        <p class="no-travels">You haven’t booked any travels yet.</p>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
 
 <!-- Travel booking popup (re-used when user clicks a vehicle) -->
 <div id="travelPopup" class="modal" style="display:none;">
