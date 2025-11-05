@@ -254,7 +254,8 @@
 
 
       <div id="dynamicPagesContainer" class="content-section" style="display:none;"></div>
-      <!-- Travels Section -->
+    
+<!-- ✅ Travels Section -->
 <section id="travels" class="content-section">
   <div class="section-header">
     <h2>Travels</h2>
@@ -263,13 +264,10 @@
   <div style="padding:20px;">
     <p>Click a vehicle to offer travel for a selected booking.</p>
 
-    <div class="travels-grid" id="travelsGrid">
-      <!-- JS will render vehicle cards (Tempo, Thar, Travels) -->
-       <h3 style="margin-top:30px;">Your Booked Travels</h3>
-<div id="travelBookingsList" class="travel-booked-container"></div>
+    <!-- where travel cards (Tempo, Thar, etc.) will appear -->
+    <div class="travels-grid" id="travelsGrid"></div>
 
-
-    <!-- ✅ User’s Booked Travels Box -->
+    <!-- ✅ Booked Travels Box -->
     <div class="booked-travels-box" style="margin-top:40px;">
       <h2>🧳 Travels Booked</h2>
       <div id="bookedTravelsList">
@@ -278,6 +276,7 @@
     </div>
   </div>
 </section>
+
 <!-- Travel booking popup (re-used when user clicks a vehicle) -->
 <div id="travelPopup" class="modal" style="display:none;">
   <div class="modal-content" style="max-width:520px;">
