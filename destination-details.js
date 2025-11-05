@@ -1,4 +1,6 @@
-// (This is an updated version with payment flow)
+// (Updated to avoid redirecting away on DOM load when user is not logged in.
+// Instead the Book button will handle login redirect or open the booking modal.)
+
 const urlParams = new URLSearchParams(window.location.search);
 const destinationId = urlParams.get('id');
 let currentUser = null;
@@ -7,13 +9,16 @@ let lastCreatedBooking = null;
 const PER_PERSON_PER_DAY = 1000; // base trip cost per person per day (adjustable)
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // Try to read the currentUser but do NOT force-redirect if missing.
   const userData = localStorage.getItem('currentUser');
-  if (!userData) {
-    alert('Please login first');
-    window.location.href = 'travel.html';
-    return;
+  if (userData) {
+    try {
+      currentUser = JSON.parse(userData);
+    } catch (e) {
+      console.warn('Could not parse currentUser from storage', e);
+      localStorage.removeItem('currentUser');
+    }
   }
-  currentUser = JSON.parse(userData);
 
   if (!destinationId) {
     alert('No destination specified');
@@ -24,6 +29,24 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadDestinationDetails(destinationId);
   setupDateRestrictions();
   setupFormListeners();
+
+  // Attach Book button behavior:
+  const bookBtn = document.getElementById('bookBtn');
+  if (bookBtn) {
+    bookBtn.addEventListener('click', function () {
+      // If user is logged in, open booking modal
+      if (currentUser && currentUser._id) {
+        const modal = document.getElementById('bookingModal');
+        if (modal) modal.style.display = 'flex';
+      } else {
+        // User not logged in: save destination to localStorage and send to login/home.
+        // After login we will redirect to dashboard with openBooking flag (script.js will handle it).
+        localStorage.setItem('bookingDestination', JSON.stringify({ id: destinationId, name: destinationData?.name || '' }));
+        // Redirect user to the public login page (travel.html) to sign in / sign up
+        window.location.href = 'travel.html';
+      }
+    }, { passive: true });
+  }
 });
 
 async function loadDestinationDetails(destinationId) {
@@ -84,6 +107,7 @@ function setupDateRestrictions() {
   const today = new Date().toISOString().split('T')[0];
   const startDateInput = document.getElementById('startDate');
   const endDateInput = document.getElementById('endDate');
+  if (!startDateInput || !endDateInput) return;
   startDateInput.min = today;
   endDateInput.min = today;
 
@@ -108,27 +132,30 @@ function setupDateRestrictions() {
 
 function setupFormListeners() {
   const travelersSelect = document.getElementById('travelers');
-  travelersSelect.addEventListener('change', function() {
-    document.getElementById('travelersDisplay').textContent = travelersSelect.value;
-  });
+  if (travelersSelect) {
+    travelersSelect.addEventListener('change', function() {
+      const display = document.getElementById('travelersDisplay');
+      if (display) display.textContent = travelersSelect.value;
+    });
+  }
   const bookingForm = document.getElementById('bookingForm');
-  bookingForm.addEventListener('submit', handleBookingSubmit);
+  if (bookingForm) bookingForm.addEventListener('submit', handleBookingSubmit);
 }
 
 function updateDuration() {
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
+  const startDate = document.getElementById('startDate')?.value;
+  const endDate = document.getElementById('endDate')?.value;
   if (startDate && endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (duration > 0) {
-      document.getElementById('durationDisplay').textContent = `${duration} ${duration === 1 ? 'day' : 'days'}`;
+      document.getElementById('durationDisplay')?.textContent = `${duration} ${duration === 1 ? 'day' : 'days'}`;
     } else {
-      document.getElementById('durationDisplay').textContent = '-';
+      document.getElementById('durationDisplay')?.textContent = '-';
     }
   } else {
-    document.getElementById('durationDisplay').textContent = '-';
+    document.getElementById('durationDisplay')?.textContent = '-';
   }
 }
 
@@ -153,15 +180,26 @@ async function handleBookingSubmit(e) {
   }
 
   const bookNowBtn = document.getElementById('bookNowBtn');
-  bookNowBtn.disabled = true;
-  bookNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  if (bookNowBtn) {
+    bookNowBtn.disabled = true;
+    bookNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  }
 
   try {
+    // Ensure user is logged in before creating booking
+    const user = currentUser || JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user || !user._id) {
+      // save destination and redirect to login flow
+      localStorage.setItem('bookingDestination', JSON.stringify({ id: destinationId, name: destinationData?.name || '' }));
+      window.location.href = 'travel.html';
+      return;
+    }
+
     const response = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: currentUser._id,
+        userId: user._id,
         destination: destinationId,
         startDate,
         endDate,
@@ -172,21 +210,27 @@ async function handleBookingSubmit(e) {
     if (response.ok) {
       // Save booking locally and open payment modal for optional transport
       lastCreatedBooking = data;
+      // close booking modal
+      document.getElementById('bookingModal').style.display = 'none';
       openPaymentModalForBooking(data);
     } else {
       alert('Booking failed: ' + (data.error || data.message || 'Unknown error'));
-      bookNowBtn.disabled = false;
-      bookNowBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Book Now';
+      if (bookNowBtn) {
+        bookNowBtn.disabled = false;
+        bookNowBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Book Now';
+      }
     }
   } catch (error) {
     console.error('Booking error:', error);
     alert('Failed to create booking. Please try again.');
-    bookNowBtn.disabled = false;
-    bookNowBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Book Now';
+    if (bookNowBtn) {
+      bookNowBtn.disabled = false;
+      bookNowBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Book Now';
+    }
   }
 }
 
-/* -------------------- Payment Modal & Flow -------------------- */
+/* -------------------- Payment Modal & Flow (unchanged from previous) -------------------- */
 function openPaymentModalForBooking(booking) {
   // Populate summary
   const start = booking.startDate.slice(0,10);
@@ -240,14 +284,16 @@ function updatePaymentTotal(tripCost, travelTotal = 0) {
   document.getElementById('paymentTotal').textContent = `₹${total}`;
   // attach computed values to modal for later use
   const modal = document.getElementById('paymentModal');
-  modal.dataset.tripCost = tripCost;
-  modal.dataset.travelTotal = travelTotal;
-  modal.dataset.total = total;
+  if (modal) {
+    modal.dataset.tripCost = tripCost;
+    modal.dataset.travelTotal = travelTotal;
+    modal.dataset.total = total;
+  }
 }
 
 function closePaymentModal() {
   const modal = document.getElementById('paymentModal');
-  modal.style.display = 'none';
+  if (modal) modal.style.display = 'none';
 
   // redirect user to dashboard bookings after closing to show booking
   setTimeout(() => {
@@ -261,11 +307,13 @@ async function confirmPayment(booking, tripCost) {
   const travelId = travelSel.value || null;
   const travelTotal = parseInt(travelSel.options[travelSel.selectedIndex]?.dataset?.total || '0', 10) || 0;
   const method = document.getElementById('paymentMethod').value || 'card';
-  const total = parseInt(modal.dataset.total || (tripCost + travelTotal), 10) || (tripCost + travelTotal);
+  const total = parseInt(modal?.dataset?.total || (tripCost + travelTotal), 10) || (tripCost + travelTotal);
 
   const btn = document.getElementById('confirmPaymentBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  }
 
   try {
     const res = await fetch('/api/payments', {
@@ -283,18 +331,22 @@ async function confirmPayment(booking, tripCost) {
     const data = await res.json();
     if (res.ok) {
       alert('✅ Payment successful! Your booking is confirmed.');
-      // Close modal and redirect to bookings
+      localStorage.removeItem('bookingDestination'); // clear saved selection
       closePaymentModal();
     } else {
       alert('Payment failed: ' + (data.message || data.error || 'Unknown error'));
-      btn.disabled = false;
-      btn.innerHTML = 'Pay Now';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Pay Now';
+      }
     }
   } catch (err) {
     console.error('Payment error:', err);
     alert('Payment failed. Please try again later.');
-    btn.disabled = false;
-    btn.innerHTML = 'Pay Now';
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = 'Pay Now';
+    }
   }
 }
 
