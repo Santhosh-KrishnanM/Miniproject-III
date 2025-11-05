@@ -2323,39 +2323,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 async function renderBookedTravels() {
-  const res = await fetch(`/api/bookings/${currentUser._id}`);
-  const bookings = await res.json();
+  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
+  const travels = await res.json();
   const container = document.getElementById("bookedTravelsList");
+  if (!container) return;
+
   container.innerHTML = "";
 
-  const withTravels = bookings.filter(b => b.assignedTravel);
-  if (!withTravels.length) {
+  if (!travels.length) {
     container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
     return;
   }
 
-  withTravels.forEach(b => {
-    const t = b.assignedTravel;
-    const div = document.createElement("div");
-    div.className = "travel-booked-item";
-    div.innerHTML = `
+  travels.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "travel-booked-item";
+    item.innerHTML = `
       <div>
-        <strong>${t.name}</strong><br>
-        <span>${b.destination?.name || "Unknown"} — 
-        ${new Date(t.bookedAt).toLocaleString()}</span>
+        <strong>${t.travelName}</strong><br>
+        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
       </div>
-      <button class="delete-travel-btn" onclick="deleteBookedTravel('${b._id}')">Delete</button>
+      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
     `;
-    container.appendChild(div);
+    container.appendChild(item);
   });
 }
-
 
 async function deleteBookedTravel(id) {
   if (!confirm("Are you sure you want to delete this travel?")) return;
   const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
   if (res.ok) {
-    showSuccess("Travel deleted successfully!");
+    alert("Travel deleted successfully!");
     renderBookedTravels();
   } else {
     alert("Failed to delete travel.");
@@ -2368,8 +2366,10 @@ function showSection(sectionId) {
   document.getElementById("pageTitle").textContent =
     sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
 
+  // ✅ Run this only for travels section
   if (sectionId === "travels") renderBookedTravels();
 }
+
 
 
   // ✅ Step 1: Fetch the full booking details
