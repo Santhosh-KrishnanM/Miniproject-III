@@ -2366,9 +2366,14 @@ function showSection(sectionId) {
   document.getElementById("pageTitle").textContent =
     sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
 
+
+  if (sectionId === "travels") renderBookedTravels();
+ 
+
+
   // ✅ Run this only for travels section
   if (sectionId === "travels") renderBookedTravels();
-}
+ } 
 
 
 
