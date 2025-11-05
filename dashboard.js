@@ -2260,8 +2260,6 @@ async function renderBookedTravels() {
   const res = await fetch(`/api/travels-booked/${currentUser._id}`);
   const travels = await res.json();
   const container = document.getElementById("bookedTravelsList");
-  if (!container) return;
-
   container.innerHTML = "";
 
   if (!travels.length) {
@@ -2287,7 +2285,7 @@ async function deleteBookedTravel(id) {
   if (!confirm("Are you sure you want to delete this travel?")) return;
   const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
   if (res.ok) {
-    alert("Travel deleted successfully!");
+    showSuccess("Travel deleted successfully!");
     renderBookedTravels();
   } else {
     alert("Failed to delete travel.");
@@ -2300,15 +2298,8 @@ function showSection(sectionId) {
   document.getElementById("pageTitle").textContent =
     sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
 
-
   if (sectionId === "travels") renderBookedTravels();
- 
-
-
-  // ✅ Run this only for travels section
-  if (sectionId === "travels") renderBookedTravels();
- } 
-
+}
 
 
   // ✅ Step 1: Fetch the full booking details
