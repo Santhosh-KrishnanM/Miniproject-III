@@ -475,7 +475,7 @@ async function renderBookings() {
           travelers: booking.travelers,
           destination: booking.destination
         })})'>Modify</button>
-        <button class="btn-danger" onclick="cancelBooking('${booking._id}')">Cancel</button>
+        <button class="btn-danger" onclick="cancelBooking('${booking._1}')">Cancel</button>
       </div>
     `;
     container.appendChild(card);
@@ -722,72 +722,6 @@ async function submitBooking() {
   } catch (err) {
     console.error("Booking error:", err);
     alert("Failed to save booking. Please try again later.");
-  }
-}
-
-// --------- MODIFY BOOKING ------------
-function openModifyForm(booking) {
-  const modal = document.getElementById("modifyBookingModal");
-  
-  document.getElementById("modifyBookingId").value = booking._id;
-  document.getElementById("modifyStartDate").value = booking.startDate.slice(0,10);
-  document.getElementById("modifyEndDate").value = booking.endDate.slice(0,10);
-  document.getElementById("modifyTravelers").value = booking.travelers;
-  
-  const today = new Date().toISOString().split("T")[0];
-  document.getElementById("modifyStartDate").setAttribute("min", today);
-  document.getElementById("modifyEndDate").setAttribute("min", today);
-  
-  modal.style.display = "flex";
-}
-
-function closeModifyForm() {
-  document.getElementById("modifyBookingModal").style.display = "none";
-}
-
-async function submitBookingModification() {
-  const bookingId = document.getElementById("modifyBookingId").value;
-  const startDate = document.getElementById("modifyStartDate").value;
-  const endDate = document.getElementById("modifyEndDate").value;
-  const travelers = document.getElementById("modifyTravelers").value;
-
-  if (!startDate || !endDate || !travelers) {
-    alert("Please fill all fields.");
-    return;
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-  if (startDate < today || endDate < today) {
-    alert("Please select future dates only.");
-    return;
-  }
-
-  if (endDate <= startDate) {
-    alert("End date must be after start date.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/bookings/${bookingId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, travelers }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert("✅ Booking updated successfully!");
-      closeModifyForm();
-      await loadUserBookings(currentUser._id);
-      await updateStats();
-      await renderAllSections(); // Refresh insights too
-    } else {
-      alert("Failed to update booking: " + (data.error || data.message || "Unknown error"));
-    }
-  } catch (err) {
-    console.error("Update booking error:", err);
-    alert("Error updating booking. Please try again later.");
   }
 }
 
