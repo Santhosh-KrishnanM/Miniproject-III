@@ -7,11 +7,14 @@ function showAdminSection(sectionId) {
   document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
   const el = document.getElementById(sectionId);
   if (el) el.classList.add('active');
-  document.getElementById('adminTitle').textContent = sectionId === 'destinations'
-    ? 'Manage Destinations'
-    : sectionId === 'bookings'
-    ? 'View Bookings'
-    : 'View Users';
+  const titleEl = document.getElementById('adminTitle');
+  if (titleEl) {
+    titleEl.textContent = sectionId === 'destinations'
+      ? 'Manage Destinations'
+      : sectionId === 'bookings'
+      ? 'View Bookings'
+      : 'View Users';
+  }
 }
 
 // On DOM ready
@@ -22,8 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Please login as admin first");
     window.location.href = "travel.html";
   } else {
-    currentAdmin = JSON.parse(storedAdmin);
-    console.log("Admin logged in:", currentAdmin.username);
+    try {
+      currentAdmin = JSON.parse(storedAdmin);
+      console.log("Admin logged in:", currentAdmin.username);
+    } catch (e) {
+      console.warn("Could not parse stored admin data; clearing", e);
+      localStorage.removeItem("adminUser");
+      window.location.href = "travel.html";
+      return;
+    }
     loadAdminData();
     setupDestinationFormHandlers();
   }
@@ -35,14 +45,14 @@ async function loadAdminData() {
     console.log("Loading admin dashboard data...");
     
     const [users, bookings, destinations] = await Promise.all([
-      fetch('https://travel-aura-enb6.onrender.com/admin/users').then(r => r.json()),
-      fetch('https://travel-aura-enb6.onrender.com/admin/bookings').then(r => r.json()),
-      fetch('https://travel-aura-enb6.onrender.com/admin/destinations').then(r => r.json())
+      fetch('/admin/users').then(r => r.json()),
+      fetch('/admin/bookings').then(r => r.json()),
+      fetch('/admin/destinations').then(r => r.json())
     ]);
 
-    renderUsers(users);
-    renderBookings(bookings);
-    renderDestinations(destinations);
+    renderUsers(users || []);
+    renderBookings(bookings || []);
+    renderDestinations(destinations || []);
     
     console.log("✅ Admin data loaded successfully");
   } catch (err) {
@@ -59,7 +69,7 @@ function renderUsers(users) {
     return;
   }
   
-  tbody.innerHTML = users.map(u => `
+  tbody.innerHTML = (users || []).map(u => `
     <tr>
       <td>${u.username}</td>
       <td>${u.email}</td>
@@ -79,9 +89,9 @@ function renderBookings(bookings) {
     return;
   }
   
-  tbody.innerHTML = bookings.map(b => `
+  tbody.innerHTML = (bookings || []).map(b => `
     <tr>
-      <td>${b.userId}</td>
+      <td>${(b.userId && (b.userId.username || b.userId)) || b.userId || 'Unknown'}</td>
       <td>${b.destination?.name || 'N/A'}</td>
       <td>${b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A'}</td>
       <td>${b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A'}</td>
@@ -142,7 +152,7 @@ function renderDestinations(destinations) {
           <button class="edit-btn" onclick='editDestination(${destinationStr})'>
             <i class="fas fa-edit"></i> Edit
           </button>
-          <button class="delete-btn" onclick="deleteDestination('${d._id}', '${d.name.replace(/'/g, "\\'")}')">
+          <button class="delete-btn" onclick="deleteDestination('${d._id}', '${(d.name || '').replace(/'/g, "\\'")}')">
             <i class="fas fa-trash"></i> Delete
           </button>
         </td>
@@ -158,7 +168,7 @@ async function deleteBooking(id) {
   if (!confirm("Are you sure you want to delete this booking?")) return;
   
   try {
-    const res = await fetch(`https://travel-aura-enb6.onrender.com/admin/bookings/${id}`, { 
+    const res = await fetch(`/admin/bookings/${id}`, { 
       method: 'DELETE' 
     });
     const data = await res.json();
@@ -176,6 +186,7 @@ async function deleteBooking(id) {
 }
 
 // --------- TAB SWITCH (Admin dashboard tabs) ------------
+// btnElement is optional but recommended to be passed from onclick
 function showTab(tabId, btnElement) {
   // Hide all tab contents
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -187,10 +198,8 @@ function showTab(tabId, btnElement) {
     selectedTab.classList.add('active');
   }
   // Add active class to clicked button (if provided)
-  if (btnElement) {
+  if (btnElement && btnElement.classList) {
     btnElement.classList.add('active');
-  } else if (event && event.target) {
-    event.target.classList.add('active');
   }
   // Optionally auto-load data for the selected tab
   if (tabId === 'travels') loadTravels();
@@ -220,28 +229,38 @@ function logoutAdmin() {
 
 // Open Add Destination Modal
 function openAddDestinationModal() {
-  document.getElementById('destinationModal').style.display = 'flex';
-  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Destination';
-  document.getElementById('destinationForm').reset();
-  document.getElementById('destinationId').value = '';
-  document.getElementById('imagePreview').style.display = 'none';
+  const modal = document.getElementById('destinationModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  const title = document.getElementById('modalTitle');
+  if (title) title.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Destination';
+  const form = document.getElementById('destinationForm');
+  if (form) form.reset();
+  const idEl = document.getElementById('destinationId');
+  if (idEl) idEl.value = '';
+  const imagePreview = document.getElementById('imagePreview');
+  if (imagePreview) imagePreview.style.display = 'none';
   console.log('✅ Add destination modal opened');
 }
 
 // Close Destination Modal
 function closeDestinationModal() {
-  document.getElementById('destinationModal').style.display = 'none';
-  document.getElementById('destinationForm').reset();
-  document.getElementById('imagePreview').style.display = 'none';
+  const modal = document.getElementById('destinationModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  const form = document.getElementById('destinationForm');
+  if (form) form.reset();
+  const imagePreview = document.getElementById('imagePreview');
+  if (imagePreview) imagePreview.style.display = 'none';
   console.log('✅ Destination modal closed');
 }
 
 // Setup form handlers
 function setupDestinationFormHandlers() {
-  const imageUrlInput = document.getElementById('destImageUrl');
+  const imageUrlInput = document.getElementById('destImageUrl') || document.getElementById('destImageUrl');
   const imagePreview = document.getElementById('imagePreview');
   
-  if (imageUrlInput) {
+  if (imageUrlInput && imagePreview) {
     imageUrlInput.addEventListener('input', function() {
       const url = this.value.trim();
       if (url) {
@@ -284,8 +303,8 @@ function setupDestinationFormHandlers() {
 
       try {
         const url = destinationId 
-          ? `https://travel-aura-enb6.onrender.com/destinations/${destinationId}` 
-          : 'https://travel-aura-enb6.onrender.com/destinations';
+          ? `/destinations/${destinationId}` 
+          : '/destinations';
         const method = destinationId ? 'PUT' : 'POST';
 
         console.log(`${method} ${url}`, destinationData);
@@ -332,12 +351,14 @@ function setupDestinationFormHandlers() {
 // Edit Destination
 function editDestination(destination) {
   console.log('Editing destination:', destination);
+  const modal = document.getElementById('destinationModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  const title = document.getElementById('modalTitle');
+  if (title) title.innerHTML = '<i class="fas fa-edit"></i> Edit Destination';
   
-  document.getElementById('destinationModal').style.display = 'flex';
-  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Destination';
-  
-  document.getElementById('destinationId').value = destination._id;
-  document.getElementById('destName').value = destination.name;
+  document.getElementById('destinationId').value = destination._id || '';
+  document.getElementById('destName').value = destination.name || '';
   document.getElementById('destType').value = destination.type || '';
   document.getElementById('destRating').value = destination.rating || '';
   document.getElementById('destDescription').value = destination.description || '';
@@ -345,8 +366,10 @@ function editDestination(destination) {
   
   if (destination.imageUrl) {
     const imagePreview = document.getElementById('imagePreview');
-    imagePreview.src = destination.imageUrl;
-    imagePreview.style.display = 'block';
+    if (imagePreview) {
+      imagePreview.src = destination.imageUrl;
+      imagePreview.style.display = 'block';
+    }
   }
 }
 
@@ -359,7 +382,7 @@ async function deleteDestination(id, name) {
   try {
     console.log('Deleting destination:', id);
     
-    const response = await fetch(`https://travel-aura-enb6.onrender.com/destinations/${id}`, {
+    const response = await fetch(`/destinations/${id}`, {
       method: 'DELETE'
     });
 
@@ -395,15 +418,18 @@ console.log(`
 `);
 
 // --------- Travels (admin) - load travels for travels tab ------------
-
 async function loadTravels() {
   try {
     const res = await fetch("/api/admin/travels");
+    if (!res.ok) {
+      console.warn("Failed to load admin travels, status:", res.status);
+      return;
+    }
     const travels = await res.json();
     const tbody = document.querySelector("#travelsTable tbody");
     if (tbody) tbody.innerHTML = "";
 
-    if (!travels.length) {
+    if (!travels || !travels.length) {
       if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No travels booked yet.</td></tr>`;
       return;
     }
