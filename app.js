@@ -15,11 +15,15 @@ const Image = require('./Image');
 const Page = require('./Page');
 const bcrypt = require('bcryptjs');
 
+// New models
+const Payment = require('./Payment');       // new file
+const Travel = require('./travels');        // existing travels.js
+
 const app = express();
 app.use(cors({
   origin: '*', // Allow all origins in development
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Accept']
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization']
 }));
 app.use(bodyParser.json());
 
@@ -155,7 +159,6 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-
 // ---------------------- BOOKINGS ----------------------
 
 app.post('/api/bookings', async (req, res) => {
@@ -174,7 +177,7 @@ app.post('/api/bookings', async (req, res) => {
     await Activity.create({
       userId,
       type: 'booking',
-      content: `Booked trip to ${booking.destination.name}`,
+      content: `Booked trip to ${booking.destination?.name || destination}`,
       destinationId: destination
     });
 
@@ -188,14 +191,12 @@ app.get('/api/bookings/:userId', async (req, res) => {
   try {
     const bookings = await Booking.find({ userId: req.params.userId })
       .populate("destination")
-      .lean(); // ✅ added .lean() so assignedTravel shows up properly
+      .lean();
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch bookings", details: err.message });
   }
 });
-
-
 
 app.put("/api/bookings/:id", async (req, res) => {
   try {
@@ -207,23 +208,21 @@ app.put("/api/bookings/:id", async (req, res) => {
     // Merge update data safely
     const updateData = req.body;
 
-    // ✅ Ensure userId is preserved (this fixes your "userId not defined" issue)
-    updateData.userId = booking.userId;
+    // Ensure userId is preserved if missing
+    updateData.userId = updateData.userId || booking.userId;
 
-    // Update the booking (either date changes or assigning travel)
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
       { new: true }
     ).populate("destination");
 
-    // Log activity (optional)
     await Activity.create({
       userId: booking.userId,
       type: updateData.assignedTravel ? "travel" : "booking",
       content: updateData.assignedTravel
-        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination.name}`
-        : `Modified booking for ${updatedBooking.destination.name}`,
+        ? `Assigned ${updateData.assignedTravel.name} to ${updatedBooking.destination?.name}`
+        : `Modified booking for ${updatedBooking.destination?.name}`,
       destinationId: booking.destination
     });
 
@@ -236,9 +235,7 @@ app.put("/api/bookings/:id", async (req, res) => {
   }
 });
 
-
-
-// DELETE a booking (Travel cancel)
+// DELETE a booking
 app.delete("/api/bookings/:id", async (req, res) => {
   try {
     const deleted = await Booking.findByIdAndDelete(req.params.id);
@@ -250,7 +247,6 @@ app.delete("/api/bookings/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete booking", details: err.message });
   }
 });
-
 
 // ---------------------- DESTINATIONS ----------------------
 
@@ -339,12 +335,6 @@ app.delete('/destinations/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting destination', error: err.message });
   }
 });
-
-
-
-
-
-
 
 // ---------------------- FAVORITES ----------------------
 
@@ -488,7 +478,7 @@ app.get('/admin/bookings', async (req, res) => {
   }
 });
 
-// Delete a booking
+// Delete a booking (admin)
 app.delete('/admin/bookings/:id', async (req, res) => {
   try {
     await Booking.findByIdAndDelete(req.params.id);
@@ -498,7 +488,7 @@ app.delete('/admin/bookings/:id', async (req, res) => {
   }
 });
 
-// Get all destinations
+// Get all destinations for admin view
 app.get('/admin/destinations', async (req, res) => {
   try {
     const destinations = await Destination.find();
@@ -507,7 +497,6 @@ app.get('/admin/destinations', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch destinations', error: err.message });
   }
 });
-
 
 // ================== ADMIN: GET ALL TRAVEL BOOKINGS ==================
 app.get("/api/admin/travels", async (req, res) => {
@@ -540,6 +529,126 @@ app.delete("/api/admin/travels/:id", async (req, res) => {
   }
 });
 
+/* -------------------- NEW: Travels (vehicles) endpoints -------------------- */
+// Return available travel vehicles
+app.get('/travels', async (req, res) => {
+  try {
+    const travels = await Travel.find();
+    res.json(travels);
+  } catch (err) {
+    console.error('Error fetching travels:', err);
+    res.status(500).json({ message: 'Failed to fetch travels', error: err.message });
+  }
+});
+
+/* -------------------- NEW: Payments endpoint (simulated) -------------------- */
+/*
+  Expected body:
+  {
+    bookingId,
+    userId,
+    amount,
+    method,            // e.g., 'card', 'upi', 'netbanking'
+    travelId (opt)     // optional travel vehicle id to attach to booking
+  }
+*/
+app.post('/api/payments', async (req, res) => {
+  try {
+    const { bookingId, userId, amount, method, travelId } = req.body;
+    if (!bookingId || !userId || !amount || !method) {
+      return res.status(400).json({ message: 'bookingId, userId, amount and method are required' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('destination');
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (String(booking.userId) !== String(userId)) {
+      return res.status(403).json({ message: 'User mismatch for booking' });
+    }
+
+    // Create payment record (simulation)
+    const payment = new Payment({
+      bookingId,
+      userId,
+      amount,
+      method,
+      status: 'success',
+      metadata: { createdAt: new Date().toISOString() }
+    });
+    await payment.save();
+
+    // If travel selected, attach travel details
+    if (travelId) {
+      const travel = await Travel.findById(travelId);
+      if (travel) {
+        booking.assignedTravel = {
+          name: travel.name,
+          seats: travel.seats,
+          costPerDay: travel.costPerDay,
+          totalPrice: req.body.travelTotal || (travel.costPerDay || travel.cost) || 0,
+          bookedAt: new Date()
+        };
+      } else {
+        // If travelId invalid, ignore but log
+        console.warn('Travel id not found:', travelId);
+      }
+    }
+
+    // Mark booking confirmed
+    booking.status = 'Confirmed';
+    await booking.save();
+
+    // Log activity
+    await Activity.create({
+      userId,
+      type: 'payment',
+      content: `Payment of ₹${amount} received for booking ${bookingId}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ message: 'Payment successful', payment, booking });
+  } catch (err) {
+    console.error('Payment processing error:', err);
+    res.status(500).json({ message: 'Payment failed', error: err.message });
+  }
+});
+
+/* -------------------- NEW: User booked travels endpoints -------------------- */
+// returns bookings belonging to user that have assignedTravel
+app.get('/api/travels-booked/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bookings = await Booking.find({ userId, 'assignedTravel.name': { $exists: true } })
+      .populate('destination')
+      .lean();
+    res.json(bookings.map(b => ({
+      _id: b._id,
+      travelName: b.assignedTravel?.name,
+      destinationName: b.destination?.name || '',
+      bookedAt: b.assignedTravel?.bookedAt || b.createdAt,
+      totalPrice: b.assignedTravel?.totalPrice || 0
+    })));
+  } catch (err) {
+    console.error('Error fetching user booked travels:', err);
+    res.status(500).json({ message: 'Failed to fetch booked travels', error: err.message });
+  }
+});
+
+// delete booked travel by booking id (remove assignedTravel)
+app.delete('/api/travels-booked/:id', async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    booking.assignedTravel = undefined;
+    await booking.save();
+
+    res.json({ success: true, message: 'Travel removed from booking' });
+  } catch (err) {
+    console.error('Error removing booked travel:', err);
+    res.status(500).json({ message: 'Failed to remove booked travel', error: err.message });
+  }
+});
 
 // ---------------------- HEALTH CHECK ----------------------
 
@@ -565,6 +674,3 @@ mongoose.connect(process.env.MONGO_URI)
     console.error("❌ DB connection failed:", err.message);
     process.exit(1);
   });
-
-
-

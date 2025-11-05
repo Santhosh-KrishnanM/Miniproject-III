@@ -1,9 +1,12 @@
+// Cleaned and fixed adm.js - removed duplicate functions and ensured consistent tab handling
+
 let currentAdmin = null;
 
-// Show/hide sections
+// Show/hide admin sections (non-tabbed pages)
 function showAdminSection(sectionId) {
   document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-  document.getElementById(sectionId).classList.add('active');
+  const el = document.getElementById(sectionId);
+  if (el) el.classList.add('active');
   document.getElementById('adminTitle').textContent = sectionId === 'destinations'
     ? 'Manage Destinations'
     : sectionId === 'bookings'
@@ -11,7 +14,7 @@ function showAdminSection(sectionId) {
     : 'View Users';
 }
 
-// Load data on startup
+// On DOM ready
 document.addEventListener("DOMContentLoaded", () => {
   const storedAdmin = localStorage.getItem("adminUser");
   if (!storedAdmin) {
@@ -31,9 +34,11 @@ async function loadAdminData() {
   try {
     console.log("Loading admin dashboard data...");
     
-    const users = await fetch('https://travel-aura-enb6.onrender.com/admin/users').then(r => r.json());
-    const bookings = await fetch('https://travel-aura-enb6.onrender.com/admin/bookings').then(r => r.json());
-    const destinations = await fetch('https://travel-aura-enb6.onrender.com/admin/destinations').then(r => r.json());
+    const [users, bookings, destinations] = await Promise.all([
+      fetch('https://travel-aura-enb6.onrender.com/admin/users').then(r => r.json()),
+      fetch('https://travel-aura-enb6.onrender.com/admin/bookings').then(r => r.json()),
+      fetch('https://travel-aura-enb6.onrender.com/admin/destinations').then(r => r.json())
+    ]);
 
     renderUsers(users);
     renderBookings(bookings);
@@ -78,8 +83,8 @@ function renderBookings(bookings) {
     <tr>
       <td>${b.userId}</td>
       <td>${b.destination?.name || 'N/A'}</td>
-      <td>${new Date(b.startDate).toLocaleDateString()}</td>
-      <td>${new Date(b.endDate).toLocaleDateString()}</td>
+      <td>${b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A'}</td>
+      <td>${b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A'}</td>
       <td>${b.travelers}</td>
       <td><button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button></td>
     </tr>
@@ -110,7 +115,6 @@ function renderDestinations(destinations) {
   }
 
   tbody.innerHTML = destinations.map(d => {
-    // Properly escape the destination object for onclick
     const destinationStr = JSON.stringify(d)
       .replace(/\\/g, '\\\\')
       .replace(/'/g, "\\'")
@@ -171,27 +175,26 @@ async function deleteBooking(id) {
   }
 }
 
-// --------- SHOW TAB ------------
-function showTab(tabId) {
+// --------- TAB SWITCH (Admin dashboard tabs) ------------
+function showTab(tabId, btnElement) {
   // Hide all tab contents
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
   // Remove active class from all buttons
-  document.querySelectorAll('.tab-buttons button').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
+  document.querySelectorAll('.tab-buttons button').forEach(btn => btn.classList.remove('active'));
   // Show selected tab
   const selectedTab = document.getElementById(tabId);
   if (selectedTab) {
     selectedTab.classList.add('active');
   }
-  
-  // Add active class to clicked button
-  event.target.classList.add('active');
-  
+  // Add active class to clicked button (if provided)
+  if (btnElement) {
+    btnElement.classList.add('active');
+  } else if (event && event.target) {
+    event.target.classList.add('active');
+  }
+  // Optionally auto-load data for the selected tab
+  if (tabId === 'travels') loadTravels();
+  if (tabId === 'users') loadAdminData(); // ensure data load
   console.log(`Switched to ${tabId} tab`);
 }
 
@@ -199,31 +202,21 @@ function showTab(tabId) {
 function logoutAdmin() {
   console.log("Logout admin clicked");
   
-  // Confirm logout
-  if (!confirm("Are you sure you want to logout?")) {
-    return;
-  }
+  if (!confirm("Are you sure you want to logout?")) return;
   
   console.log("Logging out admin:", currentAdmin?.username);
   
-  // Clear all admin data from storage
   localStorage.removeItem("adminUser");
   sessionStorage.removeItem("adminUser");
-  
-  // Also clear any other stored data
   localStorage.removeItem("currentUser");
   sessionStorage.removeItem("currentUser");
   
   console.log("✅ Admin logged out successfully");
-  
-  // Show logout message
   alert("You have been logged out successfully!");
-  
-  // Redirect to main page
   window.location.href = "travel.html";
 }
 
-// --------- DESTINATION MANAGEMENT ------------
+// --------- DESTINATION MANAGEMENT (Modal handlers etc) ------------
 
 // Open Add Destination Modal
 function openAddDestinationModal() {
@@ -245,7 +238,6 @@ function closeDestinationModal() {
 
 // Setup form handlers
 function setupDestinationFormHandlers() {
-  // Image URL Preview
   const imageUrlInput = document.getElementById('destImageUrl');
   const imagePreview = document.getElementById('imagePreview');
   
@@ -265,7 +257,6 @@ function setupDestinationFormHandlers() {
     });
   }
 
-  // Form submission
   const destinationForm = document.getElementById('destinationForm');
   if (destinationForm) {
     destinationForm.addEventListener('submit', async function(e) {
@@ -279,25 +270,17 @@ function setupDestinationFormHandlers() {
       const description = document.getElementById('destDescription').value.trim();
       const imageUrl = document.getElementById('destImageUrl').value.trim();
 
-      // Validation
       if (!name || !type || !description || !imageUrl) {
         alert('Please fill all required fields (Name, Type, Description, and Image URL)');
         return;
       }
 
-      // Validate rating if provided
       if (rating && (rating < 1 || rating > 5)) {
         alert('Rating must be between 1 and 5');
         return;
       }
 
-      const destinationData = {
-        name,
-        type,
-        rating,
-        description,
-        imageUrl
-      };
+      const destinationData = { name, type, rating, description, imageUrl };
 
       try {
         const url = destinationId 
@@ -316,7 +299,6 @@ function setupDestinationFormHandlers() {
           body: JSON.stringify(destinationData)
         });
 
-        // Get response text first
         const responseText = await response.text();
         console.log('Response status:', response.status);
         console.log('Response text:', responseText);
@@ -412,15 +394,17 @@ console.log(`
 👤 Admin: ${currentAdmin?.username || 'Not logged in'}
 `);
 
+// --------- Travels (admin) - load travels for travels tab ------------
+
 async function loadTravels() {
   try {
     const res = await fetch("/api/admin/travels");
     const travels = await res.json();
     const tbody = document.querySelector("#travelsTable tbody");
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
 
     if (!travels.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No travels booked yet.</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No travels booked yet.</td></tr>`;
       return;
     }
 
@@ -434,7 +418,7 @@ async function loadTravels() {
         <td>${t.assignedTravel?.bookedAt ? new Date(t.assignedTravel.bookedAt).toLocaleString() : "—"}</td>
         <td><button class="delete-btn" onclick="deleteTravel('${t._id}')">Delete</button></td>
       `;
-      tbody.appendChild(tr);
+      if (tbody) tbody.appendChild(tr);
     });
   } catch (err) {
     console.error("Error loading travels", err);
@@ -455,18 +439,4 @@ async function deleteTravel(id) {
   } catch (err) {
     console.error("Delete travel failed", err);
   }
-}
-
-// Auto-load when switching to Travels tab
-function showTab(tabName) {
-  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-  document.querySelectorAll(".tab-buttons button").forEach(btn => btn.classList.remove("active"));
-
-  document.getElementById(tabName).classList.add("active");
-  document.querySelector(`.tab-buttons button[onclick="showTab('${tabName}')"]`).classList.add("active");
-
-  if (tabName === "travels") loadTravels();
-  if (tabName === "users") loadUsers();
-  if (tabName === "bookings") loadBookings();
-  if (tabName === "destinations") loadDestinations();
 }
