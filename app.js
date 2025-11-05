@@ -13,13 +13,11 @@ const Favorite = require('./Favorite');
 const Activity = require('./Activity');
 const Image = require('./Image');
 const Page = require('./Page');
-const Payment = require('./Payment');       // new file
-const Travel = require('./travels');  
 const bcrypt = require('bcryptjs');
 
 // New models
-const Payment = require('./Payment');       // new file
-const Travel = require('./travels');        // existing travels.js
+const Payment = require('./Payment');       // payment model (single declaration)
+const Travel = require('./travels');        // travel vehicles model
 
 const app = express();
 app.use(cors({
@@ -543,7 +541,7 @@ app.get('/travels', async (req, res) => {
   }
 });
 
-/* -------------------- NEW: Payments endpoint (simulated) -------------------- */
+/* -------------------- NEW: Payments endpoint (simulated, updated) -------------------- */
 /*
   Expected body:
   {
@@ -554,104 +552,6 @@ app.get('/travels', async (req, res) => {
     travelId (opt)     // optional travel vehicle id to attach to booking
   }
 */
-app.post('/api/payments', async (req, res) => {
-  try {
-    const { bookingId, userId, amount, method, travelId } = req.body;
-    if (!bookingId || !userId || !amount || !method) {
-      return res.status(400).json({ message: 'bookingId, userId, amount and method are required' });
-    }
-
-    const booking = await Booking.findById(bookingId).populate('destination');
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    if (String(booking.userId) !== String(userId)) {
-      return res.status(403).json({ message: 'User mismatch for booking' });
-    }
-
-    // Create payment record (simulation)
-    const payment = new Payment({
-      bookingId,
-      userId,
-      amount,
-      method,
-      status: 'success',
-      metadata: { createdAt: new Date().toISOString() }
-    });
-    await payment.save();
-
-    // If travel selected, attach travel details
-    if (travelId) {
-      const travel = await Travel.findById(travelId);
-      if (travel) {
-        booking.assignedTravel = {
-          name: travel.name,
-          seats: travel.seats,
-          costPerDay: travel.costPerDay,
-          totalPrice: req.body.travelTotal || (travel.costPerDay || travel.cost) || 0,
-          bookedAt: new Date()
-        };
-      } else {
-        // If travelId invalid, ignore but log
-        console.warn('Travel id not found:', travelId);
-      }
-    }
-
-    // Mark booking confirmed
-    booking.status = 'Confirmed';
-    await booking.save();
-
-    // Log activity
-    await Activity.create({
-      userId,
-      type: 'payment',
-      content: `Payment of ₹${amount} received for booking ${bookingId}`,
-      destinationId: booking.destination
-    });
-
-    res.json({ message: 'Payment successful', payment, booking });
-  } catch (err) {
-    console.error('Payment processing error:', err);
-    res.status(500).json({ message: 'Payment failed', error: err.message });
-  }
-});
-
-/* -------------------- NEW: User booked travels endpoints -------------------- */
-// returns bookings belonging to user that have assignedTravel
-app.get('/api/travels-booked/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const bookings = await Booking.find({ userId, 'assignedTravel.name': { $exists: true } })
-      .populate('destination')
-      .lean();
-    res.json(bookings.map(b => ({
-      _id: b._id,
-      travelName: b.assignedTravel?.name,
-      destinationName: b.destination?.name || '',
-      bookedAt: b.assignedTravel?.bookedAt || b.createdAt,
-      totalPrice: b.assignedTravel?.totalPrice || 0
-    })));
-  } catch (err) {
-    console.error('Error fetching user booked travels:', err);
-    res.status(500).json({ message: 'Failed to fetch booked travels', error: err.message });
-  }
-});
-
-// delete booked travel by booking id (remove assignedTravel)
-app.delete('/api/travels-booked/:id', async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-    const booking = await Booking.findById(bookingId);
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-
-    booking.assignedTravel = undefined;
-    await booking.save();
-
-    res.json({ success: true, message: 'Travel removed from booking' });
-  } catch (err) {
-    console.error('Error removing booked travel:', err);
-    res.status(500).json({ message: 'Failed to remove booked travel', error: err.message });
-  }
-});
-
 app.post('/api/payments', async (req, res) => {
   try {
     const { bookingId, userId, amount, method, travelId } = req.body;
@@ -719,6 +619,44 @@ app.post('/api/payments', async (req, res) => {
   }
 });
 
+/* -------------------- NEW: User booked travels endpoints -------------------- */
+// returns bookings belonging to user that have assignedTravel
+app.get('/api/travels-booked/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bookings = await Booking.find({ userId, 'assignedTravel.name': { $exists: true } })
+      .populate('destination')
+      .lean();
+    res.json(bookings.map(b => ({
+      _id: b._id,
+      travelName: b.assignedTravel?.name,
+      destinationName: b.destination?.name || '',
+      bookedAt: b.assignedTravel?.bookedAt || b.createdAt,
+      totalPrice: b.assignedTravel?.totalPrice || 0
+    })));
+  } catch (err) {
+    console.error('Error fetching user booked travels:', err);
+    res.status(500).json({ message: 'Failed to fetch booked travels', error: err.message });
+  }
+});
+
+// delete booked travel by booking id (remove assignedTravel)
+app.delete('/api/travels-booked/:id', async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    booking.assignedTravel = undefined;
+    await booking.save();
+
+    res.json({ success: true, message: 'Travel removed from booking' });
+  } catch (err) {
+    console.error('Error removing booked travel:', err);
+    res.status(500).json({ message: 'Failed to remove booked travel', error: err.message });
+  }
+});
+
 // -------------------- ADMIN: Pending approvals list --------------------
 app.get('/admin/bookings/pending-approvals', async (req, res) => {
   try {
@@ -781,8 +719,7 @@ app.put('/admin/bookings/:id/reject', async (req, res) => {
     }
 
     booking.approvalStatus = 'rejected';
-    booking.status = 'Pending'; // booking remains pending; admin can later suggest another travel or user can change
-    // Optionally, remove assignedTravel or keep it with approved=false. Here we'll remove it to avoid confusion.
+    booking.status = 'Pending';
     booking.assignedTravel = undefined;
     await booking.save();
 
