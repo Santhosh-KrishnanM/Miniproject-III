@@ -1,5 +1,4 @@
-// (Updated to avoid redirecting away on DOM load when user is not logged in.
-// Instead the Book button will handle login redirect or open the booking modal.)
+// Fixed destination-details.js - Auto-opens booking modal after login redirect
 
 const urlParams = new URLSearchParams(window.location.search);
 const destinationId = urlParams.get('id');
@@ -14,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (userData) {
     try {
       currentUser = JSON.parse(userData);
+      console.log('✅ User logged in:', currentUser.username);
     } catch (e) {
       console.warn('Could not parse currentUser from storage', e);
       localStorage.removeItem('currentUser');
@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   setupDateRestrictions();
   setupFormListeners();
 
+  // ✅ NEW: Check if user just logged in to book this destination
+  checkAndOpenBookingModal();
+
   // Attach Book button behavior:
   const bookBtn = document.getElementById('bookBtn');
   if (bookBtn) {
@@ -40,7 +43,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (modal) modal.style.display = 'flex';
       } else {
         // User not logged in: save destination to localStorage and send to login/home.
-        // After login we will redirect to dashboard with openBooking flag (script.js will handle it).
         localStorage.setItem('bookingDestination', JSON.stringify({ id: destinationId, name: destinationData?.name || '' }));
         // Redirect user to the public login page (travel.html) to sign in / sign up
         window.location.href = 'travel.html';
@@ -48,6 +50,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     }, { passive: true });
   }
 });
+
+// ✅ NEW FUNCTION: Auto-open booking modal if user returned from login
+function checkAndOpenBookingModal() {
+  const bookingDestStr = localStorage.getItem('bookingDestination');
+  if (!bookingDestStr) return;
+
+  try {
+    const bookingDest = JSON.parse(bookingDestStr);
+    // If the saved destination matches current page AND user is now logged in
+    if (bookingDest.id === destinationId && currentUser && currentUser._id) {
+      console.log('🎯 Auto-opening booking modal for:', bookingDest.name);
+      // Open the booking modal automatically
+      setTimeout(() => {
+        const modal = document.getElementById('bookingModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          // Clear the saved destination since we're showing it now
+          localStorage.removeItem('bookingDestination');
+        }
+      }, 500);
+    }
+  } catch (e) {
+    console.warn('Could not parse bookingDestination', e);
+    localStorage.removeItem('bookingDestination');
+  }
+}
 
 async function loadDestinationDetails(destinationId) {
   try {
@@ -195,6 +223,8 @@ async function handleBookingSubmit(e) {
       return;
     }
 
+    console.log('📤 Creating booking:', { userId: user._id, destination: destinationId, startDate, endDate, travelers });
+
     const response = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -207,6 +237,9 @@ async function handleBookingSubmit(e) {
       })
     });
     const data = await response.json();
+    
+    console.log('📥 Booking response:', response.status, data);
+    
     if (response.ok) {
       // Save booking locally and open payment modal for optional transport
       lastCreatedBooking = data;
@@ -230,7 +263,7 @@ async function handleBookingSubmit(e) {
   }
 }
 
-/* -------------------- Payment Modal & Flow (unchanged from previous) -------------------- */
+/* -------------------- Payment Modal & Flow -------------------- */
 function openPaymentModalForBooking(booking) {
   // Populate summary
   const start = booking.startDate.slice(0,10);
