@@ -2322,78 +2322,49 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-// ---------- Render Booked Travels ----------
 async function renderBookedTravels() {
+  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
+  const travels = await res.json();
   const container = document.getElementById("bookedTravelsList");
-  if (!container || !currentUser?._id) return;
+  if (!container) return;
 
-  try {
-    const res = await fetch(`/api/travels-booked/${currentUser._id}`);
-    if (!res.ok) {
-      container.innerHTML = `<p class="no-travels">Unable to load your booked travels.</p>`;
-      return;
-    }
+  container.innerHTML = "";
 
-    const travels = await res.json();
-    container.innerHTML = "";
-
-    if (!travels.length) {
-      container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
-      return;
-    }
-
-    travels.forEach(t => {
-      const item = document.createElement("div");
-      item.className = "travel-booked-item";
-      item.innerHTML = `
-        <div>
-          <strong>${t.travelName}</strong><br>
-          <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
-        </div>
-        <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
-      `;
-      container.appendChild(item);
-    });
-  } catch (err) {
-    console.error("Error loading booked travels:", err);
-    container.innerHTML = `<p class="no-travels">Error loading travels.</p>`;
+  if (!travels.length) {
+    container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
+    return;
   }
+
+  travels.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "travel-booked-item";
+    item.innerHTML = `
+      <div>
+        <strong>${t.travelName}</strong><br>
+        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
+      </div>
+      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
+    `;
+    container.appendChild(item);
+  });
 }
 
-// ---------- Delete Booked Travel ----------
 async function deleteBookedTravel(id) {
   if (!confirm("Are you sure you want to delete this travel?")) return;
-
-  try {
-    const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      alert("Travel deleted successfully!");
-      renderBookedTravels();
-    } else {
-      alert("Failed to delete travel.");
-    }
-  } catch (err) {
-    console.error("Delete error:", err);
-    alert("Error deleting travel.");
+  const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
+  if (res.ok) {
+    alert("Travel deleted successfully!");
+    renderBookedTravels();
+  } else {
+    alert("Failed to delete travel.");
   }
-}
-
-// ---------- Example Logout ----------
-function logout() {
-  localStorage.removeItem("currentUser");
-  window.location.href = "travel.html";
 }
 
 function showSection(sectionId) {
   document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
-  const section = document.getElementById(sectionId);
-  if (section) section.classList.add("active");
+  document.getElementById(sectionId).classList.add("active");
   document.getElementById("pageTitle").textContent =
     sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
-
-  if (sectionId === "travels") renderBookedTravels();
-}
-
 
   // ✅ Run this only for travels section
   if (sectionId === "travels") renderBookedTravels();
