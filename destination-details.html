@@ -349,6 +349,21 @@
         padding: 20px;
       }
     }
+
+    /* modal basics if not present in dashboard.css */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .modal-content { background: #fff; border-radius: 10px; padding: 20px; max-width: 700px; width: 100%; }
+    .modal .close-btn { cursor: pointer; position: absolute; right: 28px; top: 18px; font-size: 26px; color: #666; }
   </style>
 </head>
 <body>
@@ -422,10 +437,10 @@
         <!-- Quick Actions -->
         <div class="action-card">
           <h3>Quick Actions</h3>
-          <button class="btn-primary" onclick="bookThisDestination()">
+          <button class="btn-primary" id="bookBtn">
             <i class="fas fa-calendar-plus"></i> Book This Trip
           </button>
-          <button class="btn-secondary" id="favoriteBtn" onclick="toggleFavorite()">
+          <button class="btn-secondary" id="favoriteBtn">
             <i class="fas fa-heart"></i> <span id="favoriteBtnText">Add to Favorites</span>
           </button>
         </div>
@@ -469,14 +484,62 @@
     </div>
   </div>
 
+  <!-- Payment Modal -->
+  <div id="paymentModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closePaymentModal()">&times;</span>
+      <h2 id="paymentTitle"><i class="fas fa-credit-card"></i> Complete Payment</h2>
+
+      <div id="paymentSummary" style="margin-bottom: 12px;">
+        <p><strong>Booking:</strong> <span id="payDestinationName"></span></p>
+        <p><strong>Dates:</strong> <span id="payDates"></span></p>
+        <p><strong>Travelers:</strong> <span id="payTravelers"></span></p>
+        <p><strong>Trip Cost:</strong> ₹<span id="payTripCost">0</span></p>
+      </div>
+
+      <div class="form-group">
+        <label>Choose optional transport (travels)</label>
+        <select id="paymentTravelSelect" style="width:100%; padding:10px; border-radius:6px;">
+          <option value="">— No transport —</option>
+        </select>
+        <small style="color:#666; display:block; margin-top:6px;">You can skip transport and pay only for the trip</small>
+      </div>
+
+      <div class="form-group">
+        <label>Total amount</label>
+        <div id="paymentTotal" style="font-weight:700; font-size:1.1rem;">₹0</div>
+      </div>
+
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="paymentMethod" style="width:100%; padding:10px; border-radius:6px;">
+          <option value="card">Card</option>
+          <option value="upi">UPI</option>
+          <option value="netbanking">Netbanking</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+        <button class="btn-outline" onclick="closePaymentModal()">Cancel</button>
+        <button class="btn-primary" id="confirmPaymentBtn">Pay Now</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // Robust, fixed version of destination-details page script
+
     let currentDestination = null;
     let currentUser = null;
     let isFavorite = false;
+    let favoriteRecordId = null; // store favorite document id if exists
+    let lastCreatedBooking = null;
 
-    // Load destination details on page load
+    // Constants
+    const PER_PERSON_PER_DAY = 1000; // base cost used by booking/payment modal (adjust as needed)
+
     document.addEventListener('DOMContentLoaded', async function() {
-      // Get current user
+      // get user
       const userData = localStorage.getItem('currentUser');
       if (!userData) {
         alert('Please login first');
@@ -485,114 +548,132 @@
       }
       currentUser = JSON.parse(userData);
 
-      // Get destination ID from URL
+      // destination id from URL
       const urlParams = new URLSearchParams(window.location.search);
       const destinationId = urlParams.get('id');
-
       if (!destinationId) {
         alert('No destination specified');
         window.location.href = 'dashboard.html';
         return;
       }
 
+      // wire up buttons
+      document.getElementById('bookBtn').addEventListener('click', () => bookThisDestination());
+      document.getElementById('favoriteBtn').addEventListener('click', () => toggleFavorite());
+
+      // load and render
       await loadDestinationDetails(destinationId);
       await checkIfFavorite(destinationId);
     });
 
-    // Load destination details
+    // Load destination details (fetch all and find by id because backend doesn't expose /destinations/:id)
     async function loadDestinationDetails(destinationId) {
       try {
         const response = await fetch('/destinations');
+        if (!response.ok) throw new Error('Failed to load destinations');
         const destinations = await response.json();
-        
-        currentDestination = destinations.find(d => d._id === destinationId);
 
+        currentDestination = destinations.find(d => d._id === destinationId);
         if (!currentDestination) {
           alert('Destination not found');
           window.location.href = 'dashboard.html';
           return;
         }
 
-        // Populate page
-        document.getElementById('destinationName').textContent = currentDestination.name;
+        // populate UI
+        document.getElementById('destinationName').textContent = currentDestination.name || 'Unknown';
         document.getElementById('destinationType').textContent = (currentDestination.type || 'Destination').replace('-', ' ');
-        document.getElementById('destinationRating').textContent = currentDestination.rating || '0';
-        document.getElementById('destinationReviews').textContent = currentDestination.reviews || 0;
-        
-        // Hero image
+        document.getElementById('destinationRating').textContent = currentDestination.rating ?? '0';
+        document.getElementById('destinationReviews').textContent = currentDestination.reviews ?? 0;
+
         const heroImage = document.getElementById('heroImage');
-        heroImage.style.backgroundImage = `url('${currentDestination.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80'}')`;
+        heroImage.style.backgroundImage = `url('${escapeAttr(currentDestination.imageUrl) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80'}')`;
 
-        // Description
-        document.getElementById('destinationDescription').textContent = 
-          currentDestination.description || `Discover the beauty and culture of ${currentDestination.name}. A perfect destination for travelers seeking memorable experiences in Tamil Nadu.`;
+        document.getElementById('destinationDescription').textContent = currentDestination.description || `Discover ${currentDestination.name}.`;
+        document.getElementById('destinationLocation').textContent = currentDestination.location || 'Tamil Nadu, India';
+        document.getElementById('destinationBestTime').textContent = currentDestination.bestTime || 'October to March';
 
-        // Location
-        document.getElementById('destinationLocation').textContent = 
-          currentDestination.location || 'Tamil Nadu, India';
-
-        // Best time
-        document.getElementById('destinationBestTime').textContent = 
-          currentDestination.bestTime || 'October to March (Winter months are ideal for pleasant weather)';
-
-        // Highlights
-        if (currentDestination.highlights) {
+        // highlights
+        if (currentDestination.highlights && String(currentDestination.highlights).trim() !== '') {
           const highlightsList = document.getElementById('destinationHighlights');
           highlightsList.innerHTML = '';
-          currentDestination.highlights.split(',').forEach(highlight => {
+          currentDestination.highlights.split(',').map(s => s.trim()).filter(Boolean).forEach(h => {
             const li = document.createElement('li');
-            li.textContent = highlight.trim();
+            li.textContent = h;
             highlightsList.appendChild(li);
           });
           document.getElementById('highlightsSection').style.display = 'block';
+        } else {
+          document.getElementById('highlightsSection').style.display = 'none';
         }
 
-        // Activities
-        if (currentDestination.activities) {
+        // activities
+        if (currentDestination.activities && String(currentDestination.activities).trim() !== '') {
           const activitiesGrid = document.getElementById('destinationActivities');
           activitiesGrid.innerHTML = '';
-          currentDestination.activities.split(',').forEach(activity => {
+          currentDestination.activities.split(',').map(s => s.trim()).filter(Boolean).forEach(a => {
             const tag = document.createElement('div');
             tag.className = 'activity-tag';
-            tag.textContent = activity.trim();
+            tag.textContent = a;
             activitiesGrid.appendChild(tag);
           });
           document.getElementById('activitiesSection').style.display = 'block';
+        } else {
+          document.getElementById('activitiesSection').style.display = 'none';
         }
 
-        // Quick info sidebar
+        // quick info
         document.getElementById('quickType').textContent = (currentDestination.type || 'Destination').replace('-', ' ');
-        document.getElementById('quickRating').textContent = `${currentDestination.rating || '0'} / 5.0`;
-        document.getElementById('quickReviews').textContent = `${currentDestination.reviews || 0} travelers`;
+        document.getElementById('quickRating').textContent = `${currentDestination.rating ?? '0'} / 5.0`;
+        document.getElementById('quickReviews').textContent = `${currentDestination.reviews ?? 0} travelers`;
 
+        // set document title
+        document.title = `${currentDestination.name} — Travel Aura`;
         console.log('✅ Destination details loaded:', currentDestination.name);
-
-      } catch (error) {
-        console.error('Error loading destination:', error);
+      } catch (err) {
+        console.error('Error loading destination:', err);
         alert('Error loading destination details');
         window.location.href = 'dashboard.html';
       }
     }
 
-    // Check if destination is in favorites
+    // Check if destination is favorited by the current user
     async function checkIfFavorite(destinationId) {
+      favoriteRecordId = null;
+      isFavorite = false;
       try {
-        const response = await fetch(`/favorites/${currentUser._id}`);
-        const favorites = await response.json();
-        
-        isFavorite = favorites.some(fav => fav.destinationId?._id === destinationId);
-        
+        const res = await fetch(`/favorites/${currentUser._id}`);
+        if (!res.ok) {
+          console.warn('Could not fetch favorites, server returned', res.status);
+          updateFavoriteButton();
+          return;
+        }
+        const favorites = await res.json();
+        // favorites may contain populated destinationId or raw id; handle both
+        for (const fav of favorites) {
+          const destRef = fav.destinationId;
+          if (!destRef) continue;
+          // destRef might be an object with _id or a string id
+          const destIdValue = (typeof destRef === 'object' && destRef._id) ? String(destRef._id) : String(destRef);
+          if (destIdValue === String(destinationId)) {
+            isFavorite = true;
+            favoriteRecordId = fav._id; // store favorite doc id for removal
+            break;
+          }
+        }
         updateFavoriteButton();
-      } catch (error) {
-        console.error('Error checking favorites:', error);
+      } catch (err) {
+        console.error('Error checking favorites:', err);
+        updateFavoriteButton();
       }
     }
 
-    // Update favorite button
+    // update favorite button UI
     function updateFavoriteButton() {
       const btn = document.getElementById('favoriteBtn');
       const text = document.getElementById('favoriteBtnText');
-      
+      if (!btn || !text) return;
+
       if (isFavorite) {
         btn.classList.add('favorited');
         text.textContent = 'Already in Favorites';
@@ -602,49 +683,87 @@
       }
     }
 
-    // Toggle favorite
+    // toggle favorite (add or remove)
     async function toggleFavorite() {
-      if (isFavorite) {
-        alert('This destination is already in your favorites!');
-        return;
-      }
+      const btn = document.getElementById('favoriteBtn');
+      const text = document.getElementById('favoriteBtnText');
+      if (!btn || !text) return;
+
+      // prevent double clicks
+      btn.disabled = true;
 
       try {
-        const response = await fetch('/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUser._id,
-            destinationId: currentDestination._id
-          })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert('✅ Added to favorites!');
-          isFavorite = true;
-          updateFavoriteButton();
+        if (isFavorite && favoriteRecordId) {
+          // remove favorite
+          const res = await fetch(`/favorites/${favoriteRecordId}`, { method: 'DELETE' });
+          if (res.ok) {
+            isFavorite = false;
+            favoriteRecordId = null;
+            alert('✅ Removed from favorites');
+          } else {
+            const data = await res.json().catch(()=>({}));
+            alert('Failed to remove favorite: ' + (data.message || res.status));
+          }
         } else {
-          alert(data.message || 'Failed to add to favorites');
+          // add favorite
+          const res = await fetch('/favorites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser._id, destinationId: currentDestination._id })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            isFavorite = true;
+            // if backend returned favorite document, capture its id
+            favoriteRecordId = data.favorite?._id || data._id || null;
+            alert('✅ Added to favorites!');
+          } else if (res.status === 409) {
+            // already favorited on server
+            isFavorite = true;
+            // try to re-fetch to get the favorite id
+            await checkIfFavorite(currentDestination._id);
+            alert('Already in favorites');
+          } else {
+            alert(data.message || 'Failed to add to favorites');
+          }
         }
-      } catch (error) {
-        console.error('Error toggling favorite:', error);
-        alert('Error updating favorites');
+      } catch (err) {
+        console.error('Error toggling favorite:', err);
+        alert('Error updating favorites. Please try again.');
+      } finally {
+        btn.disabled = false;
+        updateFavoriteButton();
       }
     }
 
-    // Book this destination
+    // Book this destination: store brief info and navigate to dashboard booking modal
     function bookThisDestination() {
-      // Store destination info for booking
+      if (!currentDestination || !currentDestination._id) {
+        alert('Destination not loaded yet');
+        return;
+      }
       localStorage.setItem('bookingDestination', JSON.stringify({
         id: currentDestination._id,
         name: currentDestination.name
       }));
-
-      // Redirect to dashboard with booking modal
+      // open dashboard and instruct it to auto-open booking modal
       window.location.href = 'dashboard.html?openBooking=true';
     }
+
+    // Payment modal helpers (the page includes a simplified payment modal, the heavy payment logic is handled in dashboard flow)
+    function closePaymentModal() {
+      const modal = document.getElementById('paymentModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    // small utility to escape attributes
+    function escapeAttr(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // developer debug log
+    console.log('Destination details script loaded');
   </script>
 </body>
 </html>
