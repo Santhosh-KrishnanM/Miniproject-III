@@ -273,26 +273,66 @@ function closeDestinationDetailsModal() {
 }
 
 // --------- ADD TO FAVORITES FROM MODAL ------------
-async function addFavoriteFromModal(userId, destinationId) {
+// --------- ADD TO FAVORITES (FIXED VERSION) ------------
+async function addFavorite(userId, destinationId) {
+  console.log('Adding to favorites:', { userId, destinationId });
+  
+  if (!userId || !destinationId) {
+    alert("❌ Error: Please login to add favorites");
+    return;
+  }
+
+  // Check if user is logged in
+  if (!currentUser || !currentUser._id) {
+    alert("❌ Please login to add favorites");
+    window.location.href = 'travel.html';
+    return;
+  }
+
   try {
     const res = await fetch('/favorites', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, destinationId })
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        userId: userId, 
+        destinationId: destinationId 
+      })
     });
 
-    const data = await res.json();
+    console.log('Add favorite response status:', res.status);
 
     if (res.ok) {
-      alert('✅ Added to favorites!');
-      closeDestinationDetailsModal();
-      await renderAllSections(); // Refresh to update favorites count
+      const data = await res.json();
+      console.log('✅ Add favorite success:', data);
+      
+      alert('✅ Added to favorites successfully!');
+      
+      // Refresh favorites section
+      await renderFavorites();
+      await updateStats();
+      
     } else {
-      alert(data.message || 'Failed to add to favorites');
+      const errorData = await res.json().catch(() => null);
+      const errorMessage = errorData?.message || errorData?.error || 'Failed to add to favorites';
+      
+      console.error('❌ Add favorite failed:', errorMessage);
+      
+      // Check for specific error messages
+      if (errorMessage.toLowerCase().includes('already')) {
+        alert('ℹ️ This destination is already in your favorites!');
+      } else if (res.status === 401 || res.status === 403) {
+        alert('❌ Session expired. Please login again.');
+        localStorage.removeItem('currentUser');
+        window.location.href = 'travel.html';
+      } else {
+        alert(`❌ Failed to add to favorites: ${errorMessage}`);
+      }
     }
   } catch (error) {
-    console.error('Error adding to favorites:', error);
-    alert('Error adding to favorites');
+    console.error('❌ Error adding to favorites:', error);
+    alert('❌ Network error. Please check your connection and try again.');
   }
 }
 
@@ -341,22 +381,40 @@ async function addFavorite(userId, destinationId) {
 
 // --------- REMOVE FROM FAVORITES ------------
 async function removeFavorite(favoriteId) {
-  if (!confirm("Remove from favorites?")) return;
+  if (!confirm("Remove this destination from favorites?")) return;
+
+  console.log('Removing favorite:', favoriteId);
 
   try {
     const res = await fetch(`/favorites/${favoriteId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
+    console.log('Remove favorite response status:', res.status);
+
     if (res.ok) {
-      alert('✅ Removed from favorites');
-      await renderAllSections(); // Refresh all sections
+      const data = await res.json().catch(() => null);
+      console.log('✅ Remove favorite success:', data);
+      
+      alert('✅ Removed from favorites successfully!');
+      
+      // Refresh favorites and stats
+      await renderFavorites();
+      await updateStats();
+      
     } else {
-      alert('Failed to remove from favorites');
+      const errorData = await res.json().catch(() => null);
+      const errorMessage = errorData?.message || errorData?.error || 'Failed to remove from favorites';
+      
+      console.error('❌ Remove favorite failed:', errorMessage);
+      alert(`❌ Failed to remove from favorites: ${errorMessage}`);
     }
   } catch (error) {
-    console.error('Error removing favorite:', error);
-    alert('Error removing favorite');
+    console.error('❌ Error removing favorite:', error);
+    alert('❌ Network error. Please try again.');
   }
 }
 
@@ -485,26 +543,119 @@ function filterDestinations(filterType) {
 }
 
 
+// --------- RENDER FAVORITES (FIXED VERSION) ------------
 async function renderFavorites() {
-  const favorites = await getUserFavorites(currentUser?._id);
-  const container = document.getElementById('favoritesGrid');
-  container.innerHTML = '';
+  if (!currentUser?._id) {
+    console.warn('No user logged in, skipping favorites render');
+    return;
+  }
 
-  favorites.forEach(fav => {
-    const dest = fav.destinationId;
-    const card = document.createElement('div');
-    card.className = 'destination-card';
-    card.innerHTML = `
-      <div class="destination-image" style="background-image: url('${dest?.imageUrl || ''}')"></div>
-      <div class="destination-info">
-        <h4>${dest?.name || 'Unknown'}</h4>
-        <button class="btn-danger" onclick="event.stopPropagation(); removeFavorite('${fav._id}')">
-          <i class="fas fa-heart-broken"></i> Remove
-        </button>
-      </div>
-    `;
-    container.appendChild(card);
-  });
+  try {
+    const favorites = await getUserFavorites(currentUser._id);
+    const container = document.getElementById('favoritesGrid');
+    
+    if (!container) {
+      console.error('Favorites container not found');
+      return;
+    }
+    
+    container.innerHTML = '';
+
+    if (!favorites || favorites.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #666;">
+          <i class="fas fa-heart" style="font-size: 4rem; margin-bottom: 20px; display: block; color: #ddd;"></i>
+          <h3>No favorites yet</h3>
+          <p style="margin: 10px 0 20px 0;">Start adding destinations to your favorites!</p>
+          <button class="btn-primary" onclick="showSection('destinations')" style="margin-top: 15px;">
+            <i class="fas fa-compass"></i> Explore Destinations
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    favorites.forEach(fav => {
+      const dest = fav.destinationId;
+      
+      if (!dest || !dest._id) {
+        console.warn('Invalid favorite destination:', fav);
+        return;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'destination-card';
+      card.style.cursor = 'pointer';
+      
+      const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
+      const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
+      
+      card.innerHTML = `
+        <div class="destination-image" style="
+          background-image: url('${imageUrl}');
+          background-size: cover;
+          background-position: center;
+          height: 200px;
+          border-radius: 12px 12px 0 0;
+          position: relative;
+        " onclick="showDestinationDetails('${dest._id}')">
+          <div style="
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 59, 48, 0.9);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          ">
+            <i class="fas fa-heart"></i> Favorite
+          </div>
+        </div>
+        <div class="destination-info">
+          <h4 onclick="showDestinationDetails('${dest._id}')">${dest.name}</h4>
+          <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">
+            <i class="fas fa-star" style="color: #ffa500;"></i> 
+            ${dest.rating || 'Not rated'}
+            ${dest.reviews ? ` (${dest.reviews} reviews)` : ''}
+          </p>
+          <span class="destination-type" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin: 8px 0;
+          ">${typeFormatted}</span>
+          <button class="btn-danger" onclick="event.stopPropagation(); removeFavorite('${fav._id}')" style="
+            width: 100%;
+            margin-top: 10px;
+          ">
+            <i class="fas fa-heart-broken"></i> Remove from Favorites
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    
+    console.log(`✅ Rendered ${favorites.length} favorites`);
+    
+  } catch (error) {
+    console.error('Error rendering favorites:', error);
+    const container = document.getElementById('favoritesGrid');
+    if (container) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">
+          <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+          <h3>Failed to load favorites</h3>
+          <p>Please try refreshing the page</p>
+        </div>
+      `;
+    }
+  }
 }
 
 async function renderBookings() {

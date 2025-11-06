@@ -336,46 +336,74 @@ app.delete('/destinations/:id', async (req, res) => {
   }
 });
 
-// ---------------------- FAVORITES ----------------------
-
+// POST /favorites - Add to favorites
 app.post('/favorites', async (req, res) => {
   try {
     const { userId, destinationId } = req.body;
-    const existing = await Favorite.findOne({ userId, destinationId });
-    if (existing) {
-      return res.status(409).json({ message: 'Already favorited', favorite: existing });
+    
+    if (!userId || !destinationId) {
+      return res.status(400).json({ 
+        error: 'User ID and Destination ID are required' 
+      });
     }
-    const favorite = new Favorite({ userId, destinationId });
-    await favorite.save();
 
-    await Activity.create({
-      userId,
-      type: 'favorite',
-      content: `Added favorite for destination ${destinationId}`,
-      destinationId
+    // Check if already exists
+    const existing = await Favorite.findOne({ 
+      userId: userId, 
+      destinationId: destinationId 
+    });
+    
+    if (existing) {
+      return res.status(400).json({ 
+        message: 'This destination is already in your favorites!' 
+      });
+    }
+
+    const newFavorite = new Favorite({
+      userId: userId,
+      destinationId: destinationId
     });
 
-    res.status(201).json({ message: 'Favorite added!', favorite });
-  } catch (err) {
-    res.status(500).json({ message: 'Error adding favorite', error: err.message });
+    await newFavorite.save();
+    
+    res.status(201).json({ 
+      message: 'Added to favorites successfully!',
+      favorite: newFavorite 
+    });
+    
+  } catch (error) {
+    console.error('Error adding favorite:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
+// GET /favorites/:userId - Get user favorites
 app.get('/favorites/:userId', async (req, res) => {
   try {
-    const favorites = await Favorite.find({ userId: req.params.userId }).populate('destinationId');
+    const favorites = await Favorite.find({ userId: req.params.userId })
+      .populate('destinationId')
+      .sort({ createdAt: -1 });
+    
     res.json(favorites);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching favorites', error: err.message });
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
+// DELETE /favorites/:id - Remove from favorites
 app.delete('/favorites/:id', async (req, res) => {
   try {
-    await Favorite.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Favorite removed' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error removing favorite', error: err.message });
+    const favorite = await Favorite.findByIdAndDelete(req.params.id);
+    
+    if (!favorite) {
+      return res.status(404).json({ error: 'Favorite not found' });
+    }
+    
+    res.json({ message: 'Removed from favorites successfully!' });
+  } catch (error) {
+    console.error('Error removing favorite:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
