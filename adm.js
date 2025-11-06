@@ -471,3 +471,92 @@ async function deleteTravel(id) {
     console.error("Delete travel failed", err);
   }
 }
+
+
+// --- Edit Destination Modal ---
+function editDestination(destinationObj) {
+  // Fill modal with current destination data
+  document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Destination`;
+  document.getElementById('destinationId').value = destinationObj._id || '';
+  document.getElementById('destName').value = destinationObj.name || '';
+  document.getElementById('destType').value = destinationObj.type || '';
+  document.getElementById('destRating').value = destinationObj.rating || '';
+  document.getElementById('destDescription').value = destinationObj.description || '';
+  document.getElementById('destImageUrl').value = destinationObj.imageUrl || '';
+  // Show img preview if available
+  const imgPrev = document.getElementById('imagePreview');
+  if (destinationObj.imageUrl) {
+    imgPrev.src = destinationObj.imageUrl;
+    imgPrev.style.display = 'block';
+  } else {
+    imgPrev.style.display = 'none';
+  }
+  document.getElementById('destinationModal').style.display = 'flex';
+}
+
+// --- Delete Destination ---
+async function deleteDestination(id, name) {
+  if (!confirm(`Delete destination "${name}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/destinations/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Destination deleted.");
+      loadAdminData(); // Refresh the list
+    } else {
+      alert("Failed to delete destination: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Error deleting destination.");
+  }
+}
+
+// --- Modal close helper ---
+function closeDestinationModal() {
+  document.getElementById('destinationModal').style.display = 'none';
+}
+
+
+// ...previous admin JS code...
+
+// Destination Add/Edit Form handler
+document.getElementById('destinationForm').onsubmit = async function(e) {
+  e.preventDefault();
+  const id = document.getElementById('destinationId').value;
+  const name = document.getElementById('destName').value;
+  const type = document.getElementById('destType').value;
+  const rating = document.getElementById('destRating').value;
+  const description = document.getElementById('destDescription').value;
+  const imageUrl = document.getElementById('destImageUrl').value;
+
+  const payload = { name, type, rating, description, imageUrl };
+
+  try {
+    let res, data;
+    if (id) {
+      res = await fetch(`/destinations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      data = await res.json();
+    } else {
+      res = await fetch('/destinations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      data = await res.json();
+    }
+
+    if (res.ok) {
+      alert(data.message || 'Saved!');
+      closeDestinationModal();
+      loadAdminData();
+    } else {
+      alert(data.message || data.error || "Save failed");
+    }
+  } catch (err) {
+    alert("Error saving destination");
+  }
+};
