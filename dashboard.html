@@ -38,7 +38,6 @@
            <span>Travels</span>
         </a>
         </li>
-
         <li>
           <a href="#" onclick="showSection('favorites')">
             <i class="fas fa-heart"></i>
@@ -64,7 +63,6 @@
           <span>Logout</span>
         </a>
       </div>
-
     </nav>
 
     <!-- Main Content -->
@@ -86,8 +84,6 @@
                   onkeyup="headerSearchDestinations()"
                   onkeydown="handleHeaderSearchEnter(event)">
             <div id="headerSearchResults" class="header-search-results"></div>
-            
-            <!-- Clear Button -->
             <button class="header-clear-search" onclick="clearHeaderSearch()" style="display: none;">
               <i class="fas fa-times"></i>
             </button>
@@ -143,11 +139,8 @@
         </div>
 
         <div class="dashboard-grid">
-          <!-- Quick Actions -->
-          <!-- Replace the Quick Actions card with Travel Insights -->
           <div class="dashboard-card">
             <div id="travelInsightsWidget" class="card-content">
-              <!-- Travel insights will be populated by JavaScript -->
               <div style="text-align: center; padding: 40px; color: #999;">
                   <i class ="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
                   <p>Loading insights...</p>
@@ -155,13 +148,11 @@
             </div>
           </div>
 
-          <!-- Recent Activities -->
           <div class="dashboard-card">
             <div class="card-header">
               <h3><i class="fas fa-clock"></i> Recent Activities</h3>
             </div>
             <div class="activity-list" id="activityList">
-              <!-- JS will render activities here -->
               <div class="activity-item">
                 <div class="activity-icon">
                   <i class="fas fa-star"></i>
@@ -172,7 +163,6 @@
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -192,92 +182,76 @@
           <div style="text-align: center; padding: 40px; color: #666;">
                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
                <p>Loading destinations...</p>
+          </div>
         </div>
       </section>
 
       <!-- Bookings Section -->
-      <!-- Bookings Section -->
       <section id="bookings" class="content-section">
-      <div class="section-header">
-        <h2>My Bookings</h2> 
-      </div>
-  <div class="bookings-list" id="bookingsList">
-    <!-- Bookings will be populated by JavaScript -->
-  </div>
-
-  <!-- Travel Info Display -->
-<div id="travelInfoContainer" class="travel-info-container" style="display:none;">
-  <h4>Travels</h4>
-  <p id="travelName"></p>
-  <p id="travelPrice"></p>
-</div>
-
-</section>
-
+        <div class="section-header">
+          <h2>My Bookings</h2> 
+        </div>
+        <div class="bookings-list" id="bookingsList"></div>
+        <div id="travelInfoContainer" class="travel-info-container" style="display:none;">
+          <h4>Travels</h4>
+          <p id="travelName"></p>
+          <p id="travelPrice"></p>
+        </div>
+      </section>
 
       <div id="dynamicPagesContainer" class="content-section" style="display:none;"></div>
     
-<!-- ✅ Travels Section -->
-<section id="travels" class="content-section">
-  <div class="section-header">
-    <h2>Travels</h2>
-  </div>
+      <!-- Travels Section -->
+      <section id="travels" class="content-section">
+        <div class="section-header">
+          <h2>Travels</h2>
+        </div>
+        <div style="padding:20px;">
+          <p>Click a vehicle to offer travel for a selected booking.</p>
+          <div class="travels-grid" id="travelsGrid"></div>
+        </div>
+      </section>
 
-  <div style="padding:20px;">
-    <p>Click a vehicle to offer travel for a selected booking.</p>
-
-    <!-- where travel cards (Tempo, Thar, etc.) will appear -->
-    <div class="travels-grid" id="travelsGrid"></div>
-  </div>
-</section>
-
-<!-- Travel booking popup (re-used when user clicks a vehicle) -->
-<div id="travelPopup" class="modal" style="display:none;">
-  <div class="modal-content" style="max-width:520px;">
-    <span id="closePopup" class="close-btn" onclick="closeTravelPopup()">&times;</span>
-    <h2 id="popupName">Vehicle</h2>
-
-    <div style="display:flex; gap:16px; align-items:center; margin-bottom:10px;">
-      <img id="popupImage" src="" alt="vehicle" style="width:140px; height:90px; object-fit:cover; border-radius:8px;"/>
-      <div>
-        <p id="popupSeats">Seats: -</p>
-        <p id="popupCost">Per day: ₹-</p>
+      <!-- Travel booking popup -->
+      <div id="travelPopup" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:520px;">
+          <span id="closePopup" class="close-btn" onclick="closeTravelPopup()">&times;</span>
+          <h2 id="popupName">Vehicle</h2>
+          <div style="display:flex; gap:16px; align-items:center; margin-bottom:10px;">
+            <img id="popupImage" src="" alt="vehicle" style="width:140px; height:90px; object-fit:cover; border-radius:8px;"/>
+            <div>
+              <p id="popupSeats">Seats: -</p>
+              <p id="popupCost">Per day: ₹-</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Select one of your bookings for this destination</label>
+            <select id="userBookingsSelect" style="width:100%; padding:10px; border-radius:6px;">
+              <option value="">— Select booking —</option>
+            </select>
+            <small style="color:#666; display:block; margin-top:6px;">Pick a previously created booking to assign this vehicle</small>
+          </div>
+          <div class="form-group">
+            <label>Total price</label>
+            <div id="totalPrice" style="font-weight:700; font-size:1.1rem;">₹0</div>
+          </div>
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+            <button class="btn-outline" onclick="closeTravelPopup()">Cancel</button>
+            <button class="btn-primary" id="confirmBooking">Book Travels</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label>Select one of your bookings for this destination</label>
-      <select id="userBookingsSelect" style="width:100%; padding:10px; border-radius:6px;">
-        <option value="">— Select booking —</option>
-      </select>
-      <small style="color:#666; display:block; margin-top:6px;">Pick a previously created booking to assign this vehicle</small>
-    </div>
-
-    <div class="form-group">
-      <label>Total price</label>
-      <div id="totalPrice" style="font-weight:700; font-size:1.1rem;">₹0</div>
-    </div>
-
-    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
-      <button class="btn-outline" onclick="closeTravelPopup()">Cancel</button>
-      <button class="btn-primary" id="confirmBooking">Book Travels</button>
-    </div>
-  </div>
-</div>
-
-<!-- small success toast -->
-<div id="successPopup" style="position:fixed; bottom:24px; right:24px; background:#1e90ff; color:#fff; padding:14px 18px; border-radius:8px; display:none; z-index:4000;">
-  Travel added to booking!
-</div>
+      <div id="successPopup" style="position:fixed; bottom:24px; right:24px; background:#1e90ff; color:#fff; padding:14px 18px; border-radius:8px; display:none; z-index:4000;">
+        Travel added to booking!
+      </div>
 
       <!-- Favorites Section -->
       <section id="favorites" class="content-section">
         <div class="section-header">
           <h2>My Favorite Places</h2>
         </div>
-        <div class="favorites-grid" id="favoritesGrid">
-          <!-- Favorites will be populated by JavaScript -->
-        </div>
+        <div class="favorites-grid" id="favoritesGrid"></div>
       </section>
 
       <!-- Profile Section -->
@@ -293,7 +267,6 @@
             </div>
             <button class="btn-primary" onclick="editProfile()">Edit Profile</button>
           </div>
-          
           <div class="profile-content">
             <div class="profile-section">
               <h3>Personal Information</h3>
@@ -316,7 +289,6 @@
                 </div>
               </div>
             </div>
-            
             <div class="profile-section">
               <h3>Travel Preferences</h3>
               <div class="preferences-grid">
@@ -338,7 +310,7 @@
         </div>
       </section>
 
-      <!-- Support Section - Simplified Enhanced -->
+      <!-- Support Section -->
       <section id="support" class="content-section">
         <div class="support-container">
           <div class="support-header">
@@ -346,15 +318,13 @@
             <p>We're here to help you 24/7. Choose how you'd like to reach us.</p>
           </div>
 
-          <!-- Contact Methods Grid (Simplified) -->
           <div class="support-grid">
-            <!-- Email Support -->
             <div class="support-card">
               <div class="support-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <i class="fas fa-envelope"></i>
               </div>
               <h3>Email Support</h3>
-              <p>Send us an email and we'll get back to you within 2 hours during business hours.</p>
+              <p>Send us an email and we'll get back to you within 2 hours.</p>
               <div class="support-meta">
                 <span class="email-address"><i class="fas fa-at"></i> support@travelaura.com</span>
                 <span class="response-time">Response: 2 hours</span>
@@ -363,14 +333,12 @@
                 <i class="fas fa-paper-plane"></i> Send Email
               </button>
             </div>
-
-            <!-- WhatsApp Support -->
             <div class="support-card">
               <div class="support-icon" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);">
                 <i class="fab fa-whatsapp"></i>
               </div>
               <h3>WhatsApp Support</h3>
-              <p>Message us on WhatsApp for quick assistance. Share screenshots and documents easily.</p>
+              <p>Message us on WhatsApp for quick assistance.</p>
               <div class="support-meta">
                 <span class="status-badge online"><i class="fas fa-circle"></i> Active</span>
                 <span class="response-time">Instant messaging</span>
@@ -397,12 +365,8 @@
                   <li onclick="openFAQ('What is the cancellation policy?')">
                     <i class="fas fa-chevron-right"></i> What is the cancellation policy?
                   </li>
-                  <li onclick="openFAQ('How do I get my booking confirmation?')">
-                    <i class="fas fa-chevron-right"></i> How do I get my booking confirmation?
-                  </li>
                 </ul>
               </div>
-
               <div class="faq-category">
                 <h4><i class="fas fa-credit-card"></i> Payments</h4>
                 <ul>
@@ -412,257 +376,116 @@
                   <li onclick="openFAQ('Is my payment information secure?')">
                     <i class="fas fa-chevron-right"></i> Is my payment information secure?
                   </li>
-                  <li onclick="openFAQ('How do I get a refund?')">
-                    <i class="fas fa-chevron-right"></i> How do I get a refund?
-                  </li>
-                  <li onclick="openFAQ('Can I pay in installments?')">
-                    <i class="fas fa-chevron-right"></i> Can I pay in installments?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="faq-category">
-                <h4><i class="fas fa-map-marked-alt"></i> Destinations</h4>
-                <ul>
-                  <li onclick="openFAQ('How do I choose the right destination?')">
-                    <i class="fas fa-chevron-right"></i> How do I choose the right destination?
-                  </li>
-                  <li onclick="openFAQ('What documents do I need?')">
-                    <i class="fas fa-chevron-right"></i> What documents do I need?
-                  </li>
-                  <li onclick="openFAQ('Are destinations family-friendly?')">
-                    <i class="fas fa-chevron-right"></i> Are destinations family-friendly?
-                  </li>
-                  <li onclick="openFAQ('What is the best time to visit?')">
-                    <i class="fas fa-chevron-right"></i> What is the best time to visit?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="faq-category">
-                <h4><i class="fas fa-user-shield"></i> Account</h4>
-                <ul>
-                  <li onclick="openFAQ('How do I reset my password?')">
-                    <i class="fas fa-chevron-right"></i> How do I reset my password?
-                  </li>
-                  <li onclick="openFAQ('How do I update my profile?')">
-                    <i class="fas fa-chevron-right"></i> How do I update my profile?
-                  </li>
-                  <li onclick="openFAQ('How do I delete my account?')">
-                    <i class="fas fa-chevron-right"></i> How do I delete my account?
-                  </li>
-                  <li onclick="openFAQ('How do I change my email?')">
-                    <i class="fas fa-chevron-right"></i> How do I change my email?
-                  </li>
                 </ul>
               </div>
             </div>
-
             <button class="btn-outline" onclick="viewAllFAQs()" style="margin-top: 20px;">
               <i class="fas fa-book-open"></i> View All FAQs
             </button>
           </div>
-
-          <!-- Help Center Resources (Simplified) -->
-          <div class="resources-section">
-            <h3><i class="fas fa-book"></i> Help Center Resources</h3>
-            <div class="resources-grid">
-              <div class="resource-card" onclick="openResource('travel-guide')">
-                <i class="fas fa-map"></i>
-                <h4>Travel Guides</h4>
-                <p>Comprehensive guides for all destinations</p>
-              </div>
-              <div class="resource-card" onclick="openResource('safety-tips')">
-                <i class="fas fa-shield-alt"></i>
-                <h4>Safety Tips</h4>
-                <p>Stay safe during your travels</p>
-              </div>
-              <div class="resource-card" onclick="openResource('blog')">
-                <i class="fas fa-newspaper"></i>
-                <h4>Travel Blog</h4>
-                <p>Tips, stories, and inspiration</p>
-              </div>
-              <div class="resource-card" onclick="openResource('destination-finder')">
-                <i class="fas fa-compass"></i>
-                <h4>Destination Finder</h4>
-                <p>Find your perfect travel spot</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Feedback Section -->
-          <div class="feedback-section">
-            <div class="feedback-card">
-              <h3><i class="fas fa-comment-alt"></i> Have Feedback?</h3>
-              <p>Help us improve! Share your thoughts, suggestions, or report issues.</p>
-              <button class="btn-primary" onclick="openFeedbackForm()">
-                <i class="fas fa-paper-plane"></i> Send Feedback
-              </button>
-            </div>
-            <div class="feedback-card">
-              <h3><i class="fas fa-bug"></i> Report a Bug</h3>
-              <p>Found a technical issue? Let us know so we can fix it quickly.</p>
-              <button class="btn-outline" onclick="openBugReportForm()">
-                <i class="fas fa-exclamation-triangle"></i> Report Issue
-              </button>
-            </div>
-          </div>
-
-          <!-- Contact Information -->
-          <div class="contact-info-section">
-            <h3><i class="fas fa-info-circle"></i> Contact Information</h3>
-            <div class="contact-info-grid">
-              <div class="contact-info-item">
-                <i class="fas fa-envelope"></i>
-                <div>
-                  <strong>Email</strong>
-                  <p>support@travelaura.com</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fab fa-whatsapp"></i>
-                <div>
-                  <strong>WhatsApp</strong>
-                  <p>+91 98765 43210</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <strong>Address</strong>
-                  <p>123 Travel Street, Chennai, Tamil Nadu</p>
-                </div>
-              </div>
-              <div class="contact-info-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <strong>Business Hours</strong>
-                  <p>24/7 Support Available</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
-<!-- Email Support Modal -->
-<div id="emailModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeEmailForm()">&times;</span>
-    <h2><i class="fas fa-envelope"></i> Email Support</h2>
-    <form id="emailSupportForm" onsubmit="submitEmailSupport(event)">
-      <div class="form-group">
-        <label>Your Name *</label>
-        <input type="text" id="supportName" required>
+      <!-- Email Support Modal -->
+      <div id="emailModal" class="modal" style="display:none;">
+        <div class="modal-content">
+          <span class="close-btn" onclick="closeEmailForm()">&times;</span>
+          <h2><i class="fas fa-envelope"></i> Email Support</h2>
+          <form id="emailSupportForm" onsubmit="submitEmailSupport(event)">
+            <div class="form-group">
+              <label>Your Name *</label>
+              <input type="text" id="supportName" required>
+            </div>
+            <div class="form-group">
+              <label>Email Address *</label>
+              <input type="email" id="supportEmail" required>
+            </div>
+            <div class="form-group">
+              <label>Subject *</label>
+              <select id="supportSubject" required>
+                <option value="">Select a topic</option>
+                <option value="booking">Booking Issue</option>
+                <option value="payment">Payment Problem</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Message *</label>
+              <textarea id="supportMessage" rows="6" required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" onclick="closeEmailForm()">Cancel</button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Send Email
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Email Address *</label>
-        <input type="email" id="supportEmail" required>
-      </div>
-      <div class="form-group">
-        <label>Subject *</label>
-        <select id="supportSubject" required>
-          <option value="">Select a topic</option>
-          <option value="booking">Booking Issue</option>
-          <option value="payment">Payment Problem</option>
-          <option value="cancellation">Cancellation Request</option>
-          <option value="account">Account Help</option>
-          <option value="destination">Destination Inquiry</option>
-          <option value="feedback">General Feedback</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Message *</label>
-        <textarea id="supportMessage" rows="6" required placeholder="Describe your issue or question in detail..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Attachment (Optional)</label>
-        <input type="file" id="supportAttachment" accept="image/*,.pdf">
-        <small>Supported: JPG, PNG, PDF (Max 5MB)</small>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" onclick="closeEmailForm()">Cancel</button>
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-paper-plane"></i> Send Email
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
 
-<!-- FAQ Detail Modal -->
-<div id="faqModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeFAQModal()">&times;</span>
-    <h2 id="faqQuestion"></h2>
-    <div id="faqAnswer"></div>
-    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
-      <p style="margin-bottom: 15px; color: #666;">Was this helpful?</p>
-      <button class="btn-outline" onclick="faqFeedback('yes')" style="margin: 0 5px;">
-        <i class="fas fa-thumbs-up"></i> Yes
-      </button>
-      <button class="btn-outline" onclick="faqFeedback('no')" style="margin: 0 5px;">
-        <i class="fas fa-thumbs-down"></i> No
-      </button>
-    </div>
-  </div>
-</div>
-      <!-- Booking Form Modal -->
+      <!-- FAQ Modal -->
+      <div id="faqModal" class="modal" style="display:none;">
+        <div class="modal-content">
+          <span class="close-btn" onclick="closeFAQModal()">&times;</span>
+          <h2 id="faqQuestion"></h2>
+          <div id="faqAnswer"></div>
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+            <p style="margin-bottom: 15px; color: #666;">Was this helpful?</p>
+            <button class="btn-outline" onclick="faqFeedback('yes')" style="margin: 0 5px;">
+              <i class="fas fa-thumbs-up"></i> Yes
+            </button>
+            <button class="btn-outline" onclick="faqFeedback('no')" style="margin: 0 5px;">
+              <i class="fas fa-thumbs-down"></i> No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Modal -->
       <div id="bookingModal" class="modal" style="display:none;">
         <div class="modal-content">
           <span class="close-btn" onclick="closeBookingForm()">&times;</span>
           <h2>New Booking</h2>
-          
           <label for="destinationSearch">Search Destination</label>
           <input type="text" id="destinationSearch" placeholder="Type destination..." onkeyup="filterDestinationsList()">
           <ul id="destinationResults" class="search-results"></ul>
-
           <div class="form-group">
             <label>Start Date</label>
             <input type="date" id="startDate" min="">            
           </div>
-          
           <div class="form-group">
             <label>End Date</label>
             <input type="date" id="endDate" min="">
           </div>
-          
           <div class="form-group">
             <label>Travelers</label>
             <input type="number" id="travelers" min="1" value="1">
           </div>
-
           <button class="btn-primary" onclick="submitBooking()">Confirm Booking</button>
         </div>
       </div>
+
       <!-- Modify Booking Modal -->
       <div id="modifyBookingModal" class="modal" style="display:none;">
         <div class="modal-content">
-    <span class="close-btn" onclick="closeModifyForm()">&times;</span>
-    <h2>Modify Booking</h2>
-
-    <input type="hidden" id="modifyBookingId">
-
-    <div class="form-group">
-      <label>Start Date</label>
-      <input type="date" id="modifyStartDate">
-    </div>
-
-    <div class="form-group">
-      <label>End Date</label>
-      <input type="date" id="modifyEndDate">
-    </div>
-
-    <div class="form-group">
-      <label>Travelers</label>
-      <input type="number" id="modifyTravelers" min="1">
-    </div>
-
-    <button class="btn-primary" onclick="submitBookingModification()">Save Changes</button>
-  </div>
-</div>
+          <span class="close-btn" onclick="closeModifyForm()">&times;</span>
+          <h2>Modify Booking</h2>
+          <input type="hidden" id="modifyBookingId">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" id="modifyStartDate">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" id="modifyEndDate">
+          </div>
+          <div class="form-group">
+            <label>Travelers</label>
+            <input type="number" id="modifyTravelers" min="1">
+          </div>
+          <button class="btn-primary" onclick="submitBookingModification()">Save Changes</button>
+        </div>
+      </div>
 
       <!-- Edit Profile Modal -->
       <div id="editProfileModal" class="modal" style="display:none;">
@@ -671,7 +494,7 @@
           <h2>Edit Profile</h2>
           <div class="form-group">
             <label>Username</label>
-              <input type="text" id="editUsername">
+            <input type="text" id="editUsername">
           </div>
           <div class="form-group">
             <label>Email</label>
@@ -687,12 +510,12 @@
           </div>
           <button class="btn-primary" onclick="submitProfileEdit()">Save Changes</button>
         </div>
-      </div>  
-
+      </div>
 
     </main>
   </div>
 
+  <!-- ✅ ONLY ONE SCRIPT TAG -->
   <script src="dashboard.js"></script>
 </body>
 </html>
