@@ -517,5 +517,27 @@
 
   <!-- ✅ ONLY ONE SCRIPT TAG -->
   <script src="dashboard.js"></script>
+
+  <script>
+// ✅ Prevent logged-in users from seeing login page via forward button
+document.addEventListener('DOMContentLoaded', function() {
+  const userData = localStorage.getItem('currentUser');
+  const adminData = localStorage.getItem('adminUser');
+
+  // Other dashboard code...
+
+// ... Other dashboard code above ...
+
+// 🚦 Paste this at the END of dashboard.js
+document.getElementById('logoutBtn').addEventListener('click', function (e) {
+  e.preventDefault();
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('adminUser');
+  window.location.href = 'login.html'; // Change your login page name if needed
+});
+  
+  
+});
+</script>
 </body>
 </html>
