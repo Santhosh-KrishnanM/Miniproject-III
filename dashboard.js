@@ -1004,6 +1004,17 @@ function renderMyBookings(bookings) {
       <p><strong>Travelers:</strong> ${b.travelers}</p>
       ${travelInfo}
     `;
+    if (b.assignedTravel) {
+  const travelBox = document.createElement("div");
+  travelBox.className = "travel-info-container";
+  travelBox.innerHTML = `
+    <h4>Travels</h4>
+    <p><strong>${b.assignedTravel.name}</strong></p>
+    <p>Price: ₹${b.assignedTravel.totalPrice}</p>
+  `;
+  card.appendChild(travelBox);
+}
+
 
     container.appendChild(card);
   });

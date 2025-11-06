@@ -2038,4 +2038,18 @@ i:hover {
   border-radius: 6px;
   cursor: pointer;
 }
+.travel-info-container {
+  background: rgba(255,255,255,0.05);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #5ec5ff;
+  margin-top: 10px;
+}
+.travel-info-container h4 {
+  margin: 0 0 4px;
+  color: #5ec5ff;
+}
+.travel-info-container p {
+  margin: 2px 0;
+}
 
