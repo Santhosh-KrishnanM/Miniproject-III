@@ -163,9 +163,9 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { userId, destination, startDate, endDate, travelers } = req.body;
+    const { username, destination, startDate, endDate, travelers } = req.body;
     const booking = new Booking({
-      userId,
+      username,
       destination,
       startDate,
       endDate,
@@ -209,7 +209,7 @@ app.put("/api/bookings/:id", async (req, res) => {
     const updateData = req.body;
 
     // Ensure userId is preserved if missing
-    updateData.userId = updateData.userId || booking.userId;
+    updateData.userame = updateData.username || booking.username;
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
