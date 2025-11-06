@@ -6,40 +6,47 @@ let destinations = []; // store destinations from backend
 
 // ✅ NEW: Prevent back button from returning to dashboard after logout
 function preventBackToProtectedPage() {
-  // Replace the current history entry to prevent going back
   history.pushState(null, null, location.href);
   
-  // Listen for back button
   window.onpopstate = function() {
-    // If user is not logged in, redirect to travel.html
     const userData = localStorage.getItem('currentUser');
     if (!userData) {
       history.pushState(null, null, location.href);
-      window.location.href = 'travel.html';
+      window.location.replace('travel.html');
     }
   };
 }
+
 
 // --------- INITIAL LOAD ------------
 document.addEventListener('DOMContentLoaded', async function() {
   const userData = localStorage.getItem('currentUser');
   if (userData) {
-    currentUser = JSON.parse(userData);
-    updateUserProfile();
-    await renderAllSections();
-    await loadUserBookings(currentUser._id);
-    
-    // ✅ Enable history management
-    preventBackToProtectedPage();
+    try {
+      currentUser = JSON.parse(userData);
+      updateUserProfile();
+      await renderAllSections();
+      await loadUserBookings(currentUser._id);
+      
+      // Enable history management
+      preventBackToProtectedPage();
+    } catch (error) {
+      console.error('Error initializing dashboard:', error);
+      localStorage.removeItem('currentUser');
+      window.location.replace('travel.html');
+      return;
+    }
   } else {
-    // ✅ Not logged in, redirect to travel.html
-    window.location.href = 'travel.html';
+    // Not logged in, redirect to travel.html
+    window.location.replace('travel.html');
     return;
   }
   
   await loadDestinations();
   setupDestinationSearch();
   setupDateRestrictions();
+  
+  // ✅ IMPORTANT: Setup logout handler
   setupLogoutHandler();
 
   // Check if coming from destination details page
@@ -57,8 +64,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-
-
 // --------- USER PROFILE ------------
 function updateUserProfile() {
   if (currentUser) {
@@ -67,15 +72,16 @@ function updateUserProfile() {
     document.getElementById('profileEmail').textContent = currentUser.email;
     document.getElementById('profileUsername').textContent = currentUser.username;
     document.getElementById('profileEmailDetail').textContent = currentUser.email;
-    document.getElementById('profilePhone').textContent = currentUser.phone;
-    document.getElementById('profileAddress').textContent = currentUser.address;
+    document.getElementById('profilePhone').textContent = currentUser.phone || 'Not provided';
+    document.getElementById('profileAddress').textContent = currentUser.address || 'Not provided';
   }
 }
 
 // --------- SECTIONS & NAVIGATION ------------
 function showSection(sectionId) {
   document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-  document.getElementById(sectionId).classList.add('active');
+  const section = document.getElementById(sectionId);
+  if (section) section.classList.add('active');
 
   document.querySelectorAll('.sidebar-menu li').forEach(item => item.classList.remove('active'));
   const activeMenu = document.querySelector(`[onclick="showSection('${sectionId}')"]`)?.parentElement;
@@ -85,11 +91,20 @@ function showSection(sectionId) {
     overview: 'Dashboard',
     destinations: 'Destinations',
     bookings: 'My Bookings',
+    travels: 'Travels',
     favorites: 'Favorites',
     profile: 'Profile',
     support: 'Support'
   };
-  if (titles[sectionId]) document.getElementById('pageTitle').textContent = titles[sectionId];
+  
+  if (titles[sectionId]) {
+    document.getElementById('pageTitle').textContent = titles[sectionId];
+  }
+  
+  // Load section-specific data
+  if (sectionId === 'travels') {
+    renderTravelsSection();
+  }
 }
 
 function toggleSidebar() {
@@ -139,17 +154,16 @@ async function renderAllSections() {
   await renderBookings();
   await renderActivities();
   await updateStats();
-  await renderTravelInsights(); // New: Travel insights widget
+  await renderTravelInsights();
 }
 
 async function renderDestinations() {
   const list = await getDestinations();
   
-  // ✅ Sort destinations by rating (highest first)
   destinations = list.sort((a, b) => {
     const ratingA = parseFloat(a.rating) || 0;
     const ratingB = parseFloat(b.rating) || 0;
-    return ratingB - ratingA; // Descending order
+    return ratingB - ratingA;
   });
   
   const container = document.getElementById('destinationsList');
@@ -177,13 +191,9 @@ async function renderDestinations() {
     card.className = 'destination-card';
     card.onclick = () => showDestinationDetails(dest._id);
     
-    // Use the imageUrl from database, fallback to placeholder
     const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
-    
-    // Format the type nicely
     const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
     
-    // Add badge for top 3 rated destinations
     let badge = '';
     if (index === 0) {
       badge = '<div class="top-badge" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);"><i class="fas fa-crown"></i> #1 Top Rated</div>';
@@ -247,11 +257,12 @@ async function renderDestinations() {
   console.log(`✅ Rendered ${destinations.length} destinations sorted by rating`);
 }
 
-// --------- SHOW DESTINATION DETAILS (Navigate to separate page) ------------
+// --------- SHOW DESTINATION DETAILS ------------
 function showDestinationDetails(destinationId) {
   console.log(`🔄 Navigating to destination details: ${destinationId}`);
   window.location.href = `destination-details.html?id=${destinationId}`;
 }
+
 
 // --------- CLOSE DESTINATION DETAILS MODAL ------------
 function closeDestinationDetailsModal() {
@@ -346,6 +357,26 @@ async function removeFavorite(favoriteId) {
   } catch (error) {
     console.error('Error removing favorite:', error);
     alert('Error removing favorite');
+  }
+}
+
+// ✅ SETUP LOGOUT HANDLER (MISSING FUNCTION - NOW ADDED)
+function setupLogoutHandler() {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    // Remove any existing listeners by cloning
+    const newLogoutBtn = logoutBtn.cloneNode(true);
+    logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+    
+    // Add fresh click event listener
+    newLogoutBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      logout();
+    });
+    
+    console.log("✅ Logout handler attached successfully");
+  } else {
+    console.error("❌ Logout button not found!");
   }
 }
 
@@ -1297,21 +1328,22 @@ function logout() {
   if (confirm("Are you sure you want to log out?")) {
     console.log("Logging out user:", currentUser?.username);
     
-    // ✅ Clear all user data
+    // Clear all user data
     localStorage.removeItem("currentUser");
     sessionStorage.removeItem("currentUser");
     localStorage.removeItem("adminUser");
     sessionStorage.removeItem("adminUser");
+    localStorage.removeItem("bookingDestination");
     
     console.log("✅ User logged out successfully");
     
-    // ✅ Clear the current user variable
+    // Clear the current user variable
     currentUser = null;
     
-    // ✅ Replace history to prevent going back to dashboard
+    // Replace history to prevent going back to dashboard
     history.replaceState(null, null, 'travel.html');
     
-    // ✅ Redirect to travel.html
+    // Redirect to travel.html
     window.location.replace('travel.html');
   }
 }
