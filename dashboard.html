@@ -699,8 +699,19 @@
 document.addEventListener('DOMContentLoaded', function() {
   const userData = localStorage.getItem('currentUser');
   const adminData = localStorage.getItem('adminUser');
+
+  // Other dashboard code...
+
+// ... Other dashboard code above ...
+
+// 🚦 Paste this at the END of dashboard.js
+document.getElementById('logoutBtn').addEventListener('click', function (e) {
+  e.preventDefault();
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('adminUser');
+  window.location.href = 'login.html'; // Change your login page name if needed
+});
   
-  // If user is already logged in and tries to access travel.html
   
 });
 </script>
