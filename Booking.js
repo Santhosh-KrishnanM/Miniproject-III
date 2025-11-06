@@ -8,11 +8,7 @@ const bookingSchema = new mongoose.Schema({
   travelers: { type: Number, default: 1 },
 
   // booking lifecycle status
-  status: { 
-    type: String, 
-    enum: ['Confirmed', 'Pending', 'Cancelled', 'Pending Approval'], 
-    default: 'Pending' 
-  },
+ status: { type: String, enum: ["pending", "confirmed", "completed", "cancelled"], default: "pending" },
 
   // payment tracking
   paymentStatus: {
