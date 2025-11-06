@@ -1,10 +1,9 @@
-// Dashboard functionality
-// Dashboard functionality with proper logout and history management
+// Dashboard functionality - COMPLETE FIXED VERSION
 let currentUser = null;
 let selectedDestinationId = null;
-let destinations = []; // store destinations from backend
+let destinations = [];
 
-// ✅ NEW: Prevent back button from returning to dashboard after logout
+// ✅ Prevent back button after logout
 function preventBackToProtectedPage() {
   history.pushState(null, null, location.href);
   
@@ -17,7 +16,6 @@ function preventBackToProtectedPage() {
   };
 }
 
-
 // --------- INITIAL LOAD ------------
 document.addEventListener('DOMContentLoaded', async function() {
   const userData = localStorage.getItem('currentUser');
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       await renderAllSections();
       await loadUserBookings(currentUser._id);
       
-      // Enable history management
       preventBackToProtectedPage();
     } catch (error) {
       console.error('Error initializing dashboard:', error);
@@ -37,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
   } else {
-    // Not logged in, redirect to travel.html
     window.location.replace('travel.html');
     return;
   }
@@ -45,11 +41,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadDestinations();
   setupDestinationSearch();
   setupDateRestrictions();
-  
-  // ✅ IMPORTANT: Setup logout handler
   setupLogoutHandler();
 
-  // Check if coming from destination details page
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('openBooking') === 'true') {
     const bookingDest = localStorage.getItem('bookingDestination');
@@ -101,7 +94,6 @@ function showSection(sectionId) {
     document.getElementById('pageTitle').textContent = titles[sectionId];
   }
   
-  // Load section-specific data
   if (sectionId === 'travels') {
     renderTravelsSection();
   }
@@ -147,16 +139,7 @@ async function loadDestinations() {
   }
 }
 
-// --------- RENDER FUNCTIONS ------------
-async function renderAllSections() {
-  await renderDestinations();
-  await renderFavorites();
-  await renderBookings();
-  await renderActivities();
-  await updateStats();
-  await renderTravelInsights();
-}
-
+// --------- RENDER DESTINATIONS ------------
 async function renderDestinations() {
   const list = await getDestinations();
   
@@ -263,16 +246,6 @@ function showDestinationDetails(destinationId) {
   window.location.href = `destination-details.html?id=${destinationId}`;
 }
 
-
-// --------- CLOSE DESTINATION DETAILS MODAL ------------
-function closeDestinationDetailsModal() {
-  const modal = document.getElementById('destinationDetailsModal');
-  if (modal) {
-    modal.remove();
-  }
-}
-
-// --------- ADD TO FAVORITES FROM MODAL ------------
 // --------- ADD TO FAVORITES (FIXED VERSION) ------------
 async function addFavorite(userId, destinationId) {
   console.log('Adding to favorites:', { userId, destinationId });
@@ -282,7 +255,6 @@ async function addFavorite(userId, destinationId) {
     return;
   }
 
-  // Check if user is logged in
   if (!currentUser || !currentUser._id) {
     alert("❌ Please login to add favorites");
     window.location.href = 'travel.html';
@@ -309,7 +281,6 @@ async function addFavorite(userId, destinationId) {
       
       alert('✅ Added to favorites successfully!');
       
-      // Refresh favorites section
       await renderFavorites();
       await updateStats();
       
@@ -319,7 +290,6 @@ async function addFavorite(userId, destinationId) {
       
       console.error('❌ Add favorite failed:', errorMessage);
       
-      // Check for specific error messages
       if (errorMessage.toLowerCase().includes('already')) {
         alert('ℹ️ This destination is already in your favorites!');
       } else if (res.status === 401 || res.status === 403) {
@@ -333,49 +303,6 @@ async function addFavorite(userId, destinationId) {
   } catch (error) {
     console.error('❌ Error adding to favorites:', error);
     alert('❌ Network error. Please check your connection and try again.');
-  }
-}
-
-// --------- BOOK FROM DESTINATION MODAL ------------
-function bookFromDestinationModal(destinationId, destinationName) {
-  // Close destination modal
-  closeDestinationDetailsModal();
-  
-  // Open booking modal
-  openBookingForm();
-  
-  // Pre-fill destination
-  selectedDestinationId = destinationId;
-  document.getElementById("destinationSearch").value = destinationName;
-  
-  console.log(`✅ Booking form opened for: ${destinationName}`);
-}
-
-// --------- ADD TO FAVORITES (for destination cards) ------------
-async function addFavorite(userId, destinationId) {
-  if (!userId || !destinationId) {
-    alert("Please login to add favorites");
-    return;
-  }
-
-  try {
-    const res = await fetch('/favorites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, destinationId })
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert('✅ Added to favorites!');
-      await renderAllSections(); // Refresh all sections
-    } else {
-      alert(data.message || 'Failed to add to favorites');
-    }
-  } catch (error) {
-    console.error('Error adding to favorites:', error);
-    alert('Error adding to favorites');
   }
 }
 
@@ -401,7 +328,6 @@ async function removeFavorite(favoriteId) {
       
       alert('✅ Removed from favorites successfully!');
       
-      // Refresh favorites and stats
       await renderFavorites();
       await updateStats();
       
@@ -418,15 +344,13 @@ async function removeFavorite(favoriteId) {
   }
 }
 
-// ✅ SETUP LOGOUT HANDLER (MISSING FUNCTION - NOW ADDED)
+// --------- SETUP LOGOUT HANDLER ------------
 function setupLogoutHandler() {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
-    // Remove any existing listeners by cloning
     const newLogoutBtn = logoutBtn.cloneNode(true);
     logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
     
-    // Add fresh click event listener
     newLogoutBtn.addEventListener("click", function(e) {
       e.preventDefault();
       logout();
@@ -442,13 +366,11 @@ function setupLogoutHandler() {
 function filterDestinations(filterType) {
   console.log(`Filtering destinations by: ${filterType}`);
   
-  // Update active filter button
   document.querySelectorAll('.filter-tab').forEach(btn => {
     btn.classList.remove('active');
   });
   event.target.classList.add('active');
 
-  // Filter destinations
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
 
@@ -456,7 +378,6 @@ function filterDestinations(filterType) {
     ? destinations 
     : destinations.filter(d => d.type === filterType);
 
-  // ✅ Sort filtered results by rating
   filtered.sort((a, b) => {
     const ratingA = parseFloat(a.rating) || 0;
     const ratingB = parseFloat(b.rating) || 0;
@@ -482,7 +403,6 @@ function filterDestinations(filterType) {
     const imageUrl = dest.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80';
     const typeFormatted = dest.type ? dest.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Destination';
     
-    // Add badge for top 3 in filtered results
     let badge = '';
     if (index === 0) {
       badge = '<div class="top-badge" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);"><i class="fas fa-crown"></i> Top Rated</div>';
@@ -541,7 +461,6 @@ function filterDestinations(filterType) {
 
   console.log(`✅ Filtered ${filtered.length} destinations sorted by rating`);
 }
-
 
 // --------- RENDER FAVORITES (FIXED VERSION) ------------
 async function renderFavorites() {
@@ -658,46 +577,94 @@ async function renderFavorites() {
   }
 }
 
+// --------- RENDER BOOKINGS ------------
 async function renderBookings() {
   const bookings = await getUserBookings(currentUser?._id);
   const container = document.getElementById('bookingsList');
   container.innerHTML = '';
 
+  if (!bookings || bookings.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+        <h3>No bookings found</h3>
+        <p>Start planning your next adventure!</p>
+        <button class="btn-primary" onclick="openBookingForm()" style="margin-top: 15px;">
+          <i class="fas fa-plus"></i> Create New Booking
+        </button>
+      </div>
+    `;
+    return;
+  }
+
   bookings.forEach(booking => {
     const card = document.createElement('div');
     card.className = 'booking-card';
+    
+    const bookingDate = new Date(booking.startDate);
+    const today = new Date();
+    const canModify = bookingDate > today && booking.status.toLowerCase() === 'confirmed';
+    const canCancel = bookingDate > today && booking.status.toLowerCase() !== 'cancelled';
+    
     card.innerHTML = `
       <div class="booking-header">
-        <h3>${booking.destination?.name || "Unknown"}</h3>
+        <h3>${booking.destination?.name || "Unknown"} Trip</h3>
         <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span>
       </div>
       <div class="booking-details">
-        <div class="detail-item"><i class="fas fa-calendar"></i> <span>${formatDate(booking.startDate)} - ${formatDate(booking.endDate)}</span></div>
-        <div class="detail-item"><i class="fas fa-users"></i> <span>${booking.travelers || 1} Travelers</span></div>
+        <div class="detail-item">
+          <i class="fas fa-calendar"></i>
+          <span>${booking.startDate.slice(0,10)} → ${booking.endDate.slice(0,10)}</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-users"></i>
+          <span>${booking.travelers} Travelers</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-info-circle"></i>
+          <span>Booking ID: ${booking._id.slice(-8)}</span>
+        </div>
       </div>
       <div class="booking-actions">
-        <button class="btn-outline" onclick="viewBookingDetails('${booking._id}')">View Details</button>
-        <button class="btn-outline" onclick='openModifyForm(${JSON.stringify({
-          _id: booking._id,
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          travelers: booking.travelers,
-          destination: booking.destination
-        })})'>Modify</button>
-        <button class="btn-danger" onclick="cancelBooking('${booking._1}')">Cancel</button>
+        <button class="btn-outline" onclick="viewBookingDetails('${booking._id}')">
+          <i class="fas fa-eye"></i> View Details
+        </button>
+        ${canModify ? 
+          `<button class="btn-outline" onclick='openModifyForm(${JSON.stringify({
+            _id: booking._id,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            travelers: booking.travelers,
+            destination: booking.destination
+          })})'>
+            <i class="fas fa-edit"></i> Modify
+          </button>` 
+          : 
+          `<button class="btn-outline" disabled style="opacity: 0.5;">
+            <i class="fas fa-edit"></i> Modify
+          </button>`
+        }
+        ${canCancel ? 
+          `<button class="btn-danger" onclick="cancelBooking('${booking._id}')">
+            <i class="fas fa-times"></i> Cancel
+          </button>` 
+          : 
+          `<button class="btn-danger" disabled style="opacity: 0.5;">
+            <i class="fas fa-times"></i> Cancel
+          </button>`
+        }
       </div>
     `;
     container.appendChild(card);
   });
 }
 
-// --------- RENDER ACTIVITIES (FIXED - NO CANCELLED BOOKINGS) ------------
+// --------- RENDER ACTIVITIES (FIXED) ------------
 async function renderActivities() {
   const activities = await getUserActivities(currentUser?._id);
   const container = document.getElementById('activityList');
   container.innerHTML = '';
 
-  // ✅ Filter out cancelled booking activities
   const filteredActivities = activities.filter(act => {
     return !(act.content && act.content.toLowerCase().includes('cancelled'));
   });
@@ -714,7 +681,6 @@ async function renderActivities() {
     return;
   }
 
-  // ✅ Display username instead of ID
   filteredActivities.slice(0, 5).forEach(act => {
     const icon = act.type === 'favorite' ? 'heart' : act.type === 'booking' ? 'calendar-check' : 'star';
     const userName = currentUser?.username || 'You';
@@ -732,8 +698,7 @@ async function renderActivities() {
   });
 }
 
-
-// --------- NEW: RENDER TRAVEL INSIGHTS WIDGET ------------
+// --------- RENDER TRAVEL INSIGHTS ------------
 async function renderTravelInsights() {
   const bookings = await getUserBookings(currentUser?._id);
   const favorites = await getUserFavorites(currentUser?._id);
@@ -741,7 +706,6 @@ async function renderTravelInsights() {
   const container = document.getElementById('travelInsightsWidget');
   if (!container) return;
 
-  // Calculate insights
   const upcomingTrips = bookings.filter(b => 
     b.status.toLowerCase() === 'confirmed' && 
     new Date(b.startDate) > new Date()
@@ -758,7 +722,6 @@ async function renderTravelInsights() {
 
   const totalTravelers = bookings.reduce((sum, b) => sum + (b.travelers || 1), 0);
 
-  // Popular destination types from favorites
   const favoriteTypes = favorites.map(f => f.destinationId?.type).filter(Boolean);
   const typeCount = {};
   favoriteTypes.forEach(type => {
@@ -853,41 +816,67 @@ async function renderTravelInsights() {
   `;
 }
 
-// --------- BOOKING FORM ------------
+// --------- RENDER ALL SECTIONS ------------
+async function renderAllSections() {
+  await renderDestinations();
+  await renderFavorites();
+  await renderBookings();
+  await renderActivities();
+  await updateStats();
+  await renderTravelInsights();
+}
+
+// --------- BOOKING FORM (FIXED VERSION) ------------
 function openBookingForm() {
-  document.getElementById("bookingModal").style.display = "flex";
+  const modal = document.getElementById("bookingModal");
+  if (!modal) {
+    console.error('❌ Booking modal not found');
+    return;
+  }
+  
+  modal.style.display = "flex";
+  
   document.getElementById("destinationSearch").value = "";
   document.getElementById("startDate").value = "";
   document.getElementById("endDate").value = "";
   document.getElementById("travelers").value = "1";
   document.getElementById("destinationResults").innerHTML = "";
   selectedDestinationId = null;
+  
   setupDateRestrictions();
+  
+  console.log('✅ Booking modal opened');
 }
 
 function closeBookingForm() {
-  document.getElementById("bookingModal").style.display = "none";
+  const modal = document.getElementById("bookingModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
+// --------- SUBMIT BOOKING (FIXED VERSION) ------------
 async function submitBooking() {
+  console.log('📝 Submitting booking...');
+  
   const destInput = document.getElementById("destinationSearch").value.trim();
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   const travelers = document.getElementById("travelers").value;
 
   if (!destInput || !startDate || !endDate || !travelers) {
-    alert("Please fill all fields.");
+    alert("❌ Please fill all fields.");
     return;
   }
 
   const today = new Date().toISOString().split("T")[0];
   if (startDate < today || endDate < today) {
-    alert("Please select future dates only.");
+    alert("❌ Please select future dates only.");
     return;
   }
 
   if (endDate <= startDate) {
-    alert("End date must be after start date.");
+    alert("❌ End date must be after start date.");
     return;
   }
 
@@ -899,10 +888,24 @@ async function submitBooking() {
     if (match) {
       destinationId = match._id;
     } else {
-      alert("Please select a valid destination from the list.");
+      alert("❌ Please select a valid destination from the list.");
       return;
     }
   }
+
+  if (!currentUser || !currentUser._id) {
+    alert("❌ Please login to make a booking");
+    window.location.href = 'travel.html';
+    return;
+  }
+
+  console.log('📤 Creating booking:', {
+    userId: currentUser._id,
+    destination: destinationId,
+    startDate,
+    endDate,
+    travelers
+  });
 
   try {
     const res = await fetch("/api/bookings", {
@@ -917,21 +920,148 @@ async function submitBooking() {
       }),
     });
 
-    const newBooking = await res.json();
+    const data = await res.json();
+    console.log('📥 Booking response:', data);
 
     if (res.ok) {
-      alert(`✅ Booking confirmed for ${newBooking.destination?.name || "your trip"}!`);
+      alert(`✅ Booking confirmed for ${data.destination?.name || "your trip"}!`);
       closeBookingForm();
+      
       await loadUserBookings(currentUser._id);
-      await renderAllSections(); // Refresh all sections including insights
+      await renderAllSections();
+      
       selectedDestinationId = null;
+      
+      showSection('bookings');
+      
     } else {
-      alert("Booking failed: " + (newBooking.error || newBooking.message || "Unknown error"));
+      alert("❌ Booking failed: " + (data.error || data.message || "Unknown error"));
     }
   } catch (err) {
-    console.error("Booking error:", err);
-    alert("Failed to save booking. Please try again later.");
+    console.error("❌ Booking error:", err);
+    alert("❌ Failed to save booking. Please try again later.");
   }
+}
+
+// --------- DESTINATION SEARCH (FIXED VERSION) ------------
+function filterDestinationsList() {
+  const input = document.getElementById("destinationSearch").value.toLowerCase();
+  const resultsBox = document.getElementById("destinationResults");
+  
+  if (!resultsBox) {
+    console.error('❌ Destination results box not found');
+    return;
+  }
+  
+  resultsBox.innerHTML = "";
+
+  if (!input) {
+    resultsBox.style.display = "none";
+    return;
+  }
+
+  const filtered = destinations.filter(dest => 
+    dest.name.toLowerCase().includes(input)
+  );
+
+  if (filtered.length === 0) {
+    resultsBox.innerHTML = '<li style="padding: 10px; color: #999;">No destinations found</li>';
+    resultsBox.style.display = "block";
+    return;
+  }
+
+  filtered.forEach(dest => {
+    const li = document.createElement("li");
+    li.textContent = dest.name;
+    li.style.padding = "10px";
+    li.style.cursor = "pointer";
+    li.style.borderBottom = "1px solid #eee";
+    li.onclick = () => selectDestination(dest);
+    resultsBox.appendChild(li);
+  });
+  
+  resultsBox.style.display = "block";
+}
+
+function selectDestination(dest) {
+  selectedDestinationId = dest._id;
+  document.getElementById("destinationSearch").value = dest.name;
+  document.getElementById("destinationResults").innerHTML = "";
+  document.getElementById("destinationResults").style.display = "none";
+  
+  console.log('✅ Destination selected:', dest.name);
+}
+
+function setupDestinationSearch() {
+  const input = document.getElementById("destinationSearch");
+  const resultsBox = document.getElementById("destinationResults");
+
+  if (!input || !resultsBox) return;
+
+  input.addEventListener("input", () => {
+    const query = input.value.toLowerCase().trim();
+    resultsBox.innerHTML = "";
+
+    if (!query) {
+      resultsBox.style.display = "none";
+      return;
+    }
+
+    const filtered = destinations.filter(d => d.name.toLowerCase().includes(query));
+
+    filtered.forEach(dest => {
+      const li = document.createElement("li");
+      li.textContent = dest.name;
+      li.classList.add("suggestion-item");
+      li.onclick = () => selectDestination(dest);
+      resultsBox.appendChild(li);
+    });
+
+    resultsBox.style.display = filtered.length ? "block" : "none";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!resultsBox.contains(e.target) && e.target !== input) {
+      resultsBox.style.display = "none";
+    }
+  });
+}
+
+// --------- DATE RESTRICTIONS (FIXED VERSION) ------------
+function setupDateRestrictions() {
+  const today = new Date().toISOString().split("T")[0];
+  const startInput = document.getElementById("startDate");
+  const endInput = document.getElementById("endDate");
+
+  if (!startInput || !endInput) {
+    console.warn('⚠️ Date inputs not found');
+    return;
+  }
+
+  startInput.min = today;
+  endInput.min = today;
+
+  const newStartInput = startInput.cloneNode(true);
+  const newEndInput = endInput.cloneNode(true);
+  startInput.parentNode.replaceChild(newStartInput, startInput);
+  endInput.parentNode.replaceChild(newEndInput, endInput);
+
+  newStartInput.addEventListener("change", function() {
+    newEndInput.min = newStartInput.value || today;
+    if (newEndInput.value && newEndInput.value <= newStartInput.value) {
+      newEndInput.value = "";
+      alert("⚠️ Please select an end date after the start date.");
+    }
+  });
+
+  newEndInput.addEventListener("change", function() {
+    if (newStartInput.value && newEndInput.value <= newStartInput.value) {
+      alert("⚠️ End date must be after start date.");
+      newEndInput.value = "";
+    }
+  });
+  
+  console.log('✅ Date restrictions setup complete');
 }
 
 // --------- CANCEL BOOKING ------------
@@ -972,7 +1102,7 @@ async function cancelBooking(bookingId) {
       alert(`✅ Booking cancelled successfully!\n\nBooking for "${booking.destination?.name || 'Unknown'}" has been cancelled.`);
       await loadUserBookings(currentUser._id);
       await updateStats();
-      await renderAllSections(); // Refresh all sections
+      await renderAllSections();
     } else {
       alert("Failed to cancel booking: " + (data.error || data.message || "Unknown error"));
     }
@@ -1020,7 +1150,6 @@ function showBookingDetailsModal(booking) {
     <div class="modal-content" style="max-width: 500px;">
       <span class="close-btn" onclick="closeBookingDetailsModal()">&times;</span>
       <h2><i class="fas fa-info-circle"></i> Booking Details</h2>
-      
       
       <div class="booking-details-content">
         <div class="detail-section">
@@ -1095,175 +1224,12 @@ async function loadUserBookings(userId) {
   try {
     const res = await fetch(`/api/bookings/${userId}`);
     const bookings = await res.json();
-    renderMyBookings(bookings);
-    const container = document.getElementById("bookingsList");
-    container.innerHTML = "";
-
-    if (!bookings.length) {
-      container.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: #666;">
-          <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
-          <h3>No bookings found</h3>
-          <p>Start planning your next adventure!</p>
-          <button class="btn-primary" onclick="openBookingForm()" style="margin-top: 15px;">
-            <i class="fas fa-plus"></i> Create New Booking
-          </button>
-        </div>
-      `;
-      return;
-    }
-
-    bookings.forEach(booking => {
-      const card = document.createElement("div");
-      card.className = "booking-card";
-      
-      const bookingDate = new Date(booking.startDate);
-      const today = new Date();
-      const canModify = bookingDate > today && booking.status.toLowerCase() === 'confirmed';
-      const canCancel = bookingDate > today && booking.status.toLowerCase() !== 'cancelled';
-      
-      card.innerHTML = `
-        <div class="booking-header">
-          <h3>${booking.destination?.name || "Unknown"} Trip</h3>
-          <span class="booking-status ${booking.status.toLowerCase()}">${booking.status}</span>
-        </div>
-        <div class="booking-details">
-          <div class="detail-item">
-            <i class="fas fa-calendar"></i>
-            <span>${booking.startDate.slice(0,10)} → ${booking.endDate.slice(0,10)}</span>
-          </div>
-          <div class="detail-item">
-            <i class="fas fa-users"></i>
-            <span>${booking.travelers} Travelers</span>
-          </div>
-          <div class="detail-item">
-            <i class="fas fa-info-circle"></i>
-            <span>Booking ID: ${booking._id.slice(-8)}</span>
-          </div>
-        </div>
-        <div class="booking-actions">
-          <button class="btn-outline" onclick="viewBookingDetails('${booking._id}')">
-            <i class="fas fa-eye"></i> View Details
-          </button>
-          ${canModify ? 
-            `<button class="btn-outline" onclick='openModifyForm(${JSON.stringify({
-              _id: booking._id,
-              startDate: booking.startDate,
-              endDate: booking.endDate,
-              travelers: booking.travelers,
-              destination: booking.destination
-            })})'>
-              <i class="fas fa-edit"></i> Modify
-            </button>` 
-            : 
-            `<button class="btn-outline" disabled style="opacity: 0.5;">
-              <i class="fas fa-edit"></i> Modify
-            </button>`
-          }
-          ${canCancel ? 
-            `<button class="btn-danger" onclick="cancelBooking('${booking._id}')">
-              <i class="fas fa-times"></i> Cancel
-            </button>` 
-            : 
-            `<button class="btn-danger" disabled style="opacity: 0.5;">
-              <i class="fas fa-times"></i> Cancel
-            </button>`
-          }
-        </div>
-      `;
-      container.appendChild(card);
-    });
-
+    renderBookings(bookings);
   } catch (err) {
     console.error("Error loading bookings:", err);
     alert("Failed to load bookings.");
   }
 }
-// ✅ Updated renderMyBookings - shows assigned travel below "Travelers"
-function renderMyBookings(bookings) {
-  const container = document.getElementById("bookingsList");
-  if (!container) return;
-  container.innerHTML = "";
-
-  if (!bookings || bookings.length === 0) {
-    container.innerHTML = `<p class="no-bookings">No bookings found yet.</p>`;
-    return;
-  }
-
-  bookings.forEach(b => {
-    const destName = b.destination?.name || "Destination";
-    const travel = b.assignedTravel;
-
-    // ✅ Travel Info shown below Travelers
-    const travelInfo = travel
-      ? `<div class="travel-info" style="margin-top: 6px;">
-           <strong>Travels:</strong> ${travel.name}<br>
-           <span class="travel-status">✅ Booked (₹${travel.totalPrice})</span>
-         </div>`
-      : `<div class="travel-info" style="margin-top: 6px;">
-           <span class="travel-status">🚗 No travels assigned yet</span>
-         </div>`;
-
-    const card = document.createElement("div");
-    card.className = "booking-card";
-    card.innerHTML = `
-      <h3>${destName}</h3>
-      <p><strong>From:</strong> ${b.startDate?.slice(0,10)} → 
-         <strong>To:</strong> ${b.endDate?.slice(0,10)}</p>
-      <p><strong>Travelers:</strong> ${b.travelers}</p>
-      ${travelInfo}
-    `;
-    if (b.assignedTravel) {
-  const travelBox = document.createElement("div");
-  travelBox.className = "travel-info-container";
-  travelBox.innerHTML = `
-    <h4>Travels</h4>
-    <p><strong>${b.assignedTravel.name}</strong></p>
-    <p>Price: ₹${b.assignedTravel.totalPrice}</p>
-  `;
-  card.appendChild(travelBox);
-}
-
-
-    container.appendChild(card);
-  });
-}
-async function renderBookedTravels() {
-  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
-  const travels = await res.json();
-  const container = document.getElementById("bookedTravelsList");
-  container.innerHTML = "";
-
-  if (!travels.length) {
-    container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
-    return;
-  }
-
-  travels.forEach(t => {
-    const item = document.createElement("div");
-    item.className = "travel-booked-item";
-    item.innerHTML = `
-      <div>
-        <strong>${t.travelName}</strong><br>
-        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
-      </div>
-      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
-    `;
-    container.appendChild(item);
-  });
-}
-async function deleteBookedTravel(travelId) {
-  if (!confirm("Are you sure you want to remove this travel?")) return;
-  const res = await fetch(`/api/travels-booked/${travelId}`, { method: "DELETE" });
-  if (res.ok) {
-    alert("✅ Travel removed!");
-    renderBookedTravels();
-  } else {
-    alert("Failed to delete travel");
-  }
-}
-
-
 
 // --------- UPDATE STATS ------------
 async function updateStats() {
@@ -1314,139 +1280,6 @@ async function updateStats() {
   }
 }
 
-// --------- DESTINATION SEARCH ------------
-function filterDestinationsList() {
-  const input = document.getElementById("destinationSearch").value.toLowerCase();
-  const resultsBox = document.getElementById("destinationResults");
-  resultsBox.innerHTML = "";
-
-  destinations
-    .filter(dest => dest.name.toLowerCase().includes(input))
-    .forEach(dest => {
-      const li = document.createElement("li");
-      li.textContent = dest.name;
-      li.onclick = () => selectDestination(dest);
-      resultsBox.appendChild(li);
-    });
-}
-
-function selectDestination(dest) {
-  selectedDestinationId = dest._id;
-  document.getElementById("destinationSearch").value = dest.name;
-  document.getElementById("destinationResults").innerHTML = "";
-}
-
-function setupDestinationSearch() {
-  const input = document.getElementById("destinationSearch");
-  const resultsBox = document.getElementById("destinationResults");
-
-  input.addEventListener("input", () => {
-    const query = input.value.toLowerCase().trim();
-    resultsBox.innerHTML = "";
-
-    if (!query) return;
-
-    const filtered = destinations.filter(d => d.name.toLowerCase().includes(query));
-
-    filtered.forEach(dest => {
-      const li = document.createElement("li");
-      li.textContent = dest.name;
-      li.classList.add("suggestion-item");
-      li.onclick = () => selectDestination(dest);
-      resultsBox.appendChild(li);
-    });
-
-    resultsBox.style.display = filtered.length ? "block" : "none";
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!resultsBox.contains(e.target) && e.target !== input) {
-      resultsBox.style.display = "none";
-    }
-  });
-}
-
-// --------- DATE RESTRICTIONS ------------
-function setupDateRestrictions() {
-  const today = new Date().toISOString().split("T")[0];
-  const startInput = document.getElementById("startDate");
-  const endInput = document.getElementById("endDate");
-
-  if (!startInput || !endInput) return;
-
-  startInput.min = today;
-  endInput.min = today;
-
-  startInput.removeEventListener("change", startInputHandler);
-  endInput.removeEventListener("change", endInputHandler);
-
-  function startInputHandler() {
-    endInput.min = startInput.value || today;
-    if (endInput.value && endInput.value <= startInput.value) {
-      endInput.value = "";
-      alert("Please select an end date after the start date.");
-    }
-  }
-
-  function endInputHandler() {
-    if (startInput.value && endInput.value <= startInput.value) {
-      alert("End date must be after start date.");
-      endInput.value = "";
-    }
-  }
-
-  startInput.addEventListener("change", startInputHandler);
-  endInput.addEventListener("change", endInputHandler);
-}
-
-// --------- EDIT PROFILE ------------
-function editProfile() {
-  document.getElementById("editProfileModal").style.display = "flex";
-  document.getElementById("editUsername").value = currentUser.username;
-  document.getElementById("editEmail").value = currentUser.email;
-  document.getElementById("editPhone").value = currentUser.phone;
-  document.getElementById("editAddress").value = currentUser.address;
-}
-
-function closeEditProfileForm() {
-  document.getElementById("editProfileModal").style.display = "none";
-}
-
-async function submitProfileEdit() {
-  const username = document.getElementById("editUsername").value.trim();
-  const email = document.getElementById("editEmail").value.trim();
-  const phone = document.getElementById("editPhone").value.trim();
-  const address = document.getElementById("editAddress").value.trim();
-
-  if (!username || !email || !phone || !address) {
-    alert("Please fill all fields");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/users/${currentUser._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, phone, address }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert("✅ Profile updated successfully!");
-      currentUser = data.user;
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      updateUserProfile();
-      closeEditProfileForm();
-    } else {
-      alert("Failed to update profile: " + (data.error || "Unknown error"));
-    }
-  } catch (error) {
-    console.error("Profile update error:", error);
-    alert("Error updating profile");
-  }
-}
-
 // --------- UTILITY FUNCTIONS ------------
 function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -1479,7 +1312,6 @@ function logout() {
   if (confirm("Are you sure you want to log out?")) {
     console.log("Logging out user:", currentUser?.username);
     
-    // Clear all user data
     localStorage.removeItem("currentUser");
     sessionStorage.removeItem("currentUser");
     localStorage.removeItem("adminUser");
@@ -1488,610 +1320,21 @@ function logout() {
     
     console.log("✅ User logged out successfully");
     
-    // Clear the current user variable
     currentUser = null;
     
-    // Replace history to prevent going back to dashboard
     history.replaceState(null, null, 'travel.html');
     
-    // Redirect to travel.html
     window.location.replace('travel.html');
   }
 }
-// --------- SHOW ADVENTURE/FOOD PAGE ------------
-function showAdventurePage() {
-  window.location.href = "travel.html#adventure";
-}
 
-function showFoodPage() {
-  window.location.href = "travel.html#food";
-}
-
-// ========== SUPPORT SECTION FUNCTIONS (SIMPLIFIED) ==========
-
-// Email Support
-function openEmailForm() {
-  document.getElementById('emailModal').style.display = 'flex';
-  
-  // Pre-fill user data
-  if (currentUser) {
-    document.getElementById('supportName').value = currentUser.username || '';
-    document.getElementById('supportEmail').value = currentUser.email || '';
-  }
-}
-
-function closeEmailForm() {
-  document.getElementById('emailModal').style.display = 'none';
-}
-
-function submitEmailSupport(event) {
-  event.preventDefault();
-  
-  const name = document.getElementById('supportName').value;
-  const email = document.getElementById('supportEmail').value;
-  const subject = document.getElementById('supportSubject').value;
-  const message = document.getElementById('supportMessage').value;
-  const attachment = document.getElementById('supportAttachment').files[0];
-  
-  // Generate ticket ID
-  const ticketId = 'TKT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-  
-  // In real implementation, send to backend
-  console.log('Email support request:', { 
-    ticketId, 
-    name, 
-    email, 
-    subject, 
-    message,
-    attachment: attachment ? attachment.name : 'None'
-  });
-  
-  alert(`✅ Your support request has been sent!\n\nTicket ID: ${ticketId}\n\nWe will respond to your email within 2 hours.`);
-  closeEmailForm();
-  document.getElementById('emailSupportForm').reset();
-}
-
-// WhatsApp Support
-function openWhatsApp() {
-  const userName = currentUser ? currentUser.username : 'User';
-  const message = encodeURIComponent(`Hi, I'm ${userName} from Travel Aura. I need help with:`);
-  window.open(`https://wa.me/919876543210?text=${message}`, '_blank');
-}
-
-// FAQ Functions
-function openFAQ(question) {
-  document.getElementById('faqModal').style.display = 'flex';
-  document.getElementById('faqQuestion').textContent = question;
-  
-  // FAQ answers database
-  const faqAnswers = {
-    'How do I book a trip?': `
-      <p><strong>Booking a trip is easy! Follow these steps:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to the <strong>Destinations</strong> section</li>
-        <li>Browse destinations or use filters (Beach, Hill Station, etc.)</li>
-        <li>Click on a destination card to view details</li>
-        <li>Click the <strong>"Book This Trip"</strong> button</li>
-        <li>Fill in your travel dates and number of travelers</li>
-        <li>Review your booking details</li>
-        <li>Click <strong>"Confirm Booking"</strong></li>
-      </ol>
-      <p>You'll receive a confirmation email immediately!</p>
-    `,
-    'Can I modify my booking?': `
-      <p><strong>Yes, you can modify your booking!</strong></p>
-      <p>Here's how:</p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to <strong>My Bookings</strong> section</li>
-        <li>Find the booking you want to modify</li>
-        <li>Click the <strong>"Modify"</strong> button</li>
-        <li>Update your travel dates or number of travelers</li>
-        <li>Save changes</li>
-      </ol>
-      <p><strong>Important:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Modifications must be made at least 24 hours before departure</li>
-        <li>You can only modify dates and number of travelers</li>
-        <li>To change destination, cancel and create a new booking</li>
-      </ul>
-    `,
-    'What is the cancellation policy?': `
-      <p><strong>Our flexible cancellation policy:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>✅ <strong>Free cancellation</strong> - 48+ hours before departure</li>
-        <li>⚠️ <strong>25% cancellation fee</strong> - 24-48 hours before departure</li>
-        <li>❌ <strong>No refund</strong> - Less than 24 hours before departure</li>
-      </ul>
-      <p><strong>Refund Processing:</strong></p>
-      <p>Refunds are processed within 5-7 business days to your original payment method.</p>
-      <p><strong>How to cancel:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to My Bookings</li>
-        <li>Find your booking</li>
-        <li>Click "Cancel" button</li>
-        <li>Confirm cancellation</li>
-      </ol>
-    `,
-    'How do I get my booking confirmation?': `
-      <p><strong>Booking confirmations are sent automatically!</strong></p>
-      <p><strong>Email Confirmation:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Sent to your registered email immediately after booking</li>
-        <li>Contains booking ID, destination, dates, and traveler details</li>
-        <li>Check your spam folder if you don't see it</li>
-      </ul>
-      <p><strong>View in Dashboard:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to <strong>My Bookings</strong> section</li>
-        <li>Find your booking</li>
-        <li>Click <strong>"View Details"</strong> to see full confirmation</li>
-      </ol>
-      <p><strong>Print or Save:</strong></p>
-      <p>You can print the confirmation or save it as PDF from your email.</p>
-    `,
-    'What payment methods do you accept?': `
-      <p><strong>We accept multiple payment methods:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>💳 <strong>Credit Cards</strong> - Visa, MasterCard, American Express</li>
-        <li>💳 <strong>Debit Cards</strong> - All major banks</li>
-        <li>📱 <strong>UPI</strong> - Google Pay, PhonePe, Paytm, BHIM</li>
-        <li>🏦 <strong>Net Banking</strong> - All major banks</li>
-        <li>💰 <strong>Digital Wallets</strong> - Paytm, Amazon Pay, Mobikwik</li>
-      </ul>
-      <p><strong>International Payments:</strong></p>
-      <p>We accept international credit/debit cards with proper authorization.</p>
-    `,
-    'Is my payment information secure?': `
-      <p><strong>Yes! Your payment security is our top priority.</strong></p>
-      <p><strong>Security Measures:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🔒 <strong>256-bit SSL Encryption</strong> - Bank-grade security</li>
-        <li>🛡️ <strong>PCI DSS Compliant</strong> - Industry standard compliance</li>
-        <li>🔐 <strong>Secure Payment Gateway</strong> - Razorpay/Stripe integration</li>
-        <li>❌ <strong>We NEVER store</strong> your complete card details</li>
-        <li>✅ <strong>3D Secure</strong> authentication for added protection</li>
-      </ul>
-      <p><strong>Your data is encrypted and protected at all times!</strong></p>
-    `,
-    'How do I get a refund?': `
-      <p><strong>Refund Process:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Cancel your booking (following cancellation policy)</li>
-        <li>Refund is automatically initiated</li>
-        <li>You'll receive a refund confirmation email</li>
-        <li>Amount credited within 5-7 business days</li>
-      </ol>
-      <p><strong>Refund Method:</strong></p>
-      <p>Refunds are processed to your original payment method:</p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>💳 Card payments → Same card</li>
-        <li>📱 UPI → Same UPI ID</li>
-        <li>🏦 Net Banking → Same bank account</li>
-      </ul>
-      <p><strong>Timeline:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Credit/Debit Card: 5-7 business days</li>
-        <li>UPI/Wallets: 3-5 business days</li>
-        <li>Net Banking: 5-7 business days</li>
-      </ul>
-    `,
-    'Can I pay in installments?': `
-      <p><strong>Yes! EMI options are available.</strong></p>
-      <p><strong>Eligibility:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Minimum booking amount: ₹10,000</li>
-        <li>Valid credit card required</li>
-        <li>Available from select banks</li>
-      </ul>
-      <p><strong>EMI Options:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>3 months - 0% interest</li>
-        <li>6 months - Low interest</li>
-        <li>9 months - Standard interest</li>
-        <li>12 months - Standard interest</li>
-      </ul>
-      <p><strong>How to choose EMI:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Proceed to payment</li>
-        <li>Select "EMI" option</li>
-        <li>Choose your preferred tenure</li>
-        <li>Complete payment</li>
-      </ol>
-    `,
-    'How do I choose the right destination?': `
-      <p><strong>Finding your perfect destination:</strong></p>
-      <p><strong>Use Filters:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🏖️ Beach - Marina Beach, Kochi</li>
-        <li>⛰️ Hill Station - Ooty, Kodaikanal</li>
-        <li>🛕 Temple - Meenakshi Temple, Rameshwaram</li>
-        <li>🏛️ Heritage - Historical sites</li>
-      </ul>
-      <p><strong>Consider:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>✈️ Travel distance and time</li>
-        <li>🌦️ Weather and season</li>
-        <li>👨‍👩‍👧‍👦 Group composition (family/friends/solo)</li>
-        <li>💰 Budget</li>
-        <li>🎯 Interests (adventure, relaxation, culture)</li>
-      </ul>
-      <p><strong>Check Reviews:</strong></p>
-      <p>Read ratings and reviews from other travelers!</p>
-    `,
-    'What documents do I need?': `
-      <p><strong>Required Documents:</strong></p>
-      <p><strong>For All Travelers:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>📋 Valid government-issued photo ID (Aadhaar/PAN/Passport/Driving License)</li>
-        <li>📱 Booking confirmation (print or digital)</li>
-      </ul>
-      <p><strong>For Specific Destinations:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🏔️ Hill stations may require permits</li>
-        <li>🏛️ Heritage sites may have entry restrictions</li>
-        <li>🌊 Beach destinations usually don't need special permits</li>
-      </ul>
-      <p><strong>For Minors:</strong></p>
-      <p>Minors (under 18) traveling without parents need:</p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Birth certificate or school ID</li>
-        <li>Parental consent letter (if traveling with others)</li>
-      </ul>
-    `,
-    'Are destinations family-friendly?': `
-      <p><strong>Yes! Most destinations are family-friendly.</strong></p>
-      <p><strong>Family-Friendly Features:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>👶 Child-friendly accommodations</li>
-        <li>🎡 Activities for all ages</li>
-        <li>🍽️ Family restaurants available</li>
-        <li>🚗 Easy accessibility</li>
-        <li>⚕️ Medical facilities nearby</li>
-      </ul>
-      <p><strong>Best for Families:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🏖️ Marina Beach - Safe, open beach</li>
-        <li>⛰️ Ooty - Pleasant weather, toy train</li>
-        <li>🏞️ Kodaikanal - Beautiful lake, boating</li>
-      </ul>
-      <p><strong>Age Recommendations:</strong></p>
-      <p>Check individual destination pages for age-specific recommendations and activities!</p>
-    `,
-    'What is the best time to visit?': `
-      <p><strong>Best Time to Visit Tamil Nadu:</strong></p>
-      <p><strong>Generally:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🌤️ <strong>October to March</strong> - Pleasant weather (15-30°C)</li>
-        <li>☀️ <strong>April to June</strong> - Hot summer (30-40°C)</li>
-        <li>🌧️ <strong>July to September</strong> - Monsoon season</li>
-      </ul>
-      <p><strong>Destination-Specific:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>🏖️ <strong>Beaches</strong> - November to February</li>
-        <li>⛰️ <strong>Hill Stations</strong> - March to June & September to November</li>
-        <li>🛕 <strong>Temples</strong> - Year-round (avoid major festivals for less crowd)</li>
-      </ul>
-      <p><strong>Festival Season:</strong></p>
-      <p>Visit during festivals like Pongal (Jan), Navarathri (Sep/Oct) for cultural experiences!</p>
-      <p><strong>Pro Tip:</strong> Check destination-specific details on the destination page!</p>
-    `,
-    'How do I reset my password?': `
-      <p><strong>Password Reset Process:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Click <strong>"Forgot Password"</strong> on the login page</li>
-        <li>Enter your registered email address</li>
-        <li>Check your email for reset link</li>
-        <li>Click the link (valid for 1 hour)</li>
-        <li>Create a new password</li>
-        <li>Confirm your new password</li>
-        <li>Login with your new password</li>
-      </ol>
-      <p><strong>Password Requirements:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Minimum 8 characters</li>
-        <li>At least one uppercase letter</li>
-        <li>At least one number</li>
-        <li>At least one special character</li>
-      </ul>
-      <p><strong>Didn't receive email?</strong> Check spam folder or contact support.</p>
-    `,
-    'How do I update my profile?': `
-      <p><strong>Updating Your Profile:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to <strong>Profile</strong> section in dashboard</li>
-        <li>Click <strong>"Edit Profile"</strong> button</li>
-        <li>Update your information:
-          <ul style="margin-top: 10px;">
-            <li>Username</li>
-            <li>Email address</li>
-            <li>Phone number</li>
-            <li>Address</li>
-          </ul>
-        </li>
-        <li>Click <strong>"Save Changes"</strong></li>
-      </ol>
-      <p><strong>Important Notes:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Email changes require verification</li>
-        <li>Phone number updates may need OTP verification</li>
-        <li>Changes are instant except email (needs verification)</li>
-      </ul>
-    `,
-    'How do I delete my account?': `
-      <p><strong>Account Deletion:</strong></p>
-      <p><strong>⚠️ Warning:</strong> Account deletion is <strong>permanent and irreversible!</strong></p>
-      <p><strong>What gets deleted:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Your profile information</li>
-        <li>Booking history</li>
-        <li>Favorites</li>
-        <li>Activity logs</li>
-      </ul>
-      <p><strong>How to delete:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Contact support at <strong>support@travelaura.com</strong></li>
-        <li>Subject: "Account Deletion Request"</li>
-        <li>Include your registered email and username</li>
-        <li>Verify your identity</li>
-        <li>Confirm deletion request</li>
-      </ol>
-      <p><strong>Processing Time:</strong> 7-14 business days</p>
-      <p><strong>Alternative:</strong> Consider deactivating instead of deleting!</p>
-    `,
-    'How do I change my email?': `
-      <p><strong>Changing Email Address:</strong></p>
-      <ol style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Go to <strong>Profile</strong> section</li>
-        <li>Click <strong>"Edit Profile"</strong></li>
-        <li>Update email address field</li>
-        <li>Click <strong>"Save Changes"</strong></li>
-        <li>Verify new email (check inbox for verification link)</li>
-        <li>Click verification link</li>
-        <li>Email updated!</li>
-      </ol>
-      <p><strong>Important:</strong></p>
-      <ul style="line-height: 2; color: #666; padding-left: 20px;">
-        <li>Old email remains active until new one is verified</li>
-        <li>Verification link expires in 24 hours</li>
-        <li>Use a valid, active email address</li>
-      </ul>
-    `
-  };
-  
-  document.getElementById('faqAnswer').innerHTML = faqAnswers[question] || '<p>Answer coming soon...</p>';
-}
-
-function closeFAQModal() {
-  document.getElementById('faqModal').style.display = 'none';
-}
-
-function faqFeedback(feedback) {
-  if (feedback === 'yes') {
-    alert('✅ Thanks for your feedback!\n\nWe\'re glad we could help!');
-  } else {
-    alert('📝 Thanks for your feedback!\n\nWe\'ll work on improving this answer.\n\nPlease contact support if you need more help.');
-  }
-  closeFAQModal();
-}
-
-function viewAllFAQs() {
-  alert('📚 Complete FAQ Center Coming Soon!\n\nFor now:\n• Browse FAQ categories above\n• Contact email support\n• Message us on WhatsApp\n\nWe\'re here to help 24/7!');
-}
-
-// Resources
-// Resources
-function openResource(resourceType) {
-  switch(resourceType) {
-    case 'travel-guide':
-      alert('📚 Travel Guides\n\n' +
-            'Comprehensive travel guides for all destinations:\n\n' +
-            '🏖️ Beach Destinations\n' +
-            '• Marina Beach - Chennai\'s iconic beach\n' +
-            '• Rameshwaram - Sacred coastal town\n' +
-            '• Kanyakumari - Where three seas meet\n\n' +
-            '⛰️ Hill Stations\n' +
-            '• Ooty - Queen of Hill Stations\n' +
-            '• Kodaikanal - Princess of Hill Stations\n' +
-            '• Yercaud - Poor Man\'s Ooty\n\n' +
-            '🛕 Temple Destinations\n' +
-            '• Meenakshi Temple - Madurai\n' +
-            '• Rameshwaram Temple - Sacred pilgrimage\n' +
-            '• Thanjavur - Brihadeeswarar Temple\n\n' +
-            '🏛️ Heritage Sites\n' +
-            '• Mahabalipuram - UNESCO World Heritage\n' +
-            '• Thanjavur - Cultural capital\n' +
-            '• Chettinad - Architectural marvel\n\n' +
-            '💡 Tip: Click on any destination in the Destinations tab for detailed guides!');
-      break;
-    case 'safety-tips':
-      alert('🛡️ Travel Safety Tips:\n\n' +
-            '1. Keep your valuables secure\n' +
-            '2. Stay in groups, especially at night\n' +
-            '3. Carry valid ID at all times\n' +
-            '4. Keep emergency contacts handy\n' +
-            '5. Follow local guidelines and rules\n' +
-            '6. Inform someone about your travel plans\n' +
-            '7. Keep copies of important documents\n' +
-            '8. Stay hydrated and carry medicines\n' +
-            '9. Use trusted transportation\n' +
-            '10. Trust your instincts!\n\n' +
-            'Have a safe journey! 🌟');
-      break;
-    case 'blog':
-      alert('📝 Travel Aura Blog\n\n' +
-            'Coming Soon!\n\n' +
-            'We\'re creating amazing travel content:\n' +
-            '• Destination guides\n' +
-            '• Travel tips & hacks\n' +
-            '• Local food recommendations\n' +
-            '• Budget travel ideas\n' +
-            '• Photography tips\n' +
-            '• Traveler stories\n\n' +
-            'Stay tuned! 🌍✈️');
-      break;
-    case 'destination-finder':
-      showSection('destinations');
-      alert('🧭 Destination Finder\n\nUse the filters and search to find your perfect destination!\n\n' +
-            'Try filtering by:\n' +
-            '• Beach\n' +
-            '• Hill Station\n' +
-            '• Temple\n' +
-            '• Heritage\n' +
-            '• And more!');
-      break;
-  }
-}
-
-// Feedback
-function openFeedbackForm() {
-  const feedback = prompt('💬 We\'d love to hear from you!\n\nWhat do you think about Travel Aura?\nShare your thoughts, suggestions, or ideas:');
-  
-  if (feedback && feedback.trim()) {
-    const ticketId = 'FBK-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    console.log('User feedback:', { ticketId, userId: currentUser?._id, feedback });
-    alert(`✅ Thank you for your feedback!\n\nTicket ID: ${ticketId}\n\nYour input helps us improve Travel Aura for everyone! 🌟`);
-  }
-}
-
-function openBugReportForm() {
-  const bug = prompt('🐛 Report a Bug\n\nPlease describe the issue you encountered:\n\n' +
-                     'Include:\n' +
-                     '• What you were trying to do\n' +
-                     '• What happened instead\n' +
-                     '• Any error messages');
-  
-  if (bug && bug.trim()) {
-    const ticketId = 'BUG-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    console.log('Bug report:', { ticketId, userId: currentUser?._id, bug });
-    alert(`✅ Bug report submitted!\n\nTicket ID: ${ticketId}\n\nOur tech team will investigate this issue ASAP.\n\nWe appreciate your help in making Travel Aura better! 🛠️`);
-  }
-}
-
-// Close modals on outside click
-window.addEventListener('click', function(event) {
-  if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
-  }
-});
-
-console.log('✅ Support section loaded successfully');
-// --------- SEARCH DESTINATIONS (REAL-TIME) ------------
-function searchDestinations() {
-  const searchInput = document.getElementById('destinationSearchInput');
-  const query = searchInput.value.trim().toLowerCase();
-  const resultsContainer = document.getElementById('destinationSearchResults');
-  const clearBtn = document.querySelector('.clear-search-btn');
-
-  // Show/hide clear button
-  if (query) {
-    clearBtn.style.display = 'flex';
-  } else {
-    clearBtn.style.display = 'none';
-    resultsContainer.classList.remove('show');
-    return;
-  }
-
-  // Filter destinations based on search query
-  const results = destinations.filter(dest => 
-    dest.name.toLowerCase().includes(query) ||
-    (dest.type && dest.type.toLowerCase().includes(query)) ||
-    (dest.description && dest.description.toLowerCase().includes(query))
-  );
-
-  // Sort results by rating
-  results.sort((a, b) => {
-    const ratingA = parseFloat(a.rating) || 0;
-    const ratingB = parseFloat(b.rating) || 0;
-    return ratingB - ratingA;
-  });
-
-  // Display results
-  if (results.length > 0) {
-    resultsContainer.innerHTML = results.map(dest => `
-      <div class="search-result-item" onclick="navigateToDestination('${dest._id}')">
-        <img src="${dest.imageUrl || 'https://via.placeholder.com/60'}" 
-             alt="${dest.name}" 
-             class="search-result-image"
-             onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
-        <div class="search-result-info">
-          <h4>${highlightText(dest.name, query)}</h4>
-          <p>
-            <span class="search-result-rating">⭐ ${dest.rating || 'N/A'}</span>
-            <span style="text-transform: capitalize;">${dest.type ? dest.type.replace('-', ' ') : 'Destination'}</span>
-          </p>
-        </div>
-        <i class="fas fa-arrow-right" style="color: #999;"></i>
-      </div>
-    `).join('');
-    resultsContainer.classList.add('show');
-  } else {
-    resultsContainer.innerHTML = `
-      <div class="no-results">
-        <i class="fas fa-search"></i>
-        <p>No destinations found for "<strong>${query}</strong>"</p>
-        <small>Try searching for Marina Beach, Ooty, Kodaikanal, etc.</small>
-      </div>
-    `;
-    resultsContainer.classList.add('show');
-  }
-}
-
-// --------- HIGHLIGHT SEARCH TEXT ------------
-function highlightText(text, query) {
-  if (!query) return text;
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.replace(regex, '<strong style="color: #667eea;">$1</strong>');
-}
-
-// --------- NAVIGATE TO DESTINATION ------------
-function navigateToDestination(destinationId) {
-  // Clear search
-  clearDestinationSearch();
-  
-  // Navigate to destination details page
-  window.location.href = `destination-details.html?id=${destinationId}`;
-}
-
-// --------- HANDLE ENTER KEY IN SEARCH ------------
-function handleDestinationSearchEnter(event) {
-  if (event.key === 'Enter') {
-    const resultsContainer = document.getElementById('destinationSearchResults');
-    const firstResult = resultsContainer.querySelector('.search-result-item');
-    
-    if (firstResult) {
-      // Click the first search result
-      firstResult.click();
-    }
-  }
-}
-
-// --------- CLEAR SEARCH ------------
-function clearDestinationSearch() {
-  document.getElementById('destinationSearchInput').value = '';
-  document.getElementById('destinationSearchResults').classList.remove('show');
-  document.querySelector('.clear-search-btn').style.display = 'none';
-}
-
-// --------- CLOSE SEARCH RESULTS ON OUTSIDE CLICK ------------
-document.addEventListener('click', function(event) {
-  const searchContainer = document.querySelector('.destination-search-container');
-  const resultsContainer = document.getElementById('destinationSearchResults');
-  
-  if (searchContainer && !searchContainer.contains(event.target)) {
-    resultsContainer.classList.remove('show');
-  }
-});
-
-// ========== HEADER SEARCH FUNCTIONALITY ==========
-
-// Header Search for Destinations
+// --------- HEADER SEARCH ------------
 function headerSearchDestinations() {
   const searchInput = document.getElementById('headerSearchInput');
   const query = searchInput.value.trim().toLowerCase();
   const resultsContainer = document.getElementById('headerSearchResults');
   const clearBtn = document.querySelector('.header-clear-search');
 
-  // Show/hide clear button
   if (query) {
     clearBtn.style.display = 'flex';
   } else {
@@ -2100,21 +1343,18 @@ function headerSearchDestinations() {
     return;
   }
 
-  // Filter destinations based on search query
   const results = destinations.filter(dest => 
     dest.name.toLowerCase().includes(query) ||
     (dest.type && dest.type.toLowerCase().includes(query)) ||
     (dest.description && dest.description.toLowerCase().includes(query))
   );
 
-  // Sort results by rating
   results.sort((a, b) => {
     const ratingA = parseFloat(a.rating) || 0;
     const ratingB = parseFloat(b.rating) || 0;
     return ratingB - ratingA;
   });
 
-  // Display results
   if (results.length > 0) {
     resultsContainer.innerHTML = results.slice(0, 5).map(dest => `
       <div class="header-search-result-item" onclick="navigateToDestinationFromHeader('${dest._id}')">
@@ -2133,7 +1373,6 @@ function headerSearchDestinations() {
       </div>
     `).join('');
     
-    // Show "View all results" if more than 5 results
     if (results.length > 5) {
       resultsContainer.innerHTML += `
         <div class="header-search-view-all" onclick="viewAllHeaderSearchResults('${query}')">
@@ -2156,32 +1395,27 @@ function headerSearchDestinations() {
   }
 }
 
-// Highlight search text
 function highlightSearchText(text, query) {
   if (!query) return text;
   const regex = new RegExp(`(${query})`, 'gi');
   return text.replace(regex, '<strong style="color: #667eea;">$1</strong>');
 }
 
-// Navigate to destination from header search
 function navigateToDestinationFromHeader(destinationId) {
   clearHeaderSearch();
   window.location.href = `destination-details.html?id=${destinationId}`;
 }
 
-// View all search results
 function viewAllHeaderSearchResults(query) {
   clearHeaderSearch();
   showSection('destinations');
   
-  // Filter destinations based on query
   const searchQuery = query.toLowerCase();
   const filtered = destinations.filter(dest => 
     dest.name.toLowerCase().includes(searchQuery) ||
     (dest.type && dest.type.toLowerCase().includes(searchQuery))
   );
   
-  // Display filtered results
   const container = document.getElementById('destinationsList');
   container.innerHTML = '';
   
@@ -2245,11 +1479,9 @@ function viewAllHeaderSearchResults(query) {
     });
   }
   
-  // Show notification
   alert(`🔍 Found ${filtered.length} destinations matching "${query}"`);
 }
 
-// Handle Enter key in header search
 function handleHeaderSearchEnter(event) {
   if (event.key === 'Enter') {
     const resultsContainer = document.getElementById('headerSearchResults');
@@ -2261,14 +1493,12 @@ function handleHeaderSearchEnter(event) {
   }
 }
 
-// Clear header search
 function clearHeaderSearch() {
   document.getElementById('headerSearchInput').value = '';
   document.getElementById('headerSearchResults').classList.remove('show');
   document.querySelector('.header-clear-search').style.display = 'none';
 }
 
-// Close search results on outside click
 document.addEventListener('click', function(event) {
   const searchBox = document.querySelector('.header-right .search-box');
   const resultsContainer = document.getElementById('headerSearchResults');
@@ -2278,499 +1508,14 @@ document.addEventListener('click', function(event) {
   }
 });
 
-console.log('✅ Header search functionality loaded');
-/* ================= TRAVELS FEATURE ================= */
-// vehicles data (images should be in your project root or adjust paths)
-const TRAVEL_VEHICLES = [
-  { id: 'tempo', name: 'Tempo Traveller', seats: 17, cost: 600, img: 'tempo.jpg' },
-  { id: 'thar', name: 'Thar', seats: 6, cost: 450, img: 'thar.jpg' },
-  { id: 'travels', name: 'Travels', seats: 60, cost: 1000, img: 'travels.jpg' }
-];
-
+// --------- TRAVELS SECTION ------------
 function renderTravelsSection() {
-  const container = document.getElementById('travelsGrid');
-  if (!container) return;
-  container.innerHTML = '';
-  TRAVEL_VEHICLES.forEach(v => {
-    const card = document.createElement('div');
-    card.className = 'travel-card';
-    card.dataset.name = v.name;
-    card.dataset.seats = v.seats;
-    card.dataset.cost = v.cost;
-    card.innerHTML = `
-      <img src="${v.img}" alt="${v.name}">
-      <div class="travel-info">
-        <h4>${v.name}</h4>
-        <div class="meta">Seats: ${v.seats} · ₹${v.cost} / day</div>
-      </div>
-    `;
-    card.addEventListener('click', () => openTravelPopup(v));
-    container.appendChild(card);
-  });
+  console.log('✅ Travels section loaded');
 }
 
-// open the popup and populate the booking select
-async function openTravelPopup(vehicle) {
-  const popup = document.getElementById('travelPopup');
-  if (!popup) return;
-  document.getElementById('popupImage').src = vehicle.img;
-  document.getElementById('popupName').textContent = vehicle.name;
-  document.getElementById('popupSeats').textContent = `Seats: ${vehicle.seats}`;
-  document.getElementById('popupCost').textContent = `Per Day Cost: ₹${vehicle.cost}`;
-  document.getElementById('totalPrice').textContent = `₹0`;
-  popup.style.display = 'flex';
-
-  // populate user's bookings (filter by selectedDestinationId if available)
-  let bookings = [];
-  try {
-    if (currentUser && currentUser._id) {
-      bookings = await getUserBookings(currentUser._id);
-    }
-  } catch (err) {
-    console.error('Error fetching user bookings for travels popup', err);
-  }
-
-  const select = document.getElementById('userBookingsSelect');
-  select.innerHTML = '<option value="">— Select booking —</option>';
-
-  const filtered = selectedDestinationId ? bookings.filter(b => {
-    const bid = b.destination?._id || b.destination;
-    return bid === selectedDestinationId;
-  }) : bookings;
-
-  if (filtered.length === 0) {
-    select.innerHTML += `<option value="" disabled>No bookings for this destination</option>`;
-  } else {
-    filtered.forEach(b => {
-      const start = b.startDate ? b.startDate.slice(0,10) : '';
-      const end = b.endDate ? b.endDate.slice(0,10) : '';
-      const title = `${b.destination?.name || 'Booking'} — ${start} → ${end} (${b._id.slice(-6)})`;
-      select.innerHTML += `<option value="${b._id}" data-start="${b.startDate}" data-end="${b.endDate}">${escapeHtml(title)}</option>`;
-    });
-  }
-
-  // on booking selection, calculate total
-  select.onchange = function() {
-    const opt = select.options[select.selectedIndex];
-    if (!opt || !opt.value) {
-      document.getElementById('totalPrice').textContent = `₹0`;
-      return;
-    }
-    const start = opt.dataset.start;
-    const end = opt.dataset.end;
-    if (!start || !end) {
-      document.getElementById('totalPrice').textContent = `₹0`;
-      return;
-    }
-    const days = calcDaysInclusive(start, end);
-    const total = days * vehicle.cost;
-    document.getElementById('totalPrice').textContent = `₹${total}`;
-    popup.dataset.selectedBooking = opt.value;
-    popup.dataset.selectedVehicle = JSON.stringify(vehicle);
-    popup.dataset.selectedTotal = total;
-  };
-
-  // bind confirm button
-  document.getElementById('confirmBooking').onclick = confirmTravelBooking;
-}
-
-function closeTravelPopup() {
-  const popup = document.getElementById('travelPopup');
-  if (popup) popup.style.display = 'none';
-}
-
-// Helper: calculate inclusive days between ISO dates
-function calcDaysInclusive(startISO, endISO) {
-  const s = new Date(startISO.slice(0,10));
-  const e = new Date(endISO.slice(0,10));
-  const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24)) + 1;
-  return diff > 0 ? diff : 0;
-}
-
-// Helper: escape text for safety in option values
-function escapeHtml(txt) {
-  if (!txt) return '';
-  return txt.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-/* ===================== TRAVELS: Confirm & UI update (Fixed Version) ===================== */
-async function confirmTravelBooking() {
-  const popup =
-    document.getElementById("travelPopup") ||
-    document.getElementById("travelModal") ||
-    document.getElementById("travelModalAlt");
-
-  const bookingId = popup?.dataset?.selectedBooking;
-  const vehicle = popup?.dataset?.selectedVehicle
-    ? JSON.parse(popup.dataset.selectedVehicle)
-    : null;
-  const total = popup?.dataset?.selectedTotal
-    ? parseInt(popup.dataset.selectedTotal)
-    : 0;
-
-  if (!bookingId || !vehicle) {
-    alert("Please select a booking from the dropdown before confirming.");
-    return;
-  }
-
- // ==================== RENDER BOOKED TRAVELS ====================
-async function renderBookedTravels() {
-  if (!currentUser?._id) return;
-
-  const container = document.getElementById("bookedTravelsList");
-  if (!container) return;
-  container.innerHTML = `<p style="color:#888;">Loading your booked travels...</p>`;
-
-  try {
-    const res = await fetch(`/api/bookings/${currentUser._id}`);
-    const bookings = await res.json();
-
-    const withTravels = bookings.filter(b => b.assignedTravel);
-    container.innerHTML = "";
-
-    if (withTravels.length === 0) {
-      container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
-      return;
-    }
-
-    withTravels.forEach(b => {
-      const t = b.assignedTravel;
-      const div = document.createElement("div");
-      div.className = "travel-booked-item";
-      div.innerHTML = `
-        <div>
-          <strong>${t.name}</strong><br>
-          <span>${b.destination?.name || "Unknown"} — 
-          ${new Date(t.bookedAt).toLocaleString()}</span>
-        </div>
-        <button class="delete-travel-btn" onclick="deleteBookedTravel('${b._id}')">Delete</button>
-      `;
-      container.appendChild(div);
-    });
-  } catch (err) {
-    console.error("Error loading booked travels:", err);
-    container.innerHTML = `<p class="no-travels">Failed to load travels.</p>`;
-  }
-}
-
-// ==================== DELETE BOOKED TRAVEL ====================
-async function deleteBookedTravel(bookingId) {
-  if (!confirm("Are you sure you want to remove this booked travel?")) return;
-
-  try {
-    const res = await fetch(`/api/bookings/${bookingId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assignedTravel: null })
-    });
-
-    if (res.ok) {
-      alert("✅ Travel removed successfully!");
-      renderBookedTravels();
-    } else {
-      const data = await res.json();
-      alert("Failed to delete travel: " + (data.error || "Unknown error"));
-    }
-  } catch (err) {
-    console.error("Delete travel error:", err);
-    alert("Error removing travel. Please try again later.");
-  }
-}
-
-/* Auto render booked travels below the travels page */
-document.addEventListener("DOMContentLoaded", () => {
-  renderTravelsSection?.();
-  renderTravelBookingsList();
-  renderBookedTravels();
-});
-
-
-async function renderBookedTravels() {
-  const res = await fetch(`/api/travels-booked/${currentUser._id}`);
-  const travels = await res.json();
-  const container = document.getElementById("bookedTravelsList");
-  container.innerHTML = "";
-
-  if (!travels.length) {
-    container.innerHTML = `<p class="no-travels">You haven’t booked any travels yet.</p>`;
-    return;
-  }
-
-  travels.forEach(t => {
-    const item = document.createElement("div");
-    item.className = "travel-booked-item";
-    item.innerHTML = `
-      <div>
-        <strong>${t.travelName}</strong><br>
-        <span>${t.destinationName} — ${new Date(t.bookedAt).toLocaleString()}</span>
-      </div>
-      <button class="delete-travel-btn" onclick="deleteBookedTravel('${t._id}')">Delete</button>
-    `;
-    container.appendChild(item);
-  });
-}
-
-async function deleteBookedTravel(id) {
-  if (!confirm("Are you sure you want to delete this travel?")) return;
-  const res = await fetch(`/api/travels-booked/${id}`, { method: "DELETE" });
-  if (res.ok) {
-    showSuccess("Travel deleted successfully!");
-    renderBookedTravels();
-  } else {
-    alert("Failed to delete travel.");
-  }
-}
-
-function showSection(sectionId) {
-  document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
-  document.getElementById(sectionId).classList.add("active");
-  document.getElementById("pageTitle").textContent =
-    sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
-
-  if (sectionId === "travels") renderBookedTravels();
-}
-
-
-  // ✅ Step 1: Fetch the full booking details
-  let currentBooking;
-  try {
-    const resGet = await fetch(`/api/bookings/${bookingId}`);
-    if (!resGet.ok) {
-      const t = await resGet.text().catch(() => null);
-      alert("Unable to load booking details: " + (t || resGet.status));
-      return;
-    }
-    currentBooking = await resGet.json();
-  } catch (err) {
-    console.error("Error fetching booking", err);
-    alert("Error fetching booking details from server.");
-    return;
-  }
-
-  // ✅ Step 2: Validate booking date
-  try {
-    if (!currentBooking.startDate || !currentBooking.endDate) {
-      console.warn("⚠️ Booking missing start/end date — proceeding without validation.");
-    } else {
-      const now = new Date();
-      const bookingEnd = new Date(currentBooking.endDate);
-      if (bookingEnd < now.setHours(0, 0, 0, 0)) {
-        alert("This trip has already ended. Cannot assign travel for completed trips.");
-        return;
-      }
-    }
-  } catch (err) {
-    console.warn("Date validation warning", err);
-  }
-
-  // ✅ Step 3: Prepare safe update payload (added userId fix)
-  const updatePayload = {
-    userId: currentUser?._id || currentUser?.id, // 🔧 added fix
-    startDate: currentBooking.startDate,
-    endDate: currentBooking.endDate,
-    travelers: currentBooking.travelers || 1,
-    assignedTravel: {
-      name: vehicle.name,
-      seats: vehicle.seats,
-      costPerDay: vehicle.costPerDay || vehicle.cost,
-      totalPrice: total,
-      bookedAt: new Date().toISOString(),
-    },
-  };
-
-  // ✅ Step 4: PUT updated booking to server
-  try {
-    const resPut = await fetch(`/api/bookings/${bookingId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatePayload),
-    });
-
-    if (!resPut.ok) {
-      const text = await resPut.text().catch(() => null);
-      alert("Failed to save travel data: " + (text || resPut.status));
-      console.error("PUT /api/bookings error:", text || resPut.status);
-      return;
-    }
-
-    // ✅ Step 5: Success
-    closeTravelPopup();
-    const destName = currentBooking.destination?.name || currentBooking.destination || "your destination";
-    showCenteredSuccess(`${vehicle.name} booked for ${destName}`);
-
-    // ✅ Step 6: Update bookings UI
-    try {
-      if (typeof loadUserBookings === "function" && typeof renderAllSections === "function") {
-        await loadUserBookings(currentUser?._id || currentUser?.id);
-        await renderAllSections();
-      } else {
-        refreshBookingsList();
-      }
-    } catch (err) {
-      console.warn("Could not reload bookings", err);
-      refreshBookingsList();
-    }
-
-    // ✅ Step 7: Log activity
-    try {
-      await fetch("/activities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: currentUser?._id || currentUser?.id,
-          type: "travel",
-          content: `${vehicle.name} booked for ${destName}`,
-          createdAt: new Date().toISOString(),
-        }),
-      });
-    } catch (e) {
-      console.warn("Activity logging failed", e);
-    }
-  } catch (err) {
-    console.error("confirmTravelBooking error", err);
-    alert("Error saving travel — check console for details.");
-  }
-}
-
-/* ---------- helper: show centered success popup ---------- */
-function showCenteredSuccess(message) {
-  let s = document.getElementById("centeredSuccessToast");
-  if (!s) {
-    s = document.createElement("div");
-    s.id = "centeredSuccessToast";
-    Object.assign(s.style, {
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%,-50%)",
-      background: "rgba(17, 25, 40, 0.95)",
-      color: "#5ec5ff",
-      padding: "18px 26px",
-      borderRadius: "12px",
-      zIndex: 99999,
-      boxShadow: "0 0 30px rgba(94,197,255,0.45)",
-      fontWeight: "700",
-      fontSize: "1.05rem",
-      textAlign: "center",
-    });
-    document.body.appendChild(s);
-  }
-  s.textContent = message;
-  s.style.display = "block";
-  setTimeout(() => {
-    s.style.display = "none";
-  }, 2200);
-}
-
-/* ---------- fallback: refresh bookings ---------- */
-async function refreshBookingsList() {
-  const bookingsListEl =
-    document.getElementById("bookingsList") ||
-    document.getElementById("bookingsListContainer");
-  if (!bookingsListEl) return;
-
-  try {
-    const res = await fetch("/api/bookings");
-    if (!res.ok) {
-      console.warn("Could not refresh bookings list - server returned", res.status);
-      return;
-    }
-    const allBookings = await res.json();
-    bookingsListEl.innerHTML = "";
-    (allBookings || []).forEach((b) => {
-      const card = document.createElement("div");
-      card.className = "booking-card";
-      const destName = b.destination?.name || b.destination || "Destination";
-      let travelInfo = "";
-      if (b.assignedTravel) {
-        travelInfo = `<div class="assigned-travel">Travels: ${escapeHtml(
-          b.assignedTravel.name
-        )} — ₹${b.assignedTravel.totalPrice}</div>`;
-      }
-      card.innerHTML = `
-        <h3>${escapeHtml(destName)}</h3>
-        <p>From: ${escapeHtml(
-          b.startDate?.slice(0, 10) || ""
-        )} To: ${escapeHtml(b.endDate?.slice(0, 10) || "")}</p>
-        ${travelInfo}
-        <div style="margin-top:8px;"><button onclick="openTravelFromBooking('${
-          b._id
-        }')">Book/Change Travels</button></div>
-      `;
-      bookingsListEl.appendChild(card);
-    });
-  } catch (err) {
-    console.error("refreshBookingsList error", err);
-  }
-}
-
-/* ---------- open travel popup preselect booking ---------- */
-function openTravelFromBooking(bookingId) {
-  try {
-    showSection && showSection("travels");
-  } catch (e) {}
-  if (typeof renderTravelsSection === "function") renderTravelsSection();
-
-  setTimeout(() => {
-    const popup =
-      document.getElementById("travelPopup") ||
-      document.getElementById("travelModal");
-    if (popup) popup.dataset.preselectBooking = bookingId;
-  }, 200);
-}
-
-// Render travel cards when DOM loads
-document.addEventListener('DOMContentLoaded', renderTravelsSection);
-
-
-
-
-/* ===================== USER TRAVEL LIST ===================== */
-async function loadUserTravels() {
-  const listContainer = document.getElementById("userTravelList");
-  if (!listContainer || !currentUser?._id) return;
-
-  try {
-    const res = await fetch(`/api/bookings/${currentUser._id}`);
-    const bookings = await res.json();
-    const bookedTravels = bookings.filter(b => b.assignedTravel);
-
-    listContainer.innerHTML = "";
-    if (bookedTravels.length === 0) {
-      listContainer.innerHTML = `<p class="no-travel">No booked travels yet.</p>`;
-      return;
-    }
-
-    bookedTravels.forEach(b => {
-      const t = b.assignedTravel;
-      const div = document.createElement("div");
-      div.className = "travel-list-item";
-      div.innerHTML = `
-        <h4>${b.destination?.name}</h4>
-        <p><strong>Vehicle:</strong> ${t.name}</p>
-        <p><strong>Total Price:</strong> ₹${t.totalPrice}</p>
-        <button class="delete-btn" onclick="deleteTravel('${b._id}')">Delete</button>
-        <button class="pay-btn" onclick="goToPayment('${b._id}')">Proceed to Payment</button>
-      `;
-      listContainer.appendChild(div);
-    });
-  } catch (err) {
-    console.error("Error loading user travels", err);
-  }
-}
-
-async function deleteTravel(bookingId) {
-  if (!confirm("Are you sure you want to delete this travel?")) return;
-
-  try {
-    const res = await fetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
-    if (res.ok) {
-      alert("Travel deleted successfully!");
-      loadUserTravels();
-    } else {
-      alert("Failed to delete travel");
-    }
-  } catch (err) {
-    console.error("Delete travel error", err);
-  }
-}
+console.log('✅ Dashboard.js loaded successfully');
+console.log(`
+📍 Travel Aura Dashboard
+🆔 User: ${currentUser?.username || 'Not logged in'}
+📅 Date: 2025-11-06
+`);
