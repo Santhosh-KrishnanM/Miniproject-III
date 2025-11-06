@@ -2,7 +2,7 @@
 
 let currentAdmin = null;
 
-// Show/hide admin sections (non-tabbed pages)
+// --- Show/hide admin sections (non-tabbed pages) ---
 function showAdminSection(sectionId) {
   document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
   const el = document.getElementById(sectionId);
@@ -17,11 +17,9 @@ function showAdminSection(sectionId) {
   }
 }
 
-// On DOM ready
 document.addEventListener("DOMContentLoaded", () => {
   const storedAdmin = localStorage.getItem("adminUser");
   if (!storedAdmin) {
-    // No admin logged in, redirect to travel.html
     alert("Please login as admin first");
     window.location.href = "travel.html";
   } else {
@@ -35,7 +33,59 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     loadAdminData();
-    setupDestinationFormHandlers();
+  }
+
+  // Attach destination form handler after DOM loaded
+  const destForm = document.getElementById('destinationForm');
+  if (destForm) {
+    destForm.onsubmit = async function(e) {
+      e.preventDefault();
+      const id          = document.getElementById('destinationId').value;
+      const name        = document.getElementById('destName').value;
+      const type        = document.getElementById('destType').value;
+      const rating      = document.getElementById('destRating').value;
+      const description = document.getElementById('destDescription').value;
+      const imageUrl    = document.getElementById('destImageUrl').value;
+      const payload = { name, type, rating, description, imageUrl };
+      try {
+        let res, data;
+        if (id) {
+          res = await fetch(`/destinations/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          data = await res.json();
+        } else {
+          res = await fetch('/destinations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          data = await res.json();
+        }
+        if (res.ok) {
+          alert(data.message || 'Saved!');
+          closeDestinationModal();
+          loadAdminData();
+        } else {
+          alert(data.message || data.error || "Save failed");
+        }
+      } catch (err) {
+        alert("Error saving destination");
+      }
+    };
+    // Image Preview show
+    document.getElementById('destImageUrl').addEventListener('input', function() {
+      const value = this.value;
+      const imgPrev = document.getElementById('imagePreview');
+      if (value && value.startsWith('http')) {
+        imgPrev.src = value;
+        imgPrev.style.display = 'block';
+      } else {
+        imgPrev.style.display = 'none';
+      }
+    });
   }
 });
 
@@ -43,19 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadAdminData() {
   try {
     console.log("Loading admin dashboard data...");
-    
     const [users, bookings, destinations, pendingApprovals] = await Promise.all([
       fetch('/admin/users').then(r => r.json()),
       fetch('/admin/bookings').then(r => r.json()),
       fetch('/admin/destinations').then(r => r.json()),
       fetch('/admin/bookings/pending-approvals').then(r => r.json()).catch(() => [])
     ]);
-
     renderUsers(users || []);
     renderBookings(bookings || []);
     renderDestinations(destinations || []);
     renderPendingApprovals(pendingApprovals || []);
-    
     console.log("✅ Admin data loaded successfully");
   } catch (err) {
     console.error("❌ Failed to load admin data:", err);
@@ -66,11 +113,7 @@ async function loadAdminData() {
 // --------- RENDER USERS ------------
 function renderUsers(users) {
   const tbody = document.querySelector("#usersTable tbody");
-  if (!tbody) {
-    console.error("Users table body not found");
-    return;
-  }
-  
+  if (!tbody) return;
   tbody.innerHTML = (users || []).map(u => `
     <tr>
       <td>${u.username}</td>
@@ -79,28 +122,21 @@ function renderUsers(users) {
       <td>${u.address || '-'}</td>
     </tr>
   `).join('');
-  
   console.log(`✅ Rendered ${users.length} users`);
 }
 
 // --------- RENDER BOOKINGS ------------
 function renderBookings(bookings) {
   const tbody = document.querySelector("#bookingsTable tbody");
-  if (!tbody) {
-    console.error("Bookings table body not found");
-    return;
-  }
-  
+  if (!tbody) return;
   tbody.innerHTML = (bookings || []).map(b => {
-    const username = b.userId.username || 'Unknown';
-    const destinationName = b.destination?.name || 'N/A';
-    const start = b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A';
-    const end = b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A';
-    const paymentStatus = b.paymentStatus || 'pending';
-    const approvalStatus = b.approvalStatus || 'pending';
+    const username           = b.userId.username || 'Unknown';
+    const destinationName    = b.destination?.name || 'N/A';
+    const start              = b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A';
+    const end                = b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A';
+    const paymentStatus      = b.paymentStatus || 'pending';
+    const approvalStatus     = b.approvalStatus || 'pending';
     const assignedTravelName = b.assignedTravel?.name || '-';
-
-    // Show Approve / Reject buttons when there's an assigned travel awaiting approval
     let approvalButtons = '';
     if (b.assignedTravel && paymentStatus === 'paid' && approvalStatus !== 'approved') {
       approvalButtons = `
@@ -112,7 +148,6 @@ function renderBookings(bookings) {
     } else {
       approvalButtons = `<span style="color:#666;">-</span>`;
     }
-
     return `
       <tr>
         <td>${username}</td>
@@ -130,35 +165,13 @@ function renderBookings(bookings) {
       </tr>
     `;
   }).join('');
-  
   console.log(`✅ Rendered ${bookings.length} bookings`);
-}
-
-// Render list of pending approvals in a quick view
-function renderPendingApprovals(list) {
-  if (!Array.isArray(list)) return;
-  const container = document.getElementById('pendingApprovalsContainer');
-  if (!container) {
-    // create a small container if not present
-    const nav = document.querySelector('.admin-header');
-    if (!nav) return;
-    const div = document.createElement('div');
-    div.id = 'pendingApprovalsContainer';
-    div.style.padding = '10px 20px';
-    nav.parentElement.insertBefore(div, nav.nextSibling);
-  }
-  const el = document.getElementById('pendingApprovalsContainer');
-  el.innerHTML = `<strong>Pending Approvals:</strong> ${list.length} booking(s) awaiting review`;
 }
 
 // --------- RENDER DESTINATIONS ------------
 function renderDestinations(destinations) {
   const tbody = document.querySelector("#destinationsTable tbody");
-  if (!tbody) {
-    console.error("Destinations table body not found");
-    return;
-  }
-  
+  if (!tbody) return;
   if (!destinations || destinations.length === 0) {
     tbody.innerHTML = `
       <tr>
@@ -171,13 +184,11 @@ function renderDestinations(destinations) {
     `;
     return;
   }
-
   tbody.innerHTML = destinations.map(d => {
     const destinationStr = JSON.stringify(d)
       .replace(/\\/g, '\\\\')
       .replace(/'/g, "\\'")
       .replace(/"/g, '&quot;');
-    
     return `
       <tr>
         <td>
@@ -207,23 +218,89 @@ function renderDestinations(destinations) {
       </tr>
     `;
   }).join('');
-  
   console.log(`✅ Rendered ${destinations.length} destinations`);
 }
 
-// --------- DELETE BOOKING ------------
+// --- Add Destination (modal open/clear) ---
+function openAddDestinationModal() {
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Destination';
+  document.getElementById('destinationId').value = '';
+  document.getElementById('destName').value = '';
+  document.getElementById('destType').value = '';
+  document.getElementById('destRating').value = '';
+  document.getElementById('destDescription').value = '';
+  document.getElementById('destImageUrl').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
+  document.getElementById('destinationModal').style.display = 'flex';
+}
+
+// --- Edit Destination Modal ---
+function editDestination(destinationObj) {
+  document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Destination`;
+  document.getElementById('destinationId').value     = destinationObj._id || '';
+  document.getElementById('destName').value          = destinationObj.name || '';
+  document.getElementById('destType').value          = destinationObj.type || '';
+  document.getElementById('destRating').value        = destinationObj.rating || '';
+  document.getElementById('destDescription').value   = destinationObj.description || '';
+  document.getElementById('destImageUrl').value      = destinationObj.imageUrl || '';
+  // Show img preview if available
+  const imgPrev = document.getElementById('imagePreview');
+  if (destinationObj.imageUrl) {
+    imgPrev.src = destinationObj.imageUrl;
+    imgPrev.style.display = 'block';
+  } else {
+    imgPrev.style.display = 'none';
+  }
+  document.getElementById('destinationModal').style.display = 'flex';
+}
+
+// --- Modal close helper ---
+function closeDestinationModal() {
+  document.getElementById('destinationModal').style.display = 'none';
+}
+
+// --- Delete Destination ---
+async function deleteDestination(id, name) {
+  if (!confirm(`Delete destination "${name}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/destinations/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Destination deleted.");
+      loadAdminData();
+    } else {
+      alert("Failed to delete destination: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Error deleting destination.");
+  }
+}
+
+// --------- Render Pending Approvals Quick View ------------
+function renderPendingApprovals(list) {
+  if (!Array.isArray(list)) return;
+  const container = document.getElementById('pendingApprovalsContainer');
+  if (!container) {
+    const nav = document.querySelector('.admin-header');
+    if (!nav) return;
+    const div = document.createElement('div');
+    div.id = 'pendingApprovalsContainer';
+    div.style.padding = '10px 20px';
+    nav.parentElement.insertBefore(div, nav.nextSibling);
+  }
+  const el = document.getElementById('pendingApprovalsContainer');
+  el.innerHTML = `<strong>Pending Approvals:</strong> ${list.length} booking(s) awaiting review`;
+}
+
+// --------- Delete Booking (Admin) ------------
 async function deleteBooking(id) {
   if (!confirm("Are you sure you want to delete this booking?")) return;
-  
   try {
-    const res = await fetch(`/admin/bookings/${id}`, { 
-      method: 'DELETE' 
-    });
+    const res = await fetch(`/admin/bookings/${id}`, { method: 'DELETE' });
     const data = await res.json();
-    
     if (res.ok) {
       alert(data.message || "Booking deleted successfully");
-      loadAdminData(); // Refresh all data
+      loadAdminData();
     } else {
       alert("Failed to delete booking: " + (data.message || "Unknown error"));
     }
@@ -233,7 +310,7 @@ async function deleteBooking(id) {
   }
 }
 
-// --------- APPROVE / REJECT BOOKING (ADMIN) ------------
+// --------- Approve / Reject Booking (Admin) ------------
 async function approveBooking(id) {
   if (!confirm("Approve this travel assignment?")) return;
   try {
@@ -268,62 +345,33 @@ async function rejectBooking(id) {
   }
 }
 
-// --------- TAB SWITCH (Admin dashboard tabs) ------------
+// --------- Admin Tab Switch Logic ------------
 function showTab(tabId, btnElement) {
-  // Hide all tab contents
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-  // Remove active class from all buttons
   document.querySelectorAll('.tab-buttons button').forEach(btn => btn.classList.remove('active'));
-  // Show selected tab
   const selectedTab = document.getElementById(tabId);
   if (selectedTab) {
     selectedTab.classList.add('active');
   }
-  // Add active class to clicked button (if provided)
   if (btnElement && btnElement.classList) {
     btnElement.classList.add('active');
   }
-  // Optionally auto-load data for the selected tab
   if (tabId === 'travels') loadTravels();
-  if (tabId === 'users') loadAdminData(); // ensure data load
+  if (tabId === 'users') loadAdminData();
   console.log(`Switched to ${tabId} tab`);
 }
 
-// --------- LOGOUT ADMIN ------------
+// --------- Admin Logout ------------
 function logoutAdmin() {
   console.log("Logout admin clicked");
-  
   if (!confirm("Are you sure you want to logout?")) return;
-  
-  console.log("Logging out admin:", currentAdmin?.username);
-  
   localStorage.removeItem("adminUser");
   sessionStorage.removeItem("adminUser");
   localStorage.removeItem("currentUser");
   sessionStorage.removeItem("currentUser");
-  
-  console.log("✅ Admin logged out successfully");
   alert("You have been logged out successfully!");
   window.location.href = "travel.html";
 }
-
-// --------- DESTINATION MANAGEMENT (Modal handlers etc) ------------
-// ... (rest of adm.js remains unchanged) 
-
-// Close modal when clicking outside
-window.addEventListener('click', function(event) {
-  const modal = document.getElementById('destinationModal');
-  if (event.target === modal) {
-    closeDestinationModal();
-  }
-});
-
-// --------- CONSOLE LOG ON LOAD ------------
-console.log(`
-🔐 Admin Dashboard Loaded
-📅 Time: ${new Date().toLocaleString()}
-👤 Admin: ${currentAdmin?.username || 'Not logged in'}
-`);
 
 // --------- Travels (admin) - load travels for travels tab ------------
 async function loadTravels() {
@@ -341,7 +389,6 @@ async function loadTravels() {
       if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No travels booked yet.</td></tr>`;
       return;
     }
-
     travels.forEach(t => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -375,91 +422,17 @@ async function deleteTravel(id) {
   }
 }
 
-
-// --- Edit Destination Modal ---
-function editDestination(destinationObj) {
-  // Fill modal with current destination data
-  document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> Edit Destination`;
-  document.getElementById('destinationId').value = destinationObj._id || '';
-  document.getElementById('destName').value = destinationObj.name || '';
-  document.getElementById('destType').value = destinationObj.type || '';
-  document.getElementById('destRating').value = destinationObj.rating || '';
-  document.getElementById('destDescription').value = destinationObj.description || '';
-  document.getElementById('destImageUrl').value = destinationObj.imageUrl || '';
-  // Show img preview if available
-  const imgPrev = document.getElementById('imagePreview');
-  if (destinationObj.imageUrl) {
-    imgPrev.src = destinationObj.imageUrl;
-    imgPrev.style.display = 'block';
-  } else {
-    imgPrev.style.display = 'none';
+// --- Modal Close Helper with click outside ---
+window.addEventListener('click', function(event) {
+  const modal = document.getElementById('destinationModal');
+  if (event.target === modal) {
+    closeDestinationModal();
   }
-  document.getElementById('destinationModal').style.display = 'flex';
-}
+});
 
-// --- Delete Destination ---
-async function deleteDestination(id, name) {
-  if (!confirm(`Delete destination "${name}"? This cannot be undone.`)) return;
-  try {
-    const res = await fetch(`/destinations/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (res.ok) {
-      alert(data.message || "Destination deleted.");
-      loadAdminData(); // Refresh the list
-    } else {
-      alert("Failed to delete destination: " + (data.message || "Unknown error"));
-    }
-  } catch (err) {
-    alert("Error deleting destination.");
-  }
-}
-
-// --- Modal close helper ---
-function closeDestinationModal() {
-  document.getElementById('destinationModal').style.display = 'none';
-}
-
-
-// ...previous admin JS code...
-
-// Destination Add/Edit Form handler
-document.getElementById('destinationForm').onsubmit = async function(e) {
-  e.preventDefault();
-  const id = document.getElementById('destinationId').value;
-  const name = document.getElementById('destName').value;
-  const type = document.getElementById('destType').value;
-  const rating = document.getElementById('destRating').value;
-  const description = document.getElementById('destDescription').value;
-  const imageUrl = document.getElementById('destImageUrl').value;
-
-  const payload = { name, type, rating, description, imageUrl };
-
-  try {
-    let res, data;
-    if (id) {
-      res = await fetch(`/destinations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json();
-    } else {
-      res = await fetch('/destinations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json();
-    }
-
-    if (res.ok) {
-      alert(data.message || 'Saved!');
-      closeDestinationModal();
-      loadAdminData();
-    } else {
-      alert(data.message || data.error || "Save failed");
-    }
-  } catch (err) {
-    alert("Error saving destination");
-  }
-};
+// --- Console log on load ---
+console.log(`
+🔐 Admin Dashboard Loaded
+📅 Time: ${new Date().toLocaleString()}
+👤 Admin: ${currentAdmin?.username || 'Not logged in'}
+`);
