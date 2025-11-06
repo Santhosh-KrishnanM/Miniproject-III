@@ -694,30 +694,8 @@
   </div>
 
   <script src="dashboard.js"></script>
-  <script>
-// ✅ Prevent logged-in users from seeing login page via forward button
-document.addEventListener('DOMContentLoaded', function() {
-  const userData = localStorage.getItem('currentUser');
-  const adminData = localStorage.getItem('adminUser');
   
-  // If user is already logged in and tries to access travel.html
-  if (userData || adminData) {
-    const shouldStay = confirm("You are already logged in. Do you want to view your dashboard?");
-    if (shouldStay) {
-      if (adminData) {
-        window.location.replace('admin_login.html');
-      } else {
-        window.location.replace('dashboard.html');
-      }
-    } else {
-      // User wants to logout
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('adminUser');
-      sessionStorage.removeItem('currentUser');
-      sessionStorage.removeItem('adminUser');
-    }
-  }
-});
+
 </script>
 </body>
 </html>
