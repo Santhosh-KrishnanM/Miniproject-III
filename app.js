@@ -13,7 +13,6 @@ const Favorite = require('./Favorite');
 const Activity = require('./Activity');
 const Image = require('./Image');
 const Page = require('./Page');
-const Payment = require('./Payment');
 const bcrypt = require('bcryptjs');
 
 // New models
