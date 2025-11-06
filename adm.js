@@ -84,6 +84,7 @@ function renderUsers(users) {
 }
 
 // --------- RENDER BOOKINGS ------------
+// --------- RENDER BOOKINGS (COMPLETE FIXED VERSION) ------------
 function renderBookings(bookings) {
   const tbody = document.querySelector("#bookingsTable tbody");
   if (!tbody) {
@@ -91,26 +92,74 @@ function renderBookings(bookings) {
     return;
   }
   
+  if (!bookings || bookings.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+          <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
+          <strong>No bookings found</strong>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
   tbody.innerHTML = (bookings || []).map(b => {
-    const username = b.userId.username || 'Unknown';
+    const username = b.userId?.username || 'Unknown';
     const destinationName = b.destination?.name || 'N/A';
     const start = b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A';
     const end = b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A';
+    
+    // Determine booking status
+    const bookingStatus = b.status || 'pending';
+    const isPending = bookingStatus.toLowerCase() === 'pending';
+    const isConfirmed = bookingStatus.toLowerCase() === 'confirmed';
+    const isCancelled = bookingStatus.toLowerCase() === 'cancelled';
+    
+    // Payment status
     const paymentStatus = b.paymentStatus || 'pending';
-    const approvalStatus = b.approvalStatus || 'pending';
+    
+    // Approval status for display
+    const approvalStatus = b.approvalStatus || (isConfirmed ? 'approved' : 'pending');
+    
+    // Travel info
     const assignedTravelName = b.assignedTravel?.name || '-';
 
-    // Show Approve / Reject buttons when there's an assigned travel awaiting approval
-    let approvalButtons = '';
-    if (b.assignedTravel && paymentStatus === 'paid' && approvalStatus !== 'approved') {
-      approvalButtons = `
-        <button class="btn-primary" onclick="approveBooking('${b._id}')">Approve</button>
-        <button class="delete-btn" onclick="rejectBooking('${b._id}')">Reject</button>
+    // ✅ Build action buttons based on status
+    let actionButtons = '';
+    
+    if (isPending) {
+      // Show Approve and Reject buttons for pending bookings
+      actionButtons = `
+        <button class="btn-primary" onclick="approveBookingAdmin('${b._id}')" style="margin-right: 5px;">
+          <i class="fas fa-check"></i> Approve
+        </button>
+        <button class="btn-secondary" onclick="rejectBookingAdmin('${b._id}')" style="margin-right: 5px; background: #ff9800;">
+          <i class="fas fa-times"></i> Reject
+        </button>
+        <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
       `;
-    } else if (approvalStatus === 'approved') {
-      approvalButtons = `<span style="color:green; font-weight:600;">Approved</span>`;
+    } else if (isConfirmed) {
+      // Show "Approved" status for confirmed bookings
+      actionButtons = `
+        <span style="color: green; font-weight: 600; margin-right: 10px;">
+          <i class="fas fa-check-circle"></i> Approved
+        </span>
+        <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
+      `;
+    } else if (isCancelled) {
+      // Show "Cancelled" status
+      actionButtons = `
+        <span style="color: red; font-weight: 600; margin-right: 10px;">
+          <i class="fas fa-ban"></i> Cancelled
+        </span>
+        <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
+      `;
     } else {
-      approvalButtons = `<span style="color:#666;">-</span>`;
+      // Default: just delete button
+      actionButtons = `
+        <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
+      `;
     }
 
     return `
@@ -121,11 +170,32 @@ function renderBookings(bookings) {
         <td>${end}</td>
         <td>${b.travelers}</td>
         <td>${assignedTravelName}</td>
-        <td style="text-transform:capitalize;">${paymentStatus}</td>
-        <td style="text-transform:capitalize;">${approvalStatus}</td>
+        <td style="text-transform: capitalize;">
+          <span style="
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            ${paymentStatus === 'paid' || paymentStatus === 'approved' ? 'background: #d4edda; color: #155724;' : 'background: #fff3cd; color: #856404;'}
+          ">
+            ${paymentStatus}
+          </span>
+        </td>
+        <td style="text-transform: capitalize;">
+          <span style="
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            ${bookingStatus === 'confirmed' ? 'background: #d4edda; color: #155724;' : 
+              bookingStatus === 'cancelled' ? 'background: #f8d7da; color: #721c24;' : 
+              'background: #fff3cd; color: #856404;'}
+          ">
+            ${bookingStatus}
+          </span>
+        </td>
         <td>
-          ${approvalButtons}
-          <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
+          ${actionButtons}
         </td>
       </tr>
     `;
@@ -134,21 +204,48 @@ function renderBookings(bookings) {
   console.log(`✅ Rendered ${bookings.length} bookings`);
 }
 
-// Render list of pending approvals in a quick view
-function renderPendingApprovals(list) {
-  if (!Array.isArray(list)) return;
-  const container = document.getElementById('pendingApprovalsContainer');
-  if (!container) {
-    // create a small container if not present
-    const nav = document.querySelector('.admin-header');
-    if (!nav) return;
-    const div = document.createElement('div');
-    div.id = 'pendingApprovalsContainer';
-    div.style.padding = '10px 20px';
-    nav.parentElement.insertBefore(div, nav.nextSibling);
+// ✅ APPROVE BOOKING (ADMIN) - Change status from Pending to Confirmed
+async function approveBookingAdmin(bookingId) {
+  if (!confirm("Approve this booking? Status will change from Pending to Confirmed.")) return;
+  
+  try {
+    const res = await fetch(`/admin/bookings/${bookingId}/approve-booking`, { 
+      method: 'PUT' 
+    });
+    const data = await res.json();
+    
+    if (res.ok) {
+      alert(data.message || 'Booking approved successfully!');
+      loadAdminData(); // Refresh all data
+    } else {
+      alert('Failed to approve booking: ' + (data.message || data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error approving booking:', err);
+    alert('Error approving booking');
   }
-  const el = document.getElementById('pendingApprovalsContainer');
-  el.innerHTML = `<strong>Pending Approvals:</strong> ${list.length} booking(s) awaiting review`;
+}
+
+// ✅ REJECT BOOKING (ADMIN) - Change status from Pending to Cancelled
+async function rejectBookingAdmin(bookingId) {
+  if (!confirm("Reject this booking? Status will change from Pending to Cancelled.")) return;
+  
+  try {
+    const res = await fetch(`/admin/bookings/${bookingId}/reject-booking`, { 
+      method: 'PUT' 
+    });
+    const data = await res.json();
+    
+    if (res.ok) {
+      alert(data.message || 'Booking rejected successfully!');
+      loadAdminData(); // Refresh all data
+    } else {
+      alert('Failed to reject booking: ' + (data.message || data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error rejecting booking:', err);
+    alert('Error rejecting booking');
+  }
 }
 
 // --------- RENDER DESTINATIONS ------------

@@ -490,18 +490,16 @@ app.get('/admin/users', async (req, res) => {
   }
 });
 
-// Get all bookings (admin)
+// Get all bookings
 app.get('/admin/bookings', async (req, res) => {
   try {
-    // Populate both user and destination to get actual names!
-    const bookings = await Booking.find({})
-      .populate('userId', 'username email')
-      .populate('destination', 'name');
+    // Populate 'userId' so you can use username in frontend
+    const bookings = await Booking.find({}).populate('userId');
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+});;
 
 // Delete a booking (admin)
 app.delete('/admin/bookings/:id', async (req, res) => {
@@ -609,8 +607,9 @@ app.post('/api/payments', async (req, res) => {
 
     // Update booking status to confirmed (if needed)
     await Booking.findByIdAndUpdate(bookingId, { 
-      status: 'confirmed',
-      paymentId: payment._id 
+        status: 'pending',  // ✅ Set to pending, waiting for admin approval
+        paymentStatus: 'paid',
+        paymentId: payment._id 
     });
 
     // Create activity log
@@ -667,6 +666,74 @@ app.get('/api/payment/:id', async (req, res) => {
     res.json(payment);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ APPROVE BOOKING (Change from Pending to Confirmed)
+app.put('/admin/bookings/:id/approve-booking', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.status === 'confirmed' || booking.status === 'Confirmed') {
+      return res.status(400).json({ message: 'Booking is already confirmed' });
+    }
+
+    // Update booking status to confirmed
+    booking.status = 'confirmed';
+    booking.approvalStatus = 'approved';
+    await booking.save();
+
+    // Create activity log
+    await Activity.create({
+      userId: booking.userId,
+      type: 'booking',
+      content: `Admin approved booking for ${booking.destination?.name || 'destination'}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ 
+      message: 'Booking approved successfully', 
+      booking 
+    });
+  } catch (err) {
+    console.error('Error approving booking:', err);
+    res.status(500).json({ error: 'Failed to approve booking', message: err.message });
+  }
+});
+
+// ✅ REJECT BOOKING (Change from Pending to Cancelled)
+app.put('/admin/bookings/:id/reject-booking', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Update booking status to cancelled
+    booking.status = 'cancelled';
+    booking.approvalStatus = 'rejected';
+    await booking.save();
+
+    // Create activity log
+    await Activity.create({
+      userId: booking.userId,
+      type: 'booking',
+      content: `Admin rejected booking for ${booking.destination?.name || 'destination'}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ 
+      message: 'Booking rejected successfully', 
+      booking 
+    });
+  } catch (err) {
+    console.error('Error rejecting booking:', err);
+    res.status(500).json({ error: 'Failed to reject booking', message: err.message });
   }
 });
 
