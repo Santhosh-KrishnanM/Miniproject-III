@@ -163,27 +163,21 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { username, destination, startDate, endDate, travelers } = req.body;
-    const booking = new Booking({
-      username,
+    const { userId, destination, startDate, endDate, travelers } = req.body;
+    if (!userId || !destination || !startDate || !endDate || !travelers) {
+      return res.status(400).json({ error: "Missing booking fields" });
+    }
+    const booking = await Booking.create({
+      userId,
       destination,
       startDate,
       endDate,
-      travelers
+      travelers,
+      status: "confirmed"
     });
-    await booking.save();
-    await booking.populate("destination");
-
-    await Activity.create({
-      userId,
-      type: 'booking',
-      content: `Booked trip to ${booking.destination?.name || destination}`,
-      destinationId: destination
-    });
-
     res.status(201).json(booking);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to create booking", details: err.message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
