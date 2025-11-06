@@ -471,12 +471,13 @@ app.get('/admin/users', async (req, res) => {
 // Get all bookings
 app.get('/admin/bookings', async (req, res) => {
   try {
-    const bookings = await Booking.find().populate('destination');
+    // Populate 'userId' so you can use username in frontend
+    const bookings = await Booking.find({}).populate('userId');
     res.json(bookings);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch bookings', error: err.message });
+    res.status(500).json({ error: err.message });
   }
-});
+});;
 
 // Delete a booking (admin)
 app.delete('/admin/bookings/:id', async (req, res) => {
