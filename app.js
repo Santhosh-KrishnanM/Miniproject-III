@@ -13,6 +13,7 @@ const Favorite = require('./Favorite');
 const Activity = require('./Activity');
 const Image = require('./Image');
 const Page = require('./Page');
+const Payment = require('./Payment');
 const bcrypt = require('bcryptjs');
 
 // New models
@@ -552,93 +553,119 @@ app.delete("/api/admin/travels/:id", async (req, res) => {
   }
 });
 
-/* -------------------- NEW: Travels (vehicles) endpoints -------------------- */
-// Return available travel vehicles
+// ✅ GET ALL TRAVELS/TRANSPORTS
 app.get('/travels', async (req, res) => {
   try {
+    const Travel = require('./travels'); // or whatever your travel model is named
     const travels = await Travel.find();
     res.json(travels);
   } catch (err) {
     console.error('Error fetching travels:', err);
-    res.status(500).json({ message: 'Failed to fetch travels', error: err.message });
+    res.status(500).json({ error: 'Failed to fetch travels', message: err.message });
   }
 });
 
-/* -------------------- NEW: Payments endpoint (simulated, updated) -------------------- */
-/*
-  Expected body:
-  {
-    bookingId,
-    userId,
-    amount,
-    method,            // e.g., 'card', 'upi', 'netbanking'
-    travelId (opt)     // optional travel vehicle id to attach to booking
-  }
-*/
+// ✅ CREATE PAYMENT (FIXED VERSION)
 app.post('/api/payments', async (req, res) => {
   try {
-    const { bookingId, userId, amount, method, travelId } = req.body;
+    const { bookingId, userId, amount, method, travelId, travelTotal } = req.body;
+    
+    console.log('📥 Payment request:', { bookingId, userId, amount, method, travelId, travelTotal });
+    
+    // Validate inputs
     if (!bookingId || !userId || !amount || !method) {
-      return res.status(400).json({ message: 'bookingId, userId, amount and method are required' });
+      return res.status(400).json({ error: "Missing required payment fields" });
     }
 
-    const booking = await Booking.findById(bookingId).populate('destination');
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    if (String(booking.userId) !== String(userId)) {
-      return res.status(403).json({ message: 'User mismatch for booking' });
+    // Verify booking exists
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
     }
 
-    // Create payment record (simulation)
-    const payment = new Payment({
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate a mock transaction ID (in production, this would come from payment gateway)
+    const transactionId = 'TXN' + Date.now() + Math.random().toString(36).substring(7).toUpperCase();
+
+    // Create payment record
+    const payment = await Payment.create({
       bookingId,
       userId,
       amount,
       method,
-      status: 'success',
-      metadata: { createdAt: new Date().toISOString() }
+      travelId: travelId || null,
+      travelTotal: travelTotal || 0,
+      status: 'completed',
+      transactionId
     });
-    await payment.save();
 
-    // Attach payment reference to booking
-    booking.payments = booking.payments || [];
-    booking.payments.push(payment._id);
-    booking.paymentStatus = 'paid';
+    console.log('✅ Payment created:', payment._id);
 
-    // If travel selected, attach travel details but do NOT auto-approve.
-    if (travelId) {
-      const travel = await Travel.findById(travelId);
-      if (travel) {
-        booking.assignedTravel = {
-          name: travel.name,
-          seats: travel.seats,
-          costPerDay: travel.costPerDay,
-          totalPrice: req.body.travelTotal || (travel.costPerDay || travel.cost) || 0,
-          bookedAt: new Date(),
-          approved: false
-        };
-      } else {
-        console.warn('Travel id not found:', travelId);
-      }
-    }
+    // Update booking status to confirmed (if needed)
+    await Booking.findByIdAndUpdate(bookingId, { 
+      status: 'confirmed',
+      paymentId: payment._id 
+    });
 
-    // After payment the booking moves to "Pending Approval" (admin must approve if travel assigned)
-    booking.status = booking.assignedTravel ? 'Pending Approval' : 'Confirmed';
-    booking.approvalStatus = booking.assignedTravel ? 'pending' : 'approved';
-
-    await booking.save();
-
-    // Log activity
+    // Create activity log
     await Activity.create({
       userId,
       type: 'payment',
-      content: `Payment of ₹${amount} received for booking ${bookingId}`,
+      content: `Payment of ₹${amount} completed for booking`,
       destinationId: booking.destination
     });
 
-    res.json({ message: 'Payment successful', payment, booking });
+    res.status(201).json({
+      message: 'Payment successful',
+      payment: {
+        _id: payment._id,
+        transactionId: payment.transactionId,
+        amount: payment.amount,
+        method: payment.method,
+        status: payment.status
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Payment error:', error);
+    res.status(500).json({ 
+      error: "Payment processing failed",
+      message: error.message 
+    });
+  }
+});
+
+// ✅ GET USER PAYMENTS
+app.get('/api/payments/:userId', async (req, res) => {
+  try {
+    const payments = await Payment.find({ userId: req.params.userId })
+      .populate('bookingId')
+      .sort({ createdAt: -1 });
+    res.json(payments);
   } catch (err) {
-    console.error('Payment processing error:', err);
-    res.status(500).json({ message: 'Payment failed', error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ GET PAYMENT BY ID
+app.get('/api/payment/:id', async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate('bookingId')
+      .populate('userId');
+    
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    
+    res.json(payment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
