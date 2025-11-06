@@ -222,7 +222,7 @@
     const ex = document.querySelector('.experiences');
     if (ex) ex.style.display = 'block';
 
-    if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('adm.html')) {
+    if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('admin_login.html')) {
       window.location.href = 'travel.html';
     }
   }
@@ -421,7 +421,7 @@
                 lastLogin: getCurrentDateTime()
               }, true);
               showToast(`Welcome back Admin ${admin.username}!`, 'success');
-              setTimeout(() => { window.location.href = 'adm.html'; }, 900);
+              setTimeout(() => { window.location.href = 'admin_login.html'; }, 900);
             } else if (!isAdmin && payload.user) {
               const tourist = storeUserData({
                 _id: payload.user._id,
@@ -464,7 +464,7 @@
           if (res.ok && data.admin) {
             storeUserData({ _id: data.admin._id, username: data.admin.username, email: data.admin.email }, true);
             showToast('Admin login successful', 'success');
-            setTimeout(() => { window.location.href = 'adm.html'; }, 700);
+            setTimeout(() => { window.location.href = 'admin_login.html'; }, 700);
           } else {
             showToast(data.error || 'Invalid admin credentials', 'error');
           }
