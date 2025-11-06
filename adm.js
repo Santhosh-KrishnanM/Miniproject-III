@@ -92,7 +92,7 @@ function renderBookings(bookings) {
   }
   
   tbody.innerHTML = (bookings || []).map(b => {
-    const username = (b.userId && (b.userId.username || b.userId)) || b.userId || 'Unknown';
+    const username = b.userId.username || 'Unknown';
     const destinationName = b.destination?.name || 'N/A';
     const start = b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A';
     const end = b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A';
