@@ -441,29 +441,58 @@
         </div>
       </div>
 
-      <!-- Booking Modal -->
-      <div id="bookingModal" class="modal" style="display:none;">
-        <div class="modal-content">
-          <span class="close-btn" onclick="closeBookingForm()">&times;</span>
-          <h2>New Booking</h2>
-          <label for="destinationSearch">Search Destination</label>
-          <input type="text" id="destinationSearch" placeholder="Type destination..." onkeyup="filterDestinationsList()">
-          <ul id="destinationResults" class="search-results"></ul>
-          <div class="form-group">
-            <label>Start Date</label>
-            <input type="date" id="startDate" min="">            
-          </div>
-          <div class="form-group">
-            <label>End Date</label>
-            <input type="date" id="endDate" min="">
-          </div>
-          <div class="form-group">
-            <label>Travelers</label>
-            <input type="number" id="travelers" min="1" value="1">
-          </div>
-          <button class="btn-primary" onclick="submitBooking()">Confirm Booking</button>
-        </div>
-      </div>
+      <!-- ✅ BOOKING MODAL (FIXED VERSION) -->
+<div id="bookingModal" class="modal" style="display:none;">
+  <div class="modal-content" style="position: relative; max-width: 500px;">
+    <span class="close-btn" onclick="closeBookingForm()">&times;</span>
+    <h2><i class="fas fa-calendar-plus"></i> New Booking</h2>
+    
+    <div class="form-group">
+      <label for="destinationSearch">
+        <i class="fas fa-map-marker-alt"></i> Search Destination *
+      </label>
+      <input 
+        type="text" 
+        id="destinationSearch" 
+        placeholder="Type destination name..." 
+        onkeyup="filterDestinationsList()"
+        autocomplete="off"
+        required
+      />
+      <ul id="destinationResults" class="search-results" style="display: none;"></ul>
+    </div>
+    
+    <div class="form-group">
+      <label for="startDate">
+        <i class="fas fa-calendar"></i> Start Date *
+      </label>
+      <input type="date" id="startDate" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="endDate">
+        <i class="fas fa-calendar"></i> End Date *
+      </label>
+      <input type="date" id="endDate" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="travelers">
+        <i class="fas fa-users"></i> Number of Travelers *
+      </label>
+      <input type="number" id="travelers" min="1" value="1" required>
+    </div>
+    
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+      <button class="btn-outline" onclick="closeBookingForm()">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+      <button class="btn-primary" onclick="submitBooking()">
+        <i class="fas fa-check"></i> Confirm Booking
+      </button>
+    </div>
+  </div>
+</div>
 
       <!-- Modify Booking Modal -->
       <div id="modifyBookingModal" class="modal" style="display:none;">
