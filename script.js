@@ -1,265 +1,333 @@
-// Navigation and Page Switching
-function openModal() {
-  document.getElementById("loginModal").style.display = "flex";
-}
+// Centralized client-side application logic for Travel Aura
+// Cleaned up duplicates, fixed inconsistent endpoints, and consolidated event wiring.
+// Use relative API endpoints so the app works in local and deployed environments.
 
-function closeModal() {
-  document.getElementById("loginModal").style.display = "none";
-}
-
-function showSignup() {
-  document.getElementById("loginForm").style.display = "none";
-  document.getElementById("signupForm").style.display = "block";
-}
-
-function showLogin() {
-  document.getElementById("signupForm").style.display = "none";
-  document.getElementById("loginForm").style.display = "block";
-}
-
-function showAdventurePage() {
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.querySelector('nav').style.display = 'none';
-  document.getElementById('adventurePage').style.display = 'block';
-  document.getElementById('foodPage').style.display = 'none';
-  document.getElementById('mainPage').style.display = 'none';
-}
-
-function showFoodPage() {
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.querySelector('nav').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'block';
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('mainPage').style.display = 'none';
-}
-
-function showMainPage() {
-  // This shows the public main page (slideshow and experiences)
-  document.querySelector('.slideshow-container').style.display = 'block';
-  document.querySelector('.experiences').style.display = 'block';
-  document.querySelector('nav').style.display = 'flex';
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'none';
-  document.getElementById('mainPage').style.display = 'none';
-}
-
-// Show main page after login/signup (personalized)
-function showMainPageAfterAuth(username) {
-  document.getElementById("mainPage").style.display = "flex";
-  document.querySelector('nav').style.display = 'none';
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'none';
-  document.getElementById("welcomePage").style.display = "none";
-  document.getElementById("mainWelcome").innerText = `Hello, ${username || 'User'}!`;
-  closeModal();
-}
-
-// Show main page (from adventure/food back)
-function showMainExperiences() {
-  document.getElementById("mainPage").style.display = "flex";
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'none';
-}
-
-// Logout and return to main experiences (public)
-function logout() {
-  // Clear stored user data
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('adminUser');
-  sessionStorage.removeItem('currentUser');
-  sessionStorage.removeItem('adminUser');
-  
-  // Reset UI to public state
-  document.getElementById("mainPage").style.display = "none";
-  document.getElementById("welcomePage").style.display = "none";
-  document.querySelector('nav').style.display = 'flex';
-  document.querySelector('.slideshow-container').style.display = 'block';
-  document.querySelector('.experiences').style.display = 'block';
-  
-  // If on dashboard page, redirect to main page
-  if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('admin_login.html')) {
-    window.location.href = 'travel.html';
+(function () {
+  // ------------------ Utilities ------------------
+  function getCurrentDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
-}
 
-// Validation helpers
-function showError(input, message) {
-  clearError(input);
-  let error = document.createElement("div");
-  error.className = "error-msg";
-  error.innerText = message;
-  input.parentElement.appendChild(error);
-  input.style.borderColor = "#ffcc00";
-}
+  function showToast(message, type = 'info') {
+    try {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.right = '20px';
+      toast.style.top = '20px';
+      toast.style.background = type === 'error' ? '#f44336' : (type === 'success' ? '#4caf50' : '#333');
+      toast.style.color = '#fff';
+      toast.style.padding = '10px 14px';
+      toast.style.borderRadius = '6px';
+      toast.style.zIndex = 99999;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    } catch (e) {
+      alert(message);
+    }
+  }
 
-function clearError(input) {
-  let parent = input.parentElement;
-  let error = parent.querySelector(".error-msg");
-  if (error) error.remove();
-  input.style.borderColor = "";
-}
+  // ------------------ Storage & Session ------------------
+  function storeUserData(userData, isAdmin = false) {
+    const enhancedUserData = {
+      ...userData,
+      loginTime: getCurrentDateTime(),
+      isLoggedIn: true,
+      userType: isAdmin ? 'admin' : 'tourist'
+    };
 
-// Show welcome page after login/signup (legacy, now unused)
-function showWelcomePage() {
-  document.getElementById("welcomePage").style.display = "flex";
-  document.querySelector('nav').style.display = 'none';
-  document.querySelector('.slideshow-container').style.display = 'none';
-  document.querySelector('.experiences').style.display = 'none';
-  document.getElementById('adventurePage').style.display = 'none';
-  document.getElementById('foodPage').style.display = 'none';
-  document.getElementById("mainPage").style.display = "none";
-  closeModal();
-}
+    const storageKey = isAdmin ? 'adminUser' : 'currentUser';
+    localStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
+    sessionStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
+    return enhancedUserData;
+  }
 
-// Utility function to get current date and time
-function getCurrentDateTime() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
+  function checkExistingLogin() {
+    // Prefer admin presence
+    const adminRaw = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
+    if (adminRaw) {
+      try {
+        const admin = JSON.parse(adminRaw);
+        if (admin.isLoggedIn && admin.userType === 'admin') {
+          return { ...admin, isAdmin: true };
+        }
+      } catch (e) {
+        localStorage.removeItem('adminUser'); sessionStorage.removeItem('adminUser');
+      }
+    }
+    const userRaw = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    if (userRaw) {
+      try {
+        const user = JSON.parse(userRaw);
+        if (user.isLoggedIn && user.userType === 'tourist') {
+          return { ...user, isAdmin: false };
+        }
+      } catch (e) {
+        localStorage.removeItem('currentUser'); sessionStorage.removeItem('currentUser');
+      }
+    }
+    return null;
+  }
 
-// Enhanced user data storage
-function storeUserData(userData, isAdmin = false) {
-  const enhancedUserData = {
-    ...userData,
-    loginTime: getCurrentDateTime(),
-    isLoggedIn: true,
-    userType: isAdmin ? 'admin' : 'tourist'
+  function refreshSession() {
+    const user = checkExistingLogin();
+    if (user) {
+      user.lastActivity = getCurrentDateTime();
+      const storageKey = user.isAdmin ? 'adminUser' : 'currentUser';
+      localStorage.setItem(storageKey, JSON.stringify(user));
+      sessionStorage.setItem(storageKey, JSON.stringify(user));
+    }
+  }
+
+  // ------------------ DOM Helpers & Validation ------------------
+  function showError(input, message) {
+    clearError(input);
+    if (!input || !input.parentElement) return;
+    let error = document.createElement("div");
+    error.className = "error-msg";
+    error.innerText = message;
+    input.parentElement.appendChild(error);
+    input.style.borderColor = "#ffcc00";
+  }
+
+  function clearError(input) {
+    if (!input || !input.parentElement) return;
+    let parent = input.parentElement;
+    let error = parent.querySelector(".error-msg");
+    if (error) error.remove();
+    input.style.borderColor = "";
+  }
+
+  // ------------------ Modal controls ------------------
+  function openModal() {
+    const modal = document.getElementById("loginModal");
+    if (modal) {
+      modal.style.display = "flex";
+      setTimeout(() => {
+        const firstInput = modal.querySelector('input');
+        if (firstInput) firstInput.focus();
+      }, 100);
+    }
+  }
+
+  function closeModal() {
+    const modal = document.getElementById("loginModal");
+    if (modal) {
+      modal.style.display = "none";
+      document.querySelectorAll(".error-msg").forEach(err => err.remove());
+      document.querySelectorAll("#loginForm input, #signupForm input").forEach(i => i.style.borderColor = "");
+    }
+  }
+
+  // Expose open/close globally for inline handlers if any exist
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+
+  // ------------------ Navigation helpers ------------------
+  function showAdventurePage() {
+    const sc = document.querySelector('.slideshow-container');
+    const ex = document.querySelector('.experiences');
+    if (sc) sc.style.display = 'none';
+    if (ex) ex.style.display = 'none';
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'none';
+    const adv = document.getElementById('adventurePage');
+    if (adv) adv.style.display = 'block';
+    const food = document.getElementById('foodPage');
+    if (food) food.style.display = 'none';
+    const main = document.getElementById('mainPage');
+    if (main) main.style.display = 'none';
+  }
+
+  function showFoodPage() {
+    const sc = document.querySelector('.slideshow-container');
+    const ex = document.querySelector('.experiences');
+    if (sc) sc.style.display = 'none';
+    if (ex) ex.style.display = 'none';
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'none';
+    const food = document.getElementById('foodPage');
+    if (food) food.style.display = 'block';
+    const adv = document.getElementById('adventurePage');
+    if (adv) adv.style.display = 'none';
+    const main = document.getElementById('mainPage');
+    if (main) main.style.display = 'none';
+  }
+
+  function showMainPage() {
+    const sc = document.querySelector('.slideshow-container');
+    const ex = document.querySelector('.experiences');
+    if (sc) sc.style.display = 'block';
+    if (ex) ex.style.display = 'block';
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'flex';
+    const adv = document.getElementById('adventurePage');
+    if (adv) adv.style.display = 'none';
+    const food = document.getElementById('foodPage');
+    if (food) food.style.display = 'none';
+    const main = document.getElementById('mainPage');
+    if (main) main.style.display = 'none';
+  }
+
+  function showMainPageAfterAuth(username) {
+    const main = document.getElementById("mainPage");
+    if (main) main.style.display = "flex";
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'none';
+    const sc = document.querySelector('.slideshow-container');
+    if (sc) sc.style.display = 'none';
+    const ex = document.querySelector('.experiences');
+    if (ex) ex.style.display = 'none';
+    const adv = document.getElementById('adventurePage');
+    if (adv) adv.style.display = 'none';
+    const food = document.getElementById('foodPage');
+    if (food) food.style.display = 'none';
+    const welcome = document.getElementById("welcomePage");
+    if (welcome) welcome.style.display = "none";
+    const mainWelcome = document.getElementById("mainWelcome");
+    if (mainWelcome) mainWelcome.innerText = `Hello, ${username || 'User'}!`;
+    closeModal();
+  }
+
+  function showMainExperiences() {
+    const main = document.getElementById("mainPage");
+    if (main) main.style.display = "flex";
+    const adv = document.getElementById('adventurePage');
+    if (adv) adv.style.display = 'none';
+    const food = document.getElementById('foodPage');
+    if (food) food.style.display = 'none';
+  }
+
+  function logout() {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('adminUser');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('adminUser');
+
+    const main = document.getElementById("mainPage");
+    if (main) main.style.display = "none";
+    const welcome = document.getElementById("welcomePage");
+    if (welcome) welcome.style.display = "none";
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'flex';
+    const sc = document.querySelector('.slideshow-container');
+    if (sc) sc.style.display = 'block';
+    const ex = document.querySelector('.experiences');
+    if (ex) ex.style.display = 'block';
+
+    if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('adm.html')) {
+      window.location.href = 'travel.html';
+    }
+  }
+
+  // Expose navigation helpers
+  window.showAdventurePage = showAdventurePage;
+  window.showFoodPage = showFoodPage;
+  window.showMainPage = showMainPage;
+  window.showMainPageAfterAuth = showMainPageAfterAuth;
+  window.showMainExperiences = showMainExperiences;
+  window.logout = logout;
+
+  // ------------------ Booking redirect helpers ------------------
+  function afterSuccessfulLoginRedirect() {
+    const bookingDest = localStorage.getItem('bookingDestination');
+    const redirectTo = bookingDest ? 'dashboard.html?openBooking=true' : 'dashboard.html';
+    window.location.href = redirectTo;
+  }
+
+  function tryOpenBookingFromSavedDestination() {
+    const params = new URLSearchParams(window.location.search);
+    const openBooking = params.get('openBooking');
+    if (!openBooking) return;
+
+    const bookingDestStr = localStorage.getItem('bookingDestination');
+    if (!bookingDestStr) return;
+
+    try {
+      const bookingDest = JSON.parse(bookingDestStr);
+      if (typeof window.openBookingForDestination === 'function') {
+        window.openBookingForDestination(bookingDest.id);
+      } else {
+        window.location.href = `destination-details.html?id=${bookingDest.id}`;
+      }
+    } catch (e) {
+      console.warn('Could not parse bookingDestination', e);
+    }
+  }
+
+  // Provide function for other scripts to call
+  window.openBookingForDestination = function (destinationId) {
+    localStorage.setItem('bookingDestination', JSON.stringify({ id: destinationId }));
+    if (window.location.pathname.includes('dashboard.html')) {
+      const event = new Event('openBookingFromScript');
+      window.dispatchEvent(event);
+    } else {
+      window.location.href = 'dashboard.html?openBooking=true';
+    }
   };
 
-  const storageKey = isAdmin ? 'adminUser' : 'currentUser';
-  
-  // ✅ Store in both localStorage and sessionStorage
-  localStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
-  sessionStorage.setItem(storageKey, JSON.stringify(enhancedUserData));
+  // ------------------ Main DOM wiring (single consolidated listener) ------------------
+  document.addEventListener('DOMContentLoaded', function () {
+    // Console info
+    console.log(`
+🌴 Tamil Nadu Tourism Application
+📅 Current Date: ${getCurrentDateTime()}
+👨‍💻 Developer: sk-krishnan05
+🚀 Version: 2.0.0
+    `);
 
-  return enhancedUserData;
-}
+    // Wire up login/signup forms if present (use relative endpoints)
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const adminLoginForm = document.getElementById('adminLoginForm');
 
+    // Reuse buttons if present
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
 
-// Check if user is already logged in
-function checkExistingLogin() {
-  // Check for admin first
-  const adminData = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
-  if (adminData) {
-    try {
-      const admin = JSON.parse(adminData);
-      if (admin.isLoggedIn && admin.userType === 'admin') {
-        console.log('Admin already logged in:', admin.username);
-        return { ...admin, isAdmin: true };
-      }
-    } catch (error) {
-      console.error('Error parsing stored admin data:', error);
-      localStorage.removeItem('adminUser');
-      sessionStorage.removeItem('adminUser');
-    }
-  }
+    if (signupBtn && signupForm) {
+      signupBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const username = document.getElementById("signupUsername");
+        const email = document.getElementById("signupEmail");
+        const phone = document.getElementById("signupPhone");
+        const address = document.getElementById("signupAddress");
+        const password = document.getElementById("signupPassword");
 
-  // Check for tourist user
-  const userData = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-  if (userData) {
-    try {
-      const user = JSON.parse(userData);
-      if (user.isLoggedIn && user.userType === 'tourist') {
-        console.log('User already logged in:', user.username);
-        return { ...user, isAdmin: false };
-      }
-    } catch (error) {
-      console.error('Error parsing stored user data:', error);
-      localStorage.removeItem('currentUser');
-      sessionStorage.removeItem('currentUser');
-    }
-  }
-  return null;
-}
+        // Clear previous
+        [username, email, phone, address, password].forEach(clearError);
 
-// Signup validation & API
-document.addEventListener('DOMContentLoaded', function() {
-  // Check if user is already logged in
-  const existingUser = checkExistingLogin();
-  if (existingUser && !window.location.pathname.includes('dashboard.html') && !window.location.pathname.includes('admin_login.html')) {
-    console.log('Welcome back,', existingUser.username);
-  }
-  
-  // Signup event listener
-  const signupBtn = document.getElementById("signupBtn");
-  if (signupBtn) {
-    signupBtn.addEventListener("click", function(e) {
-      e.preventDefault();
-      
-      let username = document.getElementById("signupUsername");
-      let email = document.getElementById("signupEmail");
-      let phone = document.getElementById("signupPhone");
-      let address = document.getElementById("signupAddress");
-      let password = document.getElementById("signupPassword");
-      let valid = true;
+        let valid = true;
+        if (!username.value.trim()) { showError(username, "Username is required."); valid = false; }
+        else if (username.value.trim().length < 3) { showError(username, "Username must be at least 3 characters."); valid = false; }
 
-      // Clear previous errors
-      [username, email, phone, address, password].forEach(clearError);
+        if (!email.value.trim()) { showError(email, "Email is required."); valid = false; }
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { showError(email, "Please enter a valid email address."); valid = false; }
 
-      // Validation
-      if (!username.value.trim()) {
-        showError(username, "Username is required.");
-        valid = false;
-      } else if (username.value.trim().length < 3) {
-        showError(username, "Username must be at least 3 characters.");
-        valid = false;
-      }
+        if (!phone.value.trim()) { showError(phone, "Phone number is required."); valid = false; }
+        else if (!/^\d{10}$/.test(phone.value.trim())) { showError(phone, "Enter a valid 10-digit phone number."); valid = false; }
 
-      if (!email.value.trim()) {
-        showError(email, "Email is required.");
-        valid = false;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
-        showError(email, "Please enter a valid email address.");
-        valid = false;
-      }
+        if (!address.value.trim()) { showError(address, "Address is required."); valid = false; }
+        else if (address.value.trim().length < 10) { showError(address, "Address must be at least 10 characters."); valid = false; }
 
-      if (!phone.value.trim()) {
-        showError(phone, "Phone number is required.");
-        valid = false;
-      } else if (!/^\d{10}$/.test(phone.value.trim())) {
-        showError(phone, "Enter a valid 10-digit phone number.");
-        valid = false;
-      }
+        if (!password.value.trim()) { showError(password, "Password is required."); valid = false; }
+        else if (password.value.length < 6) { showError(password, "Password must be at least 6 characters."); valid = false; }
 
-      if (!address.value.trim()) {
-        showError(address, "Address is required.");
-        valid = false;
-      } else if (address.value.trim().length < 10) {
-        showError(address, "Address must be at least 10 characters.");
-        valid = false;
-      }
+        if (!valid) return;
 
-      if (!password.value.trim()) {
-        showError(password, "Password is required.");
-        valid = false;
-      } else if (password.value.length < 6) {
-        showError(password, "Password must be at least 6 characters.");
-        valid = false;
-      }
-
-      if (valid) {
-        // Disable button to prevent double submission
         signupBtn.disabled = true;
         signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing up...';
-        
-        // Call backend API
-        fetch("https://travel-aura-enb6.onrender.com/signup", {
+
+        fetch('/signup', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
             username: username.value.trim(),
             email: email.value.trim(),
@@ -268,332 +336,197 @@ document.addEventListener('DOMContentLoaded', function() {
             password: password.value
           })
         })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          if (data.message === 'User registered!' && data.user) {
-            // Store user data with real _id
-            const userData = storeUserData({
-              _id: data.user._id,
-              username: data.user.username,
-              email: data.user.email,
-              phone: data.user.phone,
-              address: data.user.address,
-              registrationDate: getCurrentDateTime()
-            }, false);
-            
-            alert(`Welcome ${userData.username}! Registration successful. Redirecting to dashboard...`);
+          .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+            return data;
+          })
+          .then(data => {
+            if (data.message === 'User registered!' && data.user) {
+              const userData = storeUserData({
+                _id: data.user._id,
+                username: data.user.username,
+                email: data.user.email,
+                phone: data.user.phone,
+                address: data.user.address,
+                registrationDate: getCurrentDateTime()
+              }, false);
+              showToast(`Welcome ${userData.username}! Registration successful.`, 'success');
+              setTimeout(() => afterSuccessfulLoginRedirect(), 1200);
+            } else {
+              showToast(data.message || 'Registration failed', 'error');
+            }
+          })
+          .catch(err => {
+            console.error('Signup error:', err);
+            showToast('Signup failed. Please try again.', 'error');
+          })
+          .finally(() => {
+            signupBtn.disabled = false;
+            signupBtn.innerHTML = 'Sign Up';
+          });
+      });
+    }
 
-            setTimeout(() => {
-              window.location.href = 'dashboard.html';
-            }, 1500);
-          } else {
-            alert(data.message || 'Registration failed. Please try again.');
-          }
-        })
-        .catch(error => {
-          console.error('Signup error:', error);
-          alert('Signup failed. Please check your connection and try again.');
-        })
-        .finally(() => {
-          // Re-enable button
-          signupBtn.disabled = false;
-          signupBtn.innerHTML = 'Sign Up';
-        });
-      }
-    });
-  }
+    if (loginBtn && loginForm) {
+      loginBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const usernameEl = document.getElementById("loginUsername");
+        const passwordEl = document.getElementById("loginPassword");
+        clearError(usernameEl); clearError(passwordEl);
 
-  // Login event listener - UNIFIED FOR BOTH ADMIN AND TOURIST
-  const loginBtn = document.getElementById("loginBtn");
-  if (loginBtn) {
-    loginBtn.addEventListener("click", function(e) {
-      e.preventDefault();
-      
-      let username = document.getElementById("loginUsername");
-      let password = document.getElementById("loginPassword");
-      let valid = true;
+        let valid = true;
+        if (!usernameEl.value.trim()) { showError(usernameEl, "Username is required."); valid = false; }
+        if (!passwordEl.value.trim()) { showError(passwordEl, "Password is required."); valid = false; }
+        if (!valid) return;
 
-      // Clear previous errors
-      clearError(username);
-      clearError(password);
-
-      // Validation
-      if (!username.value.trim()) {
-        showError(username, "Username is required.");
-        valid = false;
-      }
-
-      if (!password.value.trim()) {
-        showError(password, "Password is required.");
-        valid = false;
-      }
-
-      if (valid) {
-        // Disable button to prevent double submission
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-        
-        // ✅ Try admin login first
-        fetch("https://travel-aura-enb6.onrender.com/admin/login", {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            username: username.value.trim(),
-            password: password.value
-          })
-        })
-        .then(response => {
-          if (response.ok) {
-            return response.json().then(data => ({ success: true, data, isAdmin: true }));
-          } else {
-            // Admin login failed, try tourist login
-            return fetch("https://travel-aura-enb6.onrender.com/login", {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                username: username.value.trim(),
-                password: password.value
-              })
-            }).then(touristResponse => {
-              if (touristResponse.ok) {
-                return touristResponse.json().then(data => ({ success: true, data, isAdmin: false }));
-              } else {
-                return { success: false };
-              }
-            });
-          }
-        })
-        .then(result => {
-          if (result.success) {
-            const userData = result.data;
-            const isAdmin = result.isAdmin;
 
-            if (isAdmin && userData.admin) {
-              // Admin login successful
-              const adminData = storeUserData({
-                _id: userData.admin._id,
-                username: userData.admin.username,
-                email: userData.admin.email,
+        // Try admin login first, then tourist if admin fails
+        fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ username: usernameEl.value.trim(), password: passwordEl.value })
+        })
+          .then(async adminRes => {
+            if (adminRes.ok) {
+              const data = await adminRes.json().catch(() => ({}));
+              return { success: true, isAdmin: true, data };
+            }
+            // admin failed -> try tourist
+            const tourRes = await fetch('/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ username: usernameEl.value.trim(), password: passwordEl.value })
+            });
+            if (tourRes.ok) {
+              const data = await tourRes.json().catch(() => ({}));
+              return { success: true, isAdmin: false, data };
+            }
+            return { success: false };
+          })
+          .then(result => {
+            if (!result.success) {
+              showToast('Invalid credentials. Please try again.', 'error');
+              return;
+            }
+            const isAdmin = result.isAdmin;
+            const payload = result.data;
+            if (isAdmin && payload.admin) {
+              const admin = storeUserData({
+                _id: payload.admin._id,
+                username: payload.admin.username,
+                email: payload.admin.email,
                 lastLogin: getCurrentDateTime()
               }, true);
-
-              alert(`Welcome back Admin ${adminData.username}! Redirecting to admin dashboard...`);
-              
-              setTimeout(() => {
-                window.location.href = 'admin_login.html';
-              }, 1500);
-
-            } else if (!isAdmin && userData.user) {
-              // Tourist login successful
-              const touristData = storeUserData({
-                _id: userData.user._id,
-                username: userData.user.username,
-                email: userData.user.email,
-                phone: userData.user.phone,
-                address: userData.user.address,
+              showToast(`Welcome back Admin ${admin.username}!`, 'success');
+              setTimeout(() => { window.location.href = 'adm.html'; }, 900);
+            } else if (!isAdmin && payload.user) {
+              const tourist = storeUserData({
+                _id: payload.user._id,
+                username: payload.user.username,
+                email: payload.user.email,
+                phone: payload.user.phone,
+                address: payload.user.address,
                 lastLogin: getCurrentDateTime()
               }, false);
-
-              alert(`Welcome back ${touristData.username}! Redirecting to dashboard...`);
-              
-              setTimeout(() => {
-                window.location.href = 'dashboard.html';
-              }, 1500);
+              showToast(`Welcome back ${tourist.username}!`, 'success');
+              setTimeout(() => afterSuccessfulLoginRedirect(), 900);
             } else {
-              alert('Login failed. Invalid response from server.');
+              showToast('Login failed. Invalid server response.', 'error');
             }
+          })
+          .catch(err => {
+            console.error('Login error:', err);
+            showToast('Login failed. Please check your connection and try again.', 'error');
+          })
+          .finally(() => {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'Login';
+          });
+      });
+    }
+
+    if (adminLoginForm) {
+      adminLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('adminUsername')?.value?.trim();
+        const password = document.getElementById('adminPassword')?.value;
+        if (!username || !password) { showToast('Enter admin credentials', 'error'); return; }
+        try {
+          const res = await fetch('/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.admin) {
+            storeUserData({ _id: data.admin._id, username: data.admin.username, email: data.admin.email }, true);
+            showToast('Admin login successful', 'success');
+            setTimeout(() => { window.location.href = 'adm.html'; }, 700);
           } else {
-            alert('Invalid credentials. Please try again.');
+            showToast(data.error || 'Invalid admin credentials', 'error');
           }
-        })
-        .catch(error => {
-          console.error('Login error:', error);
-          alert('Login failed. Please check your connection and try again.');
-        })
-        .finally(() => {
-          // Re-enable button
-          loginBtn.disabled = false;
-          loginBtn.innerHTML = 'Login';
-        });
-      }
-    });
-  }
-
-  // Remove error message on input in both forms
-  document.querySelectorAll("#loginForm input, #signupForm input").forEach((input) => {
-    input.addEventListener("input", function () {
-      clearError(input);
-    });
-  });
-
-  // Add Enter key support for forms
-  document.querySelectorAll("#loginForm input").forEach((input) => {
-    input.addEventListener("keypress", function(e) {
-      if (e.key === 'Enter') {
-        document.getElementById("loginBtn").click();
-      }
-    });
-  });
-
-  document.querySelectorAll("#signupForm input").forEach((input) => {
-    input.addEventListener("keypress", function(e) {
-      if (e.key === 'Enter') {
-        document.getElementById("signupBtn").click();
-      }
-    });
-  });
-});
-
-// Enhanced modal functionality
-function openModal() {
-  const modal = document.getElementById("loginModal");
-  if (modal) {
-    modal.style.display = "flex";
-    // Focus on first input
-    setTimeout(() => {
-      const firstInput = modal.querySelector('input');
-      if (firstInput) firstInput.focus();
-    }, 100);
-  }
-}
-
-function closeModal() {
-  const modal = document.getElementById("loginModal");
-  if (modal) {
-    modal.style.display = "none";
-    // Clear any error messages
-    document.querySelectorAll(".error-msg").forEach(error => error.remove());
-    // Reset input styles
-    document.querySelectorAll("#loginForm input, #signupForm input").forEach(input => {
-      input.style.borderColor = "";
-    });
-  }
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(e) {
-  const modal = document.getElementById("loginModal");
-  if (modal && e.target === modal) {
-    closeModal();
-  }
-});
-
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeModal();
-  }
-});
-
-// Enhanced page navigation with user state management
-function navigateToPage(pageName) {
-  const user = checkExistingLogin();
-  
-  switch(pageName) {
-    case 'adventure':
-      showAdventurePage();
-      break;
-    case 'food':
-      showFoodPage();
-      break;
-    case 'dashboard':
-      if (user) {
-        if (user.isAdmin) {
-          window.location.href = 'admin_login.html';
-        } else {
-          window.location.href = 'dashboard.html';
+        } catch (err) {
+          console.error('Admin login error', err);
+          showToast('Admin login error', 'error');
         }
-      } else {
-        openModal();
-      }
-      break;
-    case 'home':
-      showMainPage();
-      break;
-    default:
-      console.log('Unknown page:', pageName);
+      });
+    }
+
+    // Input clear on typing
+    document.querySelectorAll("#loginForm input, #signupForm input").forEach((input) => {
+      input.addEventListener("input", function () { clearError(input); });
+    });
+
+    // Enter support for login/signup
+    document.querySelectorAll("#loginForm input").forEach((input) => {
+      input.addEventListener("keypress", function (e) {
+        if (e.key === 'Enter') {
+          const btn = document.getElementById("loginBtn");
+          if (btn) btn.click();
+        }
+      });
+    });
+    document.querySelectorAll("#signupForm input").forEach((input) => {
+      input.addEventListener("keypress", function (e) {
+        if (e.key === 'Enter') {
+          const btn = document.getElementById("signupBtn");
+          if (btn) btn.click();
+        }
+      });
+    });
+
+    // Wire modal close on outside click / ESC
+    document.addEventListener('click', function (e) {
+      const modal = document.getElementById("loginModal");
+      if (modal && e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Try auto-open booking if redirected after login
+    tryOpenBookingFromSavedDestination();
+
+    // Periodic session refresh
+    setInterval(refreshSession, 5 * 60 * 1000);
+    document.addEventListener('click', refreshSession);
+    document.addEventListener('keypress', refreshSession);
+  });
+
+  // ------------------ Exports for tests / other scripts ------------------
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      checkExistingLogin,
+      storeUserData,
+      getCurrentDateTime,
+      logout,
+      showAdventurePage,
+      showFoodPage,
+      showMainPage,
+      openBookingForDestination: window.openBookingForDestination
+    };
   }
-}
-
-// Session management
-function refreshSession() {
-  const user = checkExistingLogin();
-  if (user) {
-    // Update last activity time
-    user.lastActivity = getCurrentDateTime();
-    const storageKey = user.isAdmin ? 'adminUser' : 'currentUser';
-    localStorage.setItem(storageKey, JSON.stringify(user));
-    sessionStorage.setItem(storageKey, JSON.stringify(user));
-  }
-}
-
-// Refresh session every 5 minutes
-setInterval(refreshSession, 5 * 60 * 1000);
-
-// Activity tracking
-document.addEventListener('click', refreshSession);
-document.addEventListener('keypress', refreshSession);
-
-// Console welcome message for developers
-console.log(`
-🌴 Tamil Nadu Tourism Application
-📅 Current Date: ${getCurrentDateTime()}
-👨‍💻 Developer: sk-krishnan05
-🚀 Version: 2.0.0
-
-Welcome to the Tamil Nadu Tourism web application!
-This application features unified login for both admin and tourist users.
-
-Features:
-- Unified Login System (Admin + Tourist)
-- User Registration & Login
-- Interactive Dashboard
-- Admin Dashboard
-- Destination Management
-- Booking System
-- Responsive Design
-- Session Management
-
-For support, contact the development team.
-`);
-
-// Export functions for dashboard integration
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    checkExistingLogin,
-    storeUserData,
-    getCurrentDateTime,
-    logout,
-    showAdventurePage,
-    showFoodPage
-  };
-}
-
-// Global error handler
-window.addEventListener('error', function(e) {
-  console.error('Application Error:', e.error);
-});
-
-// Handle page visibility changes (useful for session management)
-document.addEventListener('visibilitychange', function() {
-  if (!document.hidden) {
-    // Page became visible, refresh session
-    refreshSession();
-  }
-});
-
-// Initialize application when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Tamil Nadu Tourism App initialized at:', getCurrentDateTime());
-});
+})();

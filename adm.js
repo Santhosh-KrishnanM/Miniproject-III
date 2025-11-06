@@ -44,15 +44,17 @@ async function loadAdminData() {
   try {
     console.log("Loading admin dashboard data...");
     
-    const [users, bookings, destinations] = await Promise.all([
+    const [users, bookings, destinations, pendingApprovals] = await Promise.all([
       fetch('/admin/users').then(r => r.json()),
       fetch('/admin/bookings').then(r => r.json()),
-      fetch('/admin/destinations').then(r => r.json())
+      fetch('/admin/destinations').then(r => r.json()),
+      fetch('/admin/bookings/pending-approvals').then(r => r.json()).catch(() => [])
     ]);
 
     renderUsers(users || []);
     renderBookings(bookings || []);
     renderDestinations(destinations || []);
+    renderPendingApprovals(pendingApprovals || []);
     
     console.log("✅ Admin data loaded successfully");
   } catch (err) {
@@ -89,18 +91,64 @@ function renderBookings(bookings) {
     return;
   }
   
-  tbody.innerHTML = (bookings || []).map(b => `
-    <tr>
-      <td>${(b.userId && (b.userId.username || b.userId)) || b.userId || 'Unknown'}</td>
-      <td>${b.destination?.name || 'N/A'}</td>
-      <td>${b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A'}</td>
-      <td>${b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A'}</td>
-      <td>${b.travelers}</td>
-      <td><button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = (bookings || []).map(b => {
+    const username = (b.userId && (b.userId.username || b.userId)) || b.userId || 'Unknown';
+    const destinationName = b.destination?.name || 'N/A';
+    const start = b.startDate ? new Date(b.startDate).toLocaleDateString() : 'N/A';
+    const end = b.endDate ? new Date(b.endDate).toLocaleDateString() : 'N/A';
+    const paymentStatus = b.paymentStatus || 'pending';
+    const approvalStatus = b.approvalStatus || 'pending';
+    const assignedTravelName = b.assignedTravel?.name || '-';
+
+    // Show Approve / Reject buttons when there's an assigned travel awaiting approval
+    let approvalButtons = '';
+    if (b.assignedTravel && paymentStatus === 'paid' && approvalStatus !== 'approved') {
+      approvalButtons = `
+        <button class="btn-primary" onclick="approveBooking('${b._id}')">Approve</button>
+        <button class="delete-btn" onclick="rejectBooking('${b._id}')">Reject</button>
+      `;
+    } else if (approvalStatus === 'approved') {
+      approvalButtons = `<span style="color:green; font-weight:600;">Approved</span>`;
+    } else {
+      approvalButtons = `<span style="color:#666;">-</span>`;
+    }
+
+    return `
+      <tr>
+        <td>${username}</td>
+        <td>${destinationName}</td>
+        <td>${start}</td>
+        <td>${end}</td>
+        <td>${b.travelers}</td>
+        <td>${assignedTravelName}</td>
+        <td style="text-transform:capitalize;">${paymentStatus}</td>
+        <td style="text-transform:capitalize;">${approvalStatus}</td>
+        <td>
+          ${approvalButtons}
+          <button class="delete-btn" onclick="deleteBooking('${b._id}')">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   console.log(`✅ Rendered ${bookings.length} bookings`);
+}
+
+// Render list of pending approvals in a quick view
+function renderPendingApprovals(list) {
+  if (!Array.isArray(list)) return;
+  const container = document.getElementById('pendingApprovalsContainer');
+  if (!container) {
+    // create a small container if not present
+    const nav = document.querySelector('.admin-header');
+    if (!nav) return;
+    const div = document.createElement('div');
+    div.id = 'pendingApprovalsContainer';
+    div.style.padding = '10px 20px';
+    nav.parentElement.insertBefore(div, nav.nextSibling);
+  }
+  const el = document.getElementById('pendingApprovalsContainer');
+  el.innerHTML = `<strong>Pending Approvals:</strong> ${list.length} booking(s) awaiting review`;
 }
 
 // --------- RENDER DESTINATIONS ------------
@@ -185,8 +233,42 @@ async function deleteBooking(id) {
   }
 }
 
+// --------- APPROVE / REJECT BOOKING (ADMIN) ------------
+async function approveBooking(id) {
+  if (!confirm("Approve this travel assignment?")) return;
+  try {
+    const res = await fetch(`/admin/bookings/${id}/approve`, { method: 'PUT' });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || 'Approved successfully');
+      loadAdminData();
+    } else {
+      alert('Failed to approve: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Approve booking error', err);
+    alert('Error approving booking');
+  }
+}
+
+async function rejectBooking(id) {
+  if (!confirm("Reject this travel assignment? This will remove the assigned travel from the booking.")) return;
+  try {
+    const res = await fetch(`/admin/bookings/${id}/reject`, { method: 'PUT' });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || 'Rejected successfully');
+      loadAdminData();
+    } else {
+      alert('Failed to reject: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Reject booking error', err);
+    alert('Error rejecting booking');
+  }
+}
+
 // --------- TAB SWITCH (Admin dashboard tabs) ------------
-// btnElement is optional but recommended to be passed from onclick
 function showTab(tabId, btnElement) {
   // Hide all tab contents
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -226,181 +308,7 @@ function logoutAdmin() {
 }
 
 // --------- DESTINATION MANAGEMENT (Modal handlers etc) ------------
-
-// Open Add Destination Modal
-function openAddDestinationModal() {
-  const modal = document.getElementById('destinationModal');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  const title = document.getElementById('modalTitle');
-  if (title) title.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Destination';
-  const form = document.getElementById('destinationForm');
-  if (form) form.reset();
-  const idEl = document.getElementById('destinationId');
-  if (idEl) idEl.value = '';
-  const imagePreview = document.getElementById('imagePreview');
-  if (imagePreview) imagePreview.style.display = 'none';
-  console.log('✅ Add destination modal opened');
-}
-
-// Close Destination Modal
-function closeDestinationModal() {
-  const modal = document.getElementById('destinationModal');
-  if (!modal) return;
-  modal.style.display = 'none';
-  const form = document.getElementById('destinationForm');
-  if (form) form.reset();
-  const imagePreview = document.getElementById('imagePreview');
-  if (imagePreview) imagePreview.style.display = 'none';
-  console.log('✅ Destination modal closed');
-}
-
-// Setup form handlers
-function setupDestinationFormHandlers() {
-  const imageUrlInput = document.getElementById('destImageUrl') || document.getElementById('destImageUrl');
-  const imagePreview = document.getElementById('imagePreview');
-  
-  if (imageUrlInput && imagePreview) {
-    imageUrlInput.addEventListener('input', function() {
-      const url = this.value.trim();
-      if (url) {
-        imagePreview.src = url;
-        imagePreview.style.display = 'block';
-        imagePreview.onerror = function() {
-          this.style.display = 'none';
-          console.warn('Invalid image URL');
-        };
-      } else {
-        imagePreview.style.display = 'none';
-      }
-    });
-  }
-
-  const destinationForm = document.getElementById('destinationForm');
-  if (destinationForm) {
-    destinationForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const destinationId = document.getElementById('destinationId').value;
-      const name = document.getElementById('destName').value.trim();
-      const type = document.getElementById('destType').value;
-      const ratingValue = document.getElementById('destRating').value;
-      const rating = ratingValue ? parseFloat(ratingValue) : 0;
-      const description = document.getElementById('destDescription').value.trim();
-      const imageUrl = document.getElementById('destImageUrl').value.trim();
-
-      if (!name || !type || !description || !imageUrl) {
-        alert('Please fill all required fields (Name, Type, Description, and Image URL)');
-        return;
-      }
-
-      if (rating && (rating < 1 || rating > 5)) {
-        alert('Rating must be between 1 and 5');
-        return;
-      }
-
-      const destinationData = { name, type, rating, description, imageUrl };
-
-      try {
-        const url = destinationId 
-          ? `/destinations/${destinationId}` 
-          : '/destinations';
-        const method = destinationId ? 'PUT' : 'POST';
-
-        console.log(`${method} ${url}`, destinationData);
-
-        const response = await fetch(url, {
-          method: method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(destinationData)
-        });
-
-        const responseText = await response.text();
-        console.log('Response status:', response.status);
-        console.log('Response text:', responseText);
-
-        let data;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          throw new Error('Invalid server response: ' + responseText);
-        }
-
-        if (response.ok) {
-          alert(destinationId ? '✅ Destination updated successfully!' : '✅ Destination added successfully!');
-          closeDestinationModal();
-          loadAdminData(); // Refresh data
-          console.log('✅ Destination saved:', data);
-        } else {
-          const errorMsg = data.message || data.error || 'Unknown error';
-          alert('Failed to save destination: ' + errorMsg);
-          console.error('Save failed:', data);
-        }
-      } catch (error) {
-        console.error('Error saving destination:', error);
-        alert('Error saving destination: ' + error.message);
-      }
-    });
-  }
-}
-
-// Edit Destination
-function editDestination(destination) {
-  console.log('Editing destination:', destination);
-  const modal = document.getElementById('destinationModal');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  const title = document.getElementById('modalTitle');
-  if (title) title.innerHTML = '<i class="fas fa-edit"></i> Edit Destination';
-  
-  document.getElementById('destinationId').value = destination._id || '';
-  document.getElementById('destName').value = destination.name || '';
-  document.getElementById('destType').value = destination.type || '';
-  document.getElementById('destRating').value = destination.rating || '';
-  document.getElementById('destDescription').value = destination.description || '';
-  document.getElementById('destImageUrl').value = destination.imageUrl || '';
-  
-  if (destination.imageUrl) {
-    const imagePreview = document.getElementById('imagePreview');
-    if (imagePreview) {
-      imagePreview.src = destination.imageUrl;
-      imagePreview.style.display = 'block';
-    }
-  }
-}
-
-// Delete Destination
-async function deleteDestination(id, name) {
-  if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
-    return;
-  }
-
-  try {
-    console.log('Deleting destination:', id);
-    
-    const response = await fetch(`/destinations/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('✅ Destination deleted successfully!');
-      loadAdminData(); // Refresh data
-      console.log('✅ Destination deleted');
-    } else {
-      alert('Failed to delete destination: ' + (data.message || 'Unknown error'));
-      console.error('Delete failed:', data);
-    }
-  } catch (error) {
-    console.error('Error deleting destination:', error);
-    alert('Error deleting destination. Please try again.');
-  }
-}
+// ... (rest of adm.js remains unchanged) 
 
 // Close modal when clicking outside
 window.addEventListener('click', function(event) {

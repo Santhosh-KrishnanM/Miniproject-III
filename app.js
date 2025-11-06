@@ -16,8 +16,8 @@ const Page = require('./Page');
 const bcrypt = require('bcryptjs');
 
 // New models
-const Payment = require('./Payment');       // new file
-const Travel = require('./travels');        // existing travels.js
+const Payment = require('./Payment');       // payment model (single declaration)
+const Travel = require('./travels');        // travel vehicles model
 
 const app = express();
 app.use(cors({
@@ -541,7 +541,7 @@ app.get('/travels', async (req, res) => {
   }
 });
 
-/* -------------------- NEW: Payments endpoint (simulated) -------------------- */
+/* -------------------- NEW: Payments endpoint (simulated, updated) -------------------- */
 /*
   Expected body:
   {
@@ -576,7 +576,12 @@ app.post('/api/payments', async (req, res) => {
     });
     await payment.save();
 
-    // If travel selected, attach travel details
+    // Attach payment reference to booking
+    booking.payments = booking.payments || [];
+    booking.payments.push(payment._id);
+    booking.paymentStatus = 'paid';
+
+    // If travel selected, attach travel details but do NOT auto-approve.
     if (travelId) {
       const travel = await Travel.findById(travelId);
       if (travel) {
@@ -585,16 +590,18 @@ app.post('/api/payments', async (req, res) => {
           seats: travel.seats,
           costPerDay: travel.costPerDay,
           totalPrice: req.body.travelTotal || (travel.costPerDay || travel.cost) || 0,
-          bookedAt: new Date()
+          bookedAt: new Date(),
+          approved: false
         };
       } else {
-        // If travelId invalid, ignore but log
         console.warn('Travel id not found:', travelId);
       }
     }
 
-    // Mark booking confirmed
-    booking.status = 'Confirmed';
+    // After payment the booking moves to "Pending Approval" (admin must approve if travel assigned)
+    booking.status = booking.assignedTravel ? 'Pending Approval' : 'Confirmed';
+    booking.approvalStatus = booking.assignedTravel ? 'pending' : 'approved';
+
     await booking.save();
 
     // Log activity
@@ -647,6 +654,86 @@ app.delete('/api/travels-booked/:id', async (req, res) => {
   } catch (err) {
     console.error('Error removing booked travel:', err);
     res.status(500).json({ message: 'Failed to remove booked travel', error: err.message });
+  }
+});
+
+// -------------------- ADMIN: Pending approvals list --------------------
+app.get('/admin/bookings/pending-approvals', async (req, res) => {
+  try {
+    const pending = await Booking.find({
+      paymentStatus: 'paid',
+      assignedTravel: { $exists: true, $ne: null },
+      approvalStatus: 'pending'
+    })
+      .populate('userId', 'username email')
+      .populate('destination', 'name')
+      .lean();
+    res.json(pending);
+  } catch (err) {
+    console.error('Failed to fetch pending approvals:', err);
+    res.status(500).json({ message: 'Failed to fetch pending approvals', error: err.message });
+  }
+});
+
+// -------------------- ADMIN: Approve a booked travel --------------------
+app.put('/admin/bookings/:id/approve', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (!booking.assignedTravel) {
+      return res.status(400).json({ message: 'No travel assigned to approve' });
+    }
+
+    if (booking.approvalStatus === 'approved') {
+      return res.status(400).json({ message: 'Booking is already approved' });
+    }
+
+    booking.approvalStatus = 'approved';
+    booking.status = 'Confirmed';
+    booking.assignedTravel.approved = true;
+    await booking.save();
+
+    await Activity.create({
+      userId: booking.userId,
+      type: 'approval',
+      content: `Admin approved travel ${booking.assignedTravel.name} for booking ${booking._id}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ message: 'Booking travel approved', booking });
+  } catch (err) {
+    console.error('Failed to approve booking:', err);
+    res.status(500).json({ message: 'Failed to approve booking', error: err.message });
+  }
+});
+
+// -------------------- ADMIN: Reject a booked travel --------------------
+app.put('/admin/bookings/:id/reject', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (!booking.assignedTravel) {
+      return res.status(400).json({ message: 'No travel assigned to reject' });
+    }
+
+    booking.approvalStatus = 'rejected';
+    booking.status = 'Pending';
+    booking.assignedTravel = undefined;
+    await booking.save();
+
+    await Activity.create({
+      userId: booking.userId,
+      type: 'approval',
+      content: `Admin rejected the assigned travel for booking ${booking._id}`,
+      destinationId: booking.destination
+    });
+
+    res.json({ message: 'Booking travel rejected', booking });
+  } catch (err) {
+    console.error('Failed to reject booking:', err);
+    res.status(500).json({ message: 'Failed to reject booking', error: err.message });
   }
 });
 
