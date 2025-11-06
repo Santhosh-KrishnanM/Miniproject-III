@@ -490,16 +490,18 @@ app.get('/admin/users', async (req, res) => {
   }
 });
 
-// Get all bookings
+// Get all bookings (FIXED: populate destination for admin bookings table)
 app.get('/admin/bookings', async (req, res) => {
   try {
-    // Populate 'userId' so you can use username in frontend
-    const bookings = await Booking.find({}).populate('userId');
+    // Populate both user and destination
+    const bookings = await Booking.find({})
+      .populate('userId', 'username email')
+      .populate('destination', 'name');
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});;
+});
 
 // Delete a booking (admin)
 app.delete('/admin/bookings/:id', async (req, res) => {
