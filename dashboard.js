@@ -1,7 +1,24 @@
 // Dashboard functionality
+// Dashboard functionality with proper logout and history management
 let currentUser = null;
 let selectedDestinationId = null;
 let destinations = []; // store destinations from backend
+
+// ✅ NEW: Prevent back button from returning to dashboard after logout
+function preventBackToProtectedPage() {
+  // Replace the current history entry to prevent going back
+  history.pushState(null, null, location.href);
+  
+  // Listen for back button
+  window.onpopstate = function() {
+    // If user is not logged in, redirect to travel.html
+    const userData = localStorage.getItem('currentUser');
+    if (!userData) {
+      history.pushState(null, null, location.href);
+      window.location.href = 'travel.html';
+    }
+  };
+}
 
 // --------- INITIAL LOAD ------------
 document.addEventListener('DOMContentLoaded', async function() {
@@ -11,13 +28,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateUserProfile();
     await renderAllSections();
     await loadUserBookings(currentUser._id);
+    
+    // ✅ Enable history management
+    preventBackToProtectedPage();
+  } else {
+    // ✅ Not logged in, redirect to travel.html
+    window.location.href = 'travel.html';
+    return;
   }
+  
   await loadDestinations();
   setupDestinationSearch();
   setupDateRestrictions();
   setupLogoutHandler();
 
-  // ✅ Check if coming from destination details page
+  // Check if coming from destination details page
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('openBooking') === 'true') {
     const bookingDest = localStorage.getItem('bookingDestination');
@@ -26,11 +51,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       openBookingForm();
       selectedDestinationId = dest.id;
       document.getElementById("destinationSearch").value = dest.name;
-      localStorage.removeItem('bookingDestination'); // Clean up
+      localStorage.removeItem('bookingDestination');
       console.log('✅ Booking form opened with pre-filled destination');
     }
   }
 });
+
+
 
 // --------- USER PROFILE ------------
 function updateUserProfile() {
@@ -1265,21 +1292,29 @@ function formatDetailDate(dateStr) {
   return date.toLocaleDateString('en-US', options);
 }
 
-// --------- LOGOUT ------------
+// --------- LOGOUT (IMPROVED) ------------
 function logout() {
   if (confirm("Are you sure you want to log out?")) {
+    console.log("Logging out user:", currentUser?.username);
+    
+    // ✅ Clear all user data
     localStorage.removeItem("currentUser");
-    window.location.href = "travel.html";
+    sessionStorage.removeItem("currentUser");
+    localStorage.removeItem("adminUser");
+    sessionStorage.removeItem("adminUser");
+    
+    console.log("✅ User logged out successfully");
+    
+    // ✅ Clear the current user variable
+    currentUser = null;
+    
+    // ✅ Replace history to prevent going back to dashboard
+    history.replaceState(null, null, 'travel.html');
+    
+    // ✅ Redirect to travel.html
+    window.location.replace('travel.html');
   }
 }
-
-function setupLogoutHandler() {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
-  }
-}
-
 // --------- SHOW ADVENTURE/FOOD PAGE ------------
 function showAdventurePage() {
   window.location.href = "travel.html#adventure";
